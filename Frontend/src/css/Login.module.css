@@ -1,0 +1,75 @@
+body {
+  background-color: white;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.Container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 10em;
+  margin-left: 30em;
+  margin-top: 60px;
+}
+
+.TopSide {
+  display: flex;
+  flex-direction: column;
+}
+
+.TopSide h5 {
+  font-size: 50px;
+  margin: 0;
+  color: #3f5930;
+}
+
+.TopSide p {
+  margin: 0;
+  font-size: 20px;
+  color: #6b7c61;
+}
+
+.form1 input[type="Username"],
+.form1 input[type="password"] {
+  width: 400px;
+  border-radius: 30px;
+  height: 50px;
+  border: none;
+  background-color: #faf9f6;
+  margin: 10px 10px 0px 0px;
+}
+
+.form1 button {
+  background-color: #3f5930;
+  color: white;
+  border: none;
+  width: 400px;
+  border-radius: 30px;
+  height: 50px;
+  margin-top: 20px;
+}
+
+.form1 button:hover {
+  cursor: pointer;
+  opacity: 60%;
+}
+
+.form1 label {
+  font-weight: bold;
+  font-size: large;
+}
+
+.form1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  width: 300px;
+}
+
+.error1 {
+  color: red;
+  font-size: medium;
+}

@@ -1,0 +1,141 @@
+/* Container styling */
+.container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  padding-bottom: 50px;
+}
+
+/* Loading state styling */
+.loading {
+  text-align: center;
+  font-size: 1.5em;
+  margin-top: 50px;
+}
+
+/* Header and title styling */
+.header {
+  text-align: center;
+  background-color: #4e654b;
+  padding: 20px;
+  color: #fff;
+}
+
+.title {
+  font-size: 2.5em;
+  margin: 0;
+}
+
+/* Progress title */
+.progressTitle {
+  text-align: center;
+  color: #333;
+  font-size: 1.8em;
+  margin: 30px 0;
+}
+
+/* Floors container styling */
+.floorsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Individual floor container */
+.floor {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  padding: 20px;
+  width: 90%;
+  max-width: 800px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.floor:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.floorHeader {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.floorTitle {
+  flex: 1;
+  color: #4e654b;
+  font-size: 1.3em;
+  text-align: left;
+}
+
+/* Progress bar styling */
+.progressBar {
+  flex: 3;
+  background-color: #e0e0e0;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 30px;
+  margin-left: 20px;
+}
+
+.progress {
+  background-color: #a7b194;
+  height: 100%;
+  line-height: 30px;
+  color: white;
+  text-align: center;
+  transition: width 0.4s ease-in-out;
+  font-weight: bold;
+}
+
+/* Tasks styling */
+.tasks {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.tasksTitle {
+  font-size: 1.5em;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.taskList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.taskItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  transition: background-color 0.3s ease;
+}
+
+.taskItem:hover {
+  background-color: #f9f9f9;
+}
+
+.taskName {
+  font-size: 1em;
+  color: #333;
+}
+
+.taskProgress {
+  font-size: 1em;
+  color: #76c7c0;
+}
+
+/* Last update date styling */
+.lastUpdate {
+  text-align: center;
+  color: #555;
+  margin-top: 20px;
+  font-size: 1em;
+}
