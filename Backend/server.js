@@ -22,7 +22,10 @@ app.use((req, res, next) => {
   next();
 })
 app.use(cors({
-  origin: 'https://foxconstruction.netlify.app'
+  origin: 'https://foxconstruction.netlify.app', // Your frontend URL
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],  // Allow these HTTP methods
+  credentials: true, // Enable cookies and other credentials if needed
+  optionsSuccessStatus: 200
 }));
 
 // routes
