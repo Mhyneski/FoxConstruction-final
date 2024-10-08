@@ -38,6 +38,7 @@ const ProjectList = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   const { user } = useContext(AuthContext);
 
@@ -47,7 +48,7 @@ const ProjectList = () => {
 
     const fetchProjects = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/api/project/contractor", {
+        const response = await axios.get(`${apiUrl}/api/project/contractor`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -65,7 +66,7 @@ const ProjectList = () => {
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
-        const response = await axios.get("http://localhost:4000/api/user/get", {
+        const response = await axios.get(`${apiUrl}/api/user/get`, {
           headers: {
             Authorization: `Bearer ${user?.token || ""}`,
           },
@@ -86,7 +87,7 @@ const ProjectList = () => {
 
       const processedProject = processProjectData(newProject);
       const response = await axios.post(
-        "http://localhost:4000/api/project",
+        `${apiUrl}/api/project`,
         {
           name: processedProject.name,
           contractor: user.Username,
@@ -131,7 +132,7 @@ const ProjectList = () => {
     try {
       const processedProject = processProjectData(newProject);
       const response = await axios.patch(
-        `http://localhost:4000/api/project/${editProjectId}`,
+        `${apiUrl}/api/project/${editProjectId}`,
         processedProject,
         {
           headers: {
@@ -175,7 +176,7 @@ const ProjectList = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
+      await axios.delete(`${apiUrl}/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 

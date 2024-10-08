@@ -10,11 +10,12 @@ const ProjectProgress = () => {
   const [project, setProject] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
+        const response = await axios.get(`${apiUrl}api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`
           }

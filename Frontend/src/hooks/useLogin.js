@@ -8,13 +8,14 @@ export const useLogin = () => {
   const [error, setError] = useState(null);
   const { dispatch } = useAuthContext();
   const navigate = useNavigate();
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   const login = async (Username, password) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:4000/api/user/login', { Username, password });
+      const response = await axios.post(`${apiUrl}/api/user/login`, { Username, password });
       const json = response.data;
 
       // save the user to local storage

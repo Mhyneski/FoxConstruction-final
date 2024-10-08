@@ -5,11 +5,12 @@ export const useFetchUsers = () => {
     const [users, setUsers] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await axios.get('http://localhost:4000/api/user');
+                const response = await axios.get(`${apiUrl}/api/user`);
                 setUsers(response.data);
             } catch (error) {
                 setError('Failed to fetch users');

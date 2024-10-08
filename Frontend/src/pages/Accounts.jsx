@@ -13,12 +13,13 @@ const Accounts = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { signup, isLoading, error, success } = useSignup();
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Fetch users on initial mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/user');
+        const response = await axios.get(`${apiUrl}/api/user`);
         setUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -34,7 +35,7 @@ const Accounts = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:4000/api/user/${selectedUserId}`);
+      await axios.delete(`${apiUrl}/api/user/${selectedUserId}`);
       setUsers(users.filter(user => user._id !== selectedUserId));
       setShowDeleteModal(false);
       setSelectedUserId(null);

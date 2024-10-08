@@ -9,11 +9,12 @@ import axios from 'axios';
 const UserDashboard = () => {
   const { user } = useAuthContext(); // Updated to destructure user properly
   const [projects, setProjects] = useState([]);
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/project/projectuser`, {
+        const response = await axios.get(`${apiUrl}/api/project/projectuser`, {
           headers: {
             Authorization: `Bearer ${user.token}`
           }

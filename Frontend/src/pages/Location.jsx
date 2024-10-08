@@ -12,6 +12,7 @@ const Location = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newLocation, setNewLocation] = useState({ name: '', markup: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Fetch all locations on component mount
   useEffect(() => {
@@ -19,7 +20,7 @@ const Location = () => {
 
     const fetchLocations = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/locations', {
+        const response = await axios.get(`${apiUrl}/api/locations`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -43,7 +44,7 @@ const Location = () => {
       const updatedLocation = { ...editedLocation };
       
       // Send the updated location to the API
-      await axios.patch(`http://localhost:4000/api/locations/${id}`, updatedLocation, {
+      await axios.patch(`${apiUrl}/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -63,7 +64,7 @@ const Location = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:4000/api/locations/${id}`, {
+      await axios.delete(`${apiUrl}/api/locations/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -95,7 +96,7 @@ const Location = () => {
         return;
       }
 
-      const response = await axios.post('http://localhost:4000/api/locations', newLocation, {
+      const response = await axios.post(`${apiUrl}/api/location`, newLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
