@@ -40,7 +40,8 @@ const generateBOM = async (req, res) => {
 
     // Group materials by category
     const groupedMaterials = scaledMaterials.reduce((acc, material) => {
-      const category = material.category && material.category.trim() !== '' ? material.category : 'UNCATEGORIZED';
+      // Trim whitespace and set to 'UNCATEGORIZED' if empty
+      const category = material.category && material.category.trim() !== '' ? material.category.trim() : 'UNCATEGORIZED';
       if (!acc[category]) {
         acc[category] = [];
       }

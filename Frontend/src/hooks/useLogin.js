@@ -15,7 +15,7 @@ export const useLogin = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`${apiUrl}/api/user/login`, { Username, password });
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/user/login`, { Username, password });
       const json = response.data;
 
       // save the user to local storage

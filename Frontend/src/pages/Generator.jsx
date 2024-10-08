@@ -91,7 +91,7 @@ const Generator = () => {
     
             console.log('Base Template Details:', payload);
     
-            Axios.post('http://localhost:4000/api/bom/generate', payload, {
+            Axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/bom/generate`, payload, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${user.token}`

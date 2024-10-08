@@ -15,7 +15,7 @@ const ProjectProgress = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`${apiUrl}api/project/${projectId}`, {
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`
           }

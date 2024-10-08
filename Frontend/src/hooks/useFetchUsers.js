@@ -10,7 +10,7 @@ export const useFetchUsers = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await axios.get(`${apiUrl}/api/user`);
+                const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/user`);
                 setUsers(response.data);
             } catch (error) {
                 setError('Failed to fetch users');

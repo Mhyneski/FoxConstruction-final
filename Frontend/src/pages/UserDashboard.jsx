@@ -14,7 +14,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/api/project/projectuser`, {
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/project/projectuser`, {
           headers: {
             Authorization: `Bearer ${user.token}`
           }

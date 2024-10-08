@@ -13,7 +13,7 @@ export const useSignup = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`${apiUrl}/api/user/signup`, {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/user/signup`, {
         Username,
         password,
         role
