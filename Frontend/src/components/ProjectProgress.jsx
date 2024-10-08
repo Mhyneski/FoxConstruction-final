@@ -15,7 +15,7 @@ const ProjectProgress = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.comapi/project/${projectId}`, {
+        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`
           }
