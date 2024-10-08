@@ -1,5 +1,5 @@
 const user = require('../models/usersModel')
-const bcrypt = require('bcrypt');
+const bcryptjs = require('bcryptjs');
 const { default: mongoose } = require('mongoose');   
 const jwt = require('jsonwebtoken');
 
@@ -43,7 +43,7 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ error: 'User not found' });
     }
     // Perform password comparison
-    const passwordMatch = await bcrypt.compare(password, USER.password);
+    const passwordMatch = await bcryptjs.compare(password, USER.password);
     if (!passwordMatch) {
       return res.status(400).json({ error: 'Invalid password' });
     }
@@ -81,7 +81,7 @@ const signupUser = async (req, res) => {
       }
 
       // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcryptjs.hash(password, 10);
 
       // Create a new user with hashed password
       const USER = await user.create({ Username, password: hashedPassword, role });
