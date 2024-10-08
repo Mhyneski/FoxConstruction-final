@@ -20,7 +20,7 @@ const Location = () => {
 
     const fetchLocations = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/locations`, {
+        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/locations`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -44,7 +44,7 @@ const Location = () => {
       const updatedLocation = { ...editedLocation };
       
       // Send the updated location to the API
-      await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/locations/${id}`, updatedLocation, {
+      await axios.patch(`https://foxconstruction-backend.onrender.com/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -64,7 +64,7 @@ const Location = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/locations/${id}`, {
+      await axios.delete(`https://foxconstruction-backend.onrender.com/api/locations/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -96,7 +96,7 @@ const Location = () => {
         return;
       }
 
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/location`, newLocation, {
+      const response = await axios.post(`https://foxconstruction-backend.onrender.com/api/location`, newLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

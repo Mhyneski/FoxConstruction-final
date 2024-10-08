@@ -48,7 +48,7 @@ const ProjectList = () => {
 
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/project/contractor`, {
+        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/project/contractor`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -66,7 +66,7 @@ const ProjectList = () => {
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/user/get`, {
+        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/user/get`, {
           headers: {
             Authorization: `Bearer ${user?.token || ""}`,
           },
@@ -87,7 +87,7 @@ const ProjectList = () => {
 
       const processedProject = processProjectData(newProject);
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/project`,
+        `https://foxconstruction-backend.onrender.com/api/project`,
         {
           name: processedProject.name,
           contractor: user.Username,
@@ -132,7 +132,7 @@ const ProjectList = () => {
     try {
       const processedProject = processProjectData(newProject);
       const response = await axios.patch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/project/${editProjectId}`,
+        `https://foxconstruction-backend.onrender.com/api/project/${editProjectId}`,
         processedProject,
         {
           headers: {
@@ -176,7 +176,7 @@ const ProjectList = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/project/${selectedProject._id}`, {
+      await axios.delete(`https://foxconstruction-backend.onrender.com/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 

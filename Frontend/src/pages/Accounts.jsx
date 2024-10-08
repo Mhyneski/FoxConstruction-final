@@ -19,7 +19,7 @@ const Accounts = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/user`);
+        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/user`);
         setUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -35,7 +35,7 @@ const Accounts = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/user/${selectedUserId}`);
+      await axios.delete(`https://foxconstruction-backend.onrender.com/api/user/${selectedUserId}`);
       setUsers(users.filter(user => user._id !== selectedUserId));
       setShowDeleteModal(false);
       setSelectedUserId(null);

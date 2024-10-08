@@ -13,7 +13,7 @@ export const useSignup = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/user/signup`, {
+      const response = await axios.post(`https://foxconstruction-backend.onrender.com/api/user/signup`, {
         Username,
         password,
         role
