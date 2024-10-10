@@ -61,40 +61,35 @@ const loginUser = async (req, res) => {
 
 
 const signupUser = async (req, res) => {
-  console.log('Request Body:', req.body); // Log the incoming request body
-
-  const { Username, password, role } = req.body;
+  const { Username, role } = req.body;
+  const defaultPassword = "12345678";
 
   if (!role) {
-      return res.status(400).json({ error: 'Role is required' });
-  }
-
-  if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    return res.status(400).json({ error: 'Role is required' });
   }
 
   try {
-      // Check if the Username already exists
-      const existingUser = await user.findOne({ Username });
-      if (existingUser) {
-          return res.status(400).json({ error: 'Username already exists' });
-      }
+    // Check if the Username already exists
+    const existingUser = await user.findOne({ Username });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
 
-      // Hash the password
-      const hashedPassword = await bcryptjs.hash(password, 10);
+    // Hash the default password
+    const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
 
-      // Create a new user with hashed password
-      const USER = await user.create({ Username, password: hashedPassword, role });
+    // Create a new user with the default password
+    const USER = await user.create({ Username, password: hashedPassword, role });
 
-      // Create a token
-      const token = createToken(USER._id);
+    // Create a token
+    const token = createToken(USER._id);
 
-      res.status(201).json({ message: 'User created successfully', Username, token });
+    res.status(201).json({ message: 'User created successfully', Username, token });
   } catch (error) {
-      console.error('Server Error:', error); // Log the error
-      res.status(500).json({ error: 'Server Error' });
+    console.error('Server Error:', error);
+    res.status(500).json({ error: 'Server Error' });
   }
-}
+};
 
 
 const deleteUser = async(req, res) => {
@@ -115,10 +110,113 @@ const deleteUser = async(req, res) => {
   }
 }
 
+const resetPassword = async (req, res) => {
+  const { id } = req.params;
+  const defaultPassword = "12345678";
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: 'Invalid user ID' });
+  }
+
+  try {
+    // Hash the default password
+    const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
+
+    // Update the user's password and reset the forgotPassword field to false
+    const updatedUser = await user.findByIdAndUpdate(
+      id, 
+      { password: hashedPassword, forgotPassword: false }, // Set forgotPassword to false
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: `Password reset to default for user ${updatedUser.Username}` });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};
+
+const changePassword = async (req, res) => {
+  const { newPassword } = req.body;
+
+  // Check if the password meets the requirements
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+  }
+
+  try {
+    // Make sure req.user is defined
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await User.findByIdAndUpdate(req.user._id, { password: hashedPassword });
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+};
+const bcrypt = require('bcryptjs');
+const User = require('../models/usersModel');
+// Default password
+const DEFAULT_PASSWORD = '12345678';
+
+const isDefaultPassword = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Compare if the current password is the default one
+    const isDefault = await bcrypt.compare(DEFAULT_PASSWORD, user.password);
+    
+    return res.status(200).json({ isDefault });
+  } catch (error) {
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  const { Username } = req.params;
+
+  try {
+    // Check if the user exists
+    const userExists = await User.findOne({ Username });
+
+    if (!userExists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Mark the user as having forgotten their password
+    await User.findByIdAndUpdate(userExists._id, { forgotPassword: true });
+
+    res.status(200).json({ message: `Password reset request noted for user: ${Username}` });
+  } catch (error) {
+    console.error('Error updating forgot password status:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};
+
+
 module.exports = {
   loginUser,
   signupUser,
   deleteUser,
   getUsers,
-  getsUsers
-}
+  getsUsers,
+  resetPassword,
+  changePassword,
+  isDefaultPassword,
+  forgotPassword
+};

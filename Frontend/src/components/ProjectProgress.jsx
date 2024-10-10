@@ -10,17 +10,18 @@ const ProjectProgress = () => {
   const [project, setProject] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/project/${projectId}`, {
+        const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`
           }
         });
-        setProject(response.data);
+
+        const fetchedProject = response.data;
+        setProject(fetchedProject);
       } catch (error) {
         console.error('Error fetching project:', error);
       }
@@ -46,9 +47,12 @@ const ProjectProgress = () => {
         <h1 className={styles.title}>{project.name.toUpperCase()}</h1>
       </div>
       <h2 className={styles.progressTitle}>PROGRESS</h2>
+      <p className={styles.progressTitle}>STATUS: {project.status.toUpperCase()}</p>
+      
+      {/* Scrollable floors container */}
       <div className={styles.floorsContainer}>
         {project.floors.map(floor => (
-          <div key={floor._id} className={styles.floor}>
+          <div key={floor._id} className={`${styles.floor} ${selectedFloor === floor._id ? styles.selected : ''}`}>
             <div className={styles.floorHeader} onClick={() => handleFloorClick(floor._id)}>
               <h3 className={styles.floorTitle}>{floor.name}</h3>
               <div className={styles.progressBar}>
@@ -56,18 +60,25 @@ const ProjectProgress = () => {
                   className={styles.progress}
                   style={{ width: `${floor.progress}%` }}
                 >
-                  {floor.progress}% DONE
+                  {floor.progress.toFixed(2)}%  
                 </div>
               </div>
             </div>
             {selectedFloor === floor._id && (
               <div className={styles.tasks}>
-                <h3 className={styles.tasksTitle}>TASKS:</h3>
+                <h3 className={styles.tasksTitle}>TASK</h3>
                 <ul className={styles.taskList}>
                   {floor.tasks.map(task => (
                     <li key={task._id} className={styles.taskItem}>
                       <span className={styles.taskName}>{task.name}</span>
-                      <span className={styles.taskProgress}>{task.progress}%</span>
+                      <div className={styles.taskProgressBar}>
+                        <div
+                          className={styles.taskProgress}
+                          style={{ width: `${task.progress}%` }}
+                        >
+                          {task.progress.toFixed(2)}%
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -76,7 +87,7 @@ const ProjectProgress = () => {
           </div>
         ))}
       </div>
-      <p className={styles.lastUpdate}>Last Update: {new Date(project.updatedAt).toLocaleDateString()}</p>
+      <p className={styles.lastUpdate}>LAST UPDATE: {new Date(project.updatedAt).toLocaleDateString()}</p>
     </div>
   );
 };

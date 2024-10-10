@@ -40,13 +40,13 @@
 
 .projectInfo {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  margin-top: 15px;
+  margin-top: 10px;
 }
 
 .projectInfo p {
-  padding: 8px 12px;
+  padding: 8px 16px;
   border-radius: 20px;
   background-color: #4e654b;
   color: #fff;
@@ -79,4 +79,3 @@
   border-radius: 40px;
   font-size: 30px;
 }
-  

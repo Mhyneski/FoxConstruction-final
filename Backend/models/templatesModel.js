@@ -13,7 +13,7 @@ const templatesSchema = new schema({
   },
   tier: {
     type: String,
-    enum: ["low", "mid", "high"],
+    enum: ["economy", "standard", "premium"],
     required: true
   },
   bom: {

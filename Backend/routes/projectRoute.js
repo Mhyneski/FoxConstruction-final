@@ -7,13 +7,16 @@ const {
   updateProject,
   deleteProject,
   updateFloorProgress,
-  getProjectForUser, // Ensure to import the controller function
+  getProjectForUser,
+  updateProjectStatus // Ensure to import the controller function
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
 router.use(authMiddleware);
+
+router.patch('/:id/status', updateProjectStatus);
 
 // Get all projects for the contractor
 router.get('/contractor', getProjectsByContractor);

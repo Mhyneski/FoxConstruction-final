@@ -20,16 +20,13 @@ const getProjectsByContractor = async (req, res) => {
 };
 
 
-
 const createProject = async (req, res) => {
-  const { name, contractor: contractorUsername, user: userUsername, floors, template } = req.body;
+  const { name, contractor: contractorUsername, user: userUsername, floors, template, timeline, status } = req.body;
 
   try {
-    // Fetch the contractor and user from the database by their Usernames
     const contractorObject = await User.findOne({ Username: contractorUsername });
     const userObject = await User.findOne({ Username: userUsername });
 
-    // Validate contractor and user
     if (!contractorObject || contractorObject.role !== 'contractor') {
       return res.status(403).json({ error: "The provided contractor is invalid or not a contractor." });
     }
@@ -37,12 +34,10 @@ const createProject = async (req, res) => {
       return res.status(404).json({ error: "The provided user does not exist." });
     }
 
-    // Validate template
-    if (!["low", "mid", "high"].includes(template)) {
-      return res.status(400).json({ error: `Invalid template: ${template}. Must be 'low', 'mid', or 'high'.` });
+    if (!["economy", "standard", "premium"].includes(template)) {
+      return res.status(400).json({ error: `Invalid template: ${template}. Must be 'economy', 'standard', or 'premium'.` });
     }
 
-    // Format floors
     const formattedFloors = floors ? floors.map(floor => ({
       name: floor.name,
       progress: floor.progress || 0,
@@ -52,13 +47,14 @@ const createProject = async (req, res) => {
       })) : []
     })) : [];
 
-    // Create the project
     const project = await Project.create({
       name,
       contractor: contractorObject.Username,
       user: userObject.Username,
       floors: formattedFloors,
-      template
+      template,
+      timeline,
+      status: status || 'ongoing' // Use the provided status or default to 'ongoing'
     });
 
     res.status(201).json({ success: true, data: project });
@@ -66,6 +62,7 @@ const createProject = async (req, res) => {
     res.status(500).json({ error: "Failed to create project.", details: error.message });
   }
 };
+
 
 
 
@@ -169,6 +166,11 @@ const updateProject = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
+    // Handle template validation
+    if (updateData.template && !["economy", "standard", "premium"].includes(updateData.template)) {
+      return res.status(400).json({ error: `Invalid template: ${updateData.template}. Must be 'economy', 'standard', or 'premium'.` });
+    }
+
     // Handle updating floors
     if (updateData.floors) {
       updateData.floors.forEach(newFloor => {
@@ -237,6 +239,33 @@ const deleteProject = async (req, res) => {
   }
 };
 
+const updateProjectStatus = async (req, res) => {
+  console.log("Received request to update status for project ID:", req.params.id); // Debug log
+  const { status } = req.body;
+
+  if (!["ongoing", "finished"].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status value. Must be "ongoing" or "finished".' });
+  }
+
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      console.log("Project not found"); // Debug log
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    project.status = status; // Update the project status
+    const updatedProject = await project.save();
+
+    res.status(200).json({ project: updatedProject });
+  } catch (error) {
+    console.error("Error updating project status:", error); // Debug log
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
 module.exports = {
   getProjectsByContractor,
   createProject,
@@ -245,5 +274,6 @@ module.exports = {
   updateProject,
   deleteProject,
   updateFloorProgress,
-  getProjectForUser
+  getProjectForUser,
+  updateProjectStatus
 };

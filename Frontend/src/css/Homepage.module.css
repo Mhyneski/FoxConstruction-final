@@ -20,19 +20,20 @@ body {
 
 .leftSide {
   display: flex;
-  flex-direction: column;
+  align-items: baseline; /* This aligns both texts on the same baseline */
+  gap: 5px; /* Adjusts spacing between FOX and CONSTRUCTION CO. */
 }
 
 .name1 {
   color: #a7b194;
   font-weight: bold;
-  font-size: 32px; /* Decreased font size */
+  font-size: 32px;
   margin: 0;
 }
 
 .name2 {
   color: #a7b194;
-  font-size: 14px; /* Decreased font size */
+  font-size: 14px;
 }
 
 .rightSide {

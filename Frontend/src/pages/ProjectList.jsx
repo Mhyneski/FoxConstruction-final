@@ -27,8 +27,13 @@ const ProjectList = () => {
     name: "",
     contractor: "",
     user: "",
-    floors: [{ name: "", progress: "", tasks: [{ name: "", progress: "" }] }],
+    numFloors: 1, // Number of floors input for creation
     template: "low", // Default template value
+    floors: [], // Floors in edit mode
+    timeline: {
+      duration: 0, // Duration of the project timeline
+      unit: "months", // Time unit (weeks or months)
+    },
   });
   const [users, setUsers] = useState([]); // Store available users for selection
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,17 +43,14 @@ const ProjectList = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
-
   const { user } = useContext(AuthContext);
 
-  // Fetch projects related to the contractor on component mount
   useEffect(() => {
-    if (!user || !user.token) return; // Ensure user is authenticated before making the request
+    if (!user || !user.token) return;
 
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/project/contractor`, {
+        const response = await axios.get(`http://localhost:4000/api/project/contractor`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -62,11 +64,10 @@ const ProjectList = () => {
     fetchProjects();
   }, [user]);
 
-  // Function to fetch users on dropdown click
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/user/get`, {
+        const response = await axios.get(`http://localhost:4000/api/user/get`, {
           headers: {
             Authorization: `Bearer ${user?.token || ""}`,
           },
@@ -80,20 +81,36 @@ const ProjectList = () => {
 
   const handleCreateProject = async () => {
     try {
-      if (!["low", "mid", "high"].includes(newProject.template)) {
+      if (!["economy", "standard", "premium"].includes(newProject.template)) {
         alert("Please select a valid template.");
         return;
       }
+      if (newProject.numFloors < 1 || newProject.numFloors > 5) {
+        alert("The number of floors must be between 1 and 5.");
+      }
+      
 
-      const processedProject = processProjectData(newProject);
+      // Generate default floors based on numFloors input
+      const defaultFloors = Array.from({ length: newProject.numFloors }, (_, i) => ({
+        name: `FLOOR ${i + 1}`,
+        progress: 0, // Default progress to 0
+        tasks: [], // Empty tasks by default
+      }));
+
+      const processedProject = {
+        ...newProject,
+        floors: defaultFloors, // Use generated floors
+      };
+
       const response = await axios.post(
-        `https://foxconstruction-backend.onrender.com/api/project`,
+        `http://localhost:4000/api/project`,
         {
           name: processedProject.name,
           contractor: user.Username,
           user: processedProject.user,
           floors: processedProject.floors,
           template: processedProject.template,
+          timeline: processedProject.timeline, // Include timeline
         },
         {
           headers: {
@@ -110,29 +127,24 @@ const ProjectList = () => {
     }
   };
 
-  const handleEditProject = (project) => {
-    setIsEditing(true);
-    setEditProjectId(project._id);
-    const projectWithStringProgress = {
-      ...project,
-      floors: project.floors.map((floor) => ({
-        ...floor,
-        progress: floor.progress.toString(),
-        tasks: floor.tasks.map((task) => ({
-          ...task,
-          progress: task.progress.toString(),
-        })),
-      })),
-    };
-    setNewProject(projectWithStringProgress);
-    setIsModalOpen(true);
-  };
-
   const handleUpdateProject = async () => {
     try {
-      const processedProject = processProjectData(newProject);
+      if (!["economy", "standard", "premium"].includes(newProject.template)) {
+        alert("Please select a valid template.");
+        return;
+      }
+      if (newProject.numFloors < 1 || newProject.numFloors > 5) {
+        alert("The number of floors must be between 1 and 5.");
+        return;
+      }
+      
+      const processedProject = {
+        ...newProject,
+      };
+
+      // Send the update request
       const response = await axios.patch(
-        `https://foxconstruction-backend.onrender.com/api/project/${editProjectId}`,
+        `http://localhost:4000/api/project/${editProjectId}`,
         processedProject,
         {
           headers: {
@@ -159,9 +171,21 @@ const ProjectList = () => {
       name: "",
       contractor: "",
       user: "",
-      floors: [{ name: "", progress: "", tasks: [{ name: "", progress: "" }] }],
+      numFloors: 1, // Reset to 1 floor for creation
       template: "low",
+      floors: [], // Reset floors for creation
+      timeline: {
+        duration: 0,
+        unit: "months",
+      },
     });
+  };
+
+  const handleEditProject = (project) => {
+    setIsEditing(true);
+    setEditProjectId(project._id); // Store the ID of the project being edited
+    setNewProject(project); // Load project data into form
+    setIsModalOpen(true); // Open the modal for editing
   };
 
   const handleViewProjectDetails = (project) => {
@@ -176,7 +200,7 @@ const ProjectList = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`https://foxconstruction-backend.onrender.com/api/project/${selectedProject._id}`, {
+      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -202,22 +226,96 @@ const ProjectList = () => {
     );
   };
 
-  const processProjectData = (projectData) => {
-    const processedFloors = projectData.floors.map((floor) => ({
-      ...floor,
-      progress: floor.progress === "" ? 0 : floor.progress,
-      tasks: floor.tasks.map((task) => ({
-        ...task,
-        progress: task.progress === "" ? 0 : task.progress,
-      })),
-    }));
-    return {
-      ...projectData,
-      floors: processedFloors,
-    };
+  // Function to delete a floor
+  const deleteFloor = (index) => {
+    const updatedFloors = newProject.floors.filter((_, i) => i !== index);
+    setNewProject({ ...newProject, floors: updatedFloors });
   };
 
+  // Function to delete a task from a floor
+  const deleteTask = (floorIndex, taskIndex) => {
+    const updatedTasks = newProject.floors[floorIndex].tasks.filter((_, i) => i !== taskIndex);
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === floorIndex ? { ...floor, tasks: updatedTasks } : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
+
+  const handleFloorChange = (index, key, value) => {
+    if (key === "numFloors") {
+      value = Math.max(1, Math.min(5, value)); // Ensure number of floors is between 1 and 5
+    } else if (value < 0) {
+      value = 0; // Ensure no negative values for other fields
+    }
+    
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === index ? { ...floor, [key]: value } : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
+  
+  
+
+  const handleTaskChange = (floorIndex, taskIndex, key, value) => {
+    if (value < 0) value = 0; // Ensure no negative values
+    const updatedTasks = newProject.floors[floorIndex].tasks.map((task, i) =>
+      i === taskIndex ? { ...task, [key]: value } : task
+    );
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === floorIndex ? { ...floor, tasks: updatedTasks } : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
+  
+
+  const addTaskToFloor = (floorIndex) => {
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === floorIndex ? { ...floor, tasks: [...floor.tasks, { name: "", progress: 0 }] } : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
+
+  // Add a floor (only in edit mode)
+  const addFloor = () => {
+    if (newProject.floors.length >= 5) {
+      alert("Cannot add more than 5 floors."); // Display an alert or warning
+      return;
+    }
+    
+    const newFloorIndex = newProject.floors.length + 1;
+    const updatedFloors = [
+      ...newProject.floors,
+      { name: `FLOOR ${newFloorIndex}`, progress: 0, tasks: [] },
+    ];
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
+  
+
   const filteredProjects = filterProjects();
+
+  const handleUpdateStatus = async (projectId, newStatus) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/status`, // Ensure this URL matches the backend route
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+  
+      const updatedProject = response.data.project;
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+    } catch (error) {
+      console.error("Error updating project status:", error);
+    }
+  };
+  
 
   return (
     <>
@@ -245,7 +343,6 @@ const ProjectList = () => {
         </div>
         <p className={styles.locationCount}>Total Projects: {filteredProjects.length}</p>
 
-        {/* Create or Edit Modal */}
         {isModalOpen && (
           <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
             <div className={styles.modalForm}>
@@ -279,44 +376,75 @@ const ProjectList = () => {
                   )}
               </select>
               <select
-                value={newProject.template}
-                onChange={(e) => setNewProject({ ...newProject, template: e.target.value })}
+  value={newProject.template}
+  onChange={(e) => setNewProject({ ...newProject, template: e.target.value })}
+  className={styles.inputField}
+>
+  <option value="economy">Economy</option>
+  <option value="standard">Standard</option>
+  <option value="premium">Premium</option>
+</select>
+
+
+              {!isEditing && (
+                <>
+                 <h3>Number of Floors</h3>
+<input
+  type="number"
+  placeholder="Number of Floors"
+  value={newProject.numFloors}
+  onChange={(e) => {
+    const value = Math.max(1, Math.min(5, parseInt(e.target.value, 10))); // Ensure value is between 1 and 5
+    setNewProject({ ...newProject, numFloors: value });
+  }}
+  className={styles.inputField}
+/>
+
+
+                </>
+              )}
+
+              {/* Timeline fields */}
+              <h3>Project Timeline</h3>
+<input
+  type="number"
+  placeholder="Duration"
+  value={newProject.timeline.duration}
+  onChange={(e) => {
+    const value = Math.max(0, parseInt(e.target.value, 10)); // Ensure value is not negative
+    setNewProject({
+      ...newProject,
+      timeline: { ...newProject.timeline, duration: value },
+    });
+  }}
+  className={styles.inputField}
+/>
+
+              <select
+                value={newProject.timeline.unit}
+                onChange={(e) =>
+                  setNewProject({
+                    ...newProject,
+                    timeline: { ...newProject.timeline, unit: e.target.value }
+                  })
+                }
                 className={styles.inputField}
               >
-                <option value="low">Low</option>
-                <option value="mid">Mid</option>
-                <option value="high">High</option>
+                <option value="weeks">Weeks</option>
+                <option value="months">Months</option>
               </select>
 
-              <h3>Floors</h3>
-              {newProject.floors.map((floor, floorIndex) => (
-                <div key={floorIndex} className={styles.floorContainer}>
-                  <h4>Floor {floorIndex + 1}</h4>
-                  <input
-                    type="text"
-                    placeholder="Floor Name"
-                    value={floor.name}
-                    onChange={(e) => {
-                      const updatedFloors = newProject.floors.map((f, i) =>
-                        i === floorIndex ? { ...f, name: e.target.value } : f
-                      );
-                      setNewProject({ ...newProject, floors: updatedFloors });
-                    }}
-                    className={styles.inputField}
-                  />
+              {newProject.floors.map((floor, index) => (
+                <div key={index} className={styles.floorContainer}>
+                  <h4>{floor.name}</h4>
                   <input
                     type="number"
-                    placeholder="Floor Progress"
+                    placeholder="Progress"
                     value={floor.progress}
-                    onChange={(e) => {
-                      const progressValue = e.target.value === "" ? "" : parseInt(e.target.value, 10);
-                      const updatedFloors = newProject.floors.map((f, i) =>
-                        i === floorIndex ? { ...f, progress: progressValue } : f
-                      );
-                      setNewProject({ ...newProject, floors: updatedFloors });
-                    }}
+                    onChange={(e) => handleFloorChange(index, "progress", parseInt(e.target.value))}
                     className={styles.inputField}
                   />
+
                   <h5>Tasks</h5>
                   {floor.tasks.map((task, taskIndex) => (
                     <div key={taskIndex} className={styles.taskContainer}>
@@ -324,86 +452,53 @@ const ProjectList = () => {
                         type="text"
                         placeholder="Task Name"
                         value={task.name}
-                        onChange={(e) => {
-                          const updatedTasks = floor.tasks.map((t, i) =>
-                            i === taskIndex ? { ...t, name: e.target.value } : t
-                          );
-                          const updatedFloors = newProject.floors.map((f, i) =>
-                            i === floorIndex ? { ...f, tasks: updatedTasks } : f
-                          );
-                          setNewProject({ ...newProject, floors: updatedFloors });
-                        }}
+                        onChange={(e) =>
+                          handleTaskChange(index, taskIndex, "name", e.target.value)
+                        }
                         className={styles.inputField}
                       />
                       <input
                         type="number"
                         placeholder="Task Progress"
                         value={task.progress}
-                        onChange={(e) => {
-                          const progressValue = e.target.value === "" ? "" : parseInt(e.target.value, 10);
-                          const updatedTasks = floor.tasks.map((t, i) =>
-                            i === taskIndex ? { ...t, progress: progressValue } : t
-                          );
-                          const updatedFloors = newProject.floors.map((f, i) =>
-                            i === floorIndex ? { ...f, tasks: updatedTasks } : f
-                          );
-                          setNewProject({ ...newProject, floors: updatedFloors });
-                        }}
+                        onChange={(e) =>
+                          handleTaskChange(index, taskIndex, "progress", parseInt(e.target.value))
+                        }
                         className={styles.inputField}
                       />
                       <button
                         className={styles.deleteTaskButton}
-                        onClick={() => {
-                          const updatedTasks = floor.tasks.filter((_, i) => i !== taskIndex);
-                          const updatedFloors = newProject.floors.map((f, i) =>
-                            i === floorIndex ? { ...f, tasks: updatedTasks } : f
-                          );
-                          setNewProject({ ...newProject, floors: updatedFloors });
-                        }}
+                        onClick={() => deleteTask(index, taskIndex)}
                       >
                         Delete Task
                       </button>
                     </div>
                   ))}
 
-                  <button
-                    className={styles.addTaskButton}
-                    onClick={() => {
-                      const updatedTasks = [...floor.tasks, { name: "", progress: "" }];
-                      const updatedFloors = newProject.floors.map((f, i) =>
-                        i === floorIndex ? { ...f, tasks: updatedTasks } : f
-                      );
-                      setNewProject({ ...newProject, floors: updatedFloors });
-                    }}
-                  >
-                    Add Task
-                  </button>
-                  <button
-                    className={styles.deleteFloorButton}
-                    onClick={() => {
-                      const updatedFloors = newProject.floors.filter((_, i) => i !== floorIndex);
-                      setNewProject({ ...newProject, floors: updatedFloors });
-                    }}
-                  >
-                    Delete Floor
-                  </button>
+                  {isEditing && (
+                    <>
+                      <button
+                        className={styles.addTaskButton}
+                        onClick={() => addTaskToFloor(index)}
+                      >
+                        Add Task
+                      </button>
+                      <button
+                        className={styles.deleteFloorButton}
+                        onClick={() => deleteFloor(index)}
+                      >
+                        Delete Floor
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
 
-              <button
-                className={styles.addFloorButton}
-                onClick={() =>
-                  setNewProject({
-                    ...newProject,
-                    floors: [
-                      ...newProject.floors,
-                      { name: "", progress: "", tasks: [{ name: "", progress: "" }] },
-                    ],
-                  })
-                }
-              >
-                Add Floor
-              </button>
+              {isEditing && (
+                <button className={styles.addFloorButton} onClick={addFloor}>
+                  Add Floor
+                </button>
+              )}
 
               <button
                 className={styles.createButton}
@@ -430,58 +525,62 @@ const ProjectList = () => {
                 </p>
               </div>
             ))}
+            <h4>Timeline:</h4>
+            <p>
+              <strong>Duration:</strong> {selectedProject.timeline.duration} {selectedProject.timeline.unit}
+            </p>
           </Modal>
         )}
 
-        <div className={styles.scrollableTableContainer}>
-          <table className={styles.locationsTable}>
-            <thead>
-              <tr>
-                <th>Project Name</th>
-                <th>Project Owner</th>
-                <th>Project Contractor</th>
-                <th>Date Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProjects.map((project) => (
-                <tr key={project._id}>
-                  <td onClick={() => handleViewProjectDetails(project)}>{project.name}</td>
-                  <td onClick={() => handleViewProjectDetails(project)}>
-                    {project.user || "No user Username"}
-                  </td>
-                  <td onClick={() => handleViewProjectDetails(project)}>
-                    {project.contractor || "No contractor Username"}
-                  </td>
-                  <td onClick={() => handleViewProjectDetails(project)}>
-                    {new Date(project.createdAt).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditProject(project);
-                      }}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(project);
-                      }}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+<div className={styles.scrollableTableContainer}>
+  <table className={styles.locationsTable}>
+    <thead>
+      <tr>
+        <th>Project Name</th>
+        <th>Project Owner</th>
+        <th>Project Contractor</th>
+        <th>Date Created</th>
+        <th>Cost Tier</th> {/* New column for Cost Tier */}
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredProjects.map((project) => (
+        <tr key={project._id}>
+          <td onClick={() => handleViewProjectDetails(project)}>{project.name}</td>
+          <td onClick={() => handleViewProjectDetails(project)}>{project.user}</td>
+          <td onClick={() => handleViewProjectDetails(project)}>{project.contractor}</td>
+          <td onClick={() => handleViewProjectDetails(project)}>
+            {new Date(project.createdAt).toLocaleDateString()}
+          </td>
+          <td>{project.template.charAt(0).toUpperCase() + project.template.slice(1)}</td> {/* Display the cost tier */}
+          <td>{project.status}</td>
+          <td>
+            <button onClick={() => handleEditProject(project)} className={styles.editButton}>
+              Edit
+            </button>
+            <button
+              onClick={() =>
+                handleUpdateStatus(
+                  project._id,
+                  project.status === "ongoing" ? "finished" : "ongoing"
+                )
+              }
+              className={styles.editButton}
+            >
+              Mark as {project.status === "ongoing" ? "Finished" : "Ongoing"}
+            </button>
+            <button onClick={() => handleDeleteClick(project)} className={styles.deleteButton}>
+              Delete
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
       </div>
 
       <ConfirmDeleteModal

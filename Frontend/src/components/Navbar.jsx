@@ -1,19 +1,42 @@
+import { useState } from "react";
+import { useAuthContext } from "../hooks/useAuthContext"; // Import the user context
 import { useLogout } from "../hooks/useLogout";
 import styles from "../css/Navbar.module.css";
+import { FaUserCircle } from 'react-icons/fa'; // You can use a profile icon from react-icons or any other library
 
 const Navbar = () => {
-  const {logout} = useLogout();
+  const { logout } = useLogout();
+  const { user } = useAuthContext(); // Get the logged-in user
+  const [dropdownOpen, setDropdownOpen] = useState(false); // State to toggle the dropdown
 
   const handleClick = () => {
-    logout()
-  }
+    logout();
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
   return (
     <div className={styles.topSIDE}>
-    <p className={styles.name1}>FOX</p>
-    <p className={styles.name2}>CONSTRUCTION CO.</p>
-    <button className={styles.wowbutton} onClick={handleClick}>LOGOUT</button>
-  </div>
-  )
-}
+      {/* FOX CONSTRUCTION Co. section */}
+      <div className={styles.companyInfo}>
+        <p className={styles.name1}>FOX</p>
+        <p className={styles.name2}>CONSTRUCTION CO.</p>
+      </div>
+      
+      {/* User Info section */}
+      <div className={styles.userInfo}>
+        <p className={styles.username}>Hi, {user && user.Username}</p>
+        <FaUserCircle className={styles.profileIcon} onClick={toggleDropdown} />
+        {dropdownOpen && (
+          <div className={styles.dropdownMenu}>
+            <button className={styles.logoutButton} onClick={handleClick}>Logout</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default Navbar;

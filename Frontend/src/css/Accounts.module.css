@@ -339,4 +339,23 @@
     font-size: 14px;
     margin-top: 10px;
   }
+
+  .resetButton {
+    background-color: #4caf50;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+
+  .searchBar {
+    padding: 8px;
+    margin-right: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    width: 200px;
+  }
+  
   

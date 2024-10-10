@@ -211,4 +211,18 @@
     background-color: #f44336;
     color: #fff;
   }
+
+  .updateStatusButton {
+    background-color: #4caf50;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  
+  .updateStatusButton:hover {
+    background-color: #0056b3;
+  }
+  
   

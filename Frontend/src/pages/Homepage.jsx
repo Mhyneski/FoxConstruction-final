@@ -12,10 +12,10 @@ const Homepage = () => {
           <p className={styles.name2}>CONSTRUCTION CO.</p>
         </div>
         <nav className={styles.rightSide}>
-          <a href="#about">ABOUT US</a>
-          <a href="#collection">COLLECTION</a>
-          <a href="#services">SERVICES</a>
-          <a href="#contacts">CONTACTS</a>
+          <Link to="/AboutUs">ABOUT US</Link>
+          <Link to="/Collection">COLLECTIONS</Link>
+          <Link to="/Services">SERVICES</Link>
+          <Link to="/Contacts">CONTACT US</Link>
           <Link to="/Login" className={styles.loginBtn}>LOGIN</Link>
         </nav>
       </header>

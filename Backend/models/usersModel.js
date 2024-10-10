@@ -18,6 +18,7 @@ const userSchema = new Schema({
     enum: ['admin', 'user', 'contractor'],
     required: true
   },
+  forgotPassword: { type: Boolean, default: false },
 }, {timestamps: true})
 
 module.exports = mongoose.model('User', userSchema)

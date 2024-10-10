@@ -10,6 +10,10 @@ import Generator from './pages/Generator';
 import Accounts from './pages/Accounts';
 import Materials from './pages/Materials';
 import Location from './pages/Location';
+import AboutUs from './pages/aboutUs';
+import Collection from './pages/Collection';
+import Services from './pages/Services';
+import Contacts from './pages/Contacts';
 
 function App() {
 
@@ -26,6 +30,10 @@ function App() {
       <Route path="/Generator" element={<Generator/>} />
       <Route path="/Materials" element={<Materials/>} />
       <Route path="/Location" element={<Location/>} />
+      <Route path="/AboutUs" element={<AboutUs/>} />
+      <Route path="/Collection" element={<Collection/>} />
+      <Route path="/Services" element={<Services/>} />
+      <Route path="/Contacts" element={<Contacts/>} />
       <Route path="/" element={<Homepage/>}/>
       </Routes>
     </Router>

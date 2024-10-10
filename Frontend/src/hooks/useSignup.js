@@ -6,14 +6,14 @@ export const useSignup = () => {
   const [isLoading, setIsLoading] = useState(null);
   const [error, setError] = useState(null);
   const { dispatch } = useAuthContext();
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
+  
 
   const signup = async (Username, password, role) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post(`https://foxconstruction-backend.onrender.com/api/user/signup`, {
+      const response = await axios.post(`http://localhost:4000/api/user/signup`, {
         Username,
         password,
         role

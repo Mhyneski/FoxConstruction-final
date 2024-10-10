@@ -12,7 +12,7 @@ const Location = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newLocation, setNewLocation] = useState({ name: '', markup: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
+  
 
   // Fetch all locations on component mount
   useEffect(() => {
@@ -20,7 +20,7 @@ const Location = () => {
 
     const fetchLocations = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/locations`, {
+        const response = await axios.get(`http://localhost:4000/api/locations`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -44,7 +44,7 @@ const Location = () => {
       const updatedLocation = { ...editedLocation };
       
       // Send the updated location to the API
-      await axios.patch(`https://foxconstruction-backend.onrender.com/api/locations/${id}`, updatedLocation, {
+      await axios.patch(`http://localhost:4000/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -64,7 +64,7 @@ const Location = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`https://foxconstruction-backend.onrender.com/api/locations/${id}`, {
+      await axios.delete(`http://localhost:4000/api/locations/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -96,7 +96,7 @@ const Location = () => {
         return;
       }
 
-      const response = await axios.post(`https://foxconstruction-backend.onrender.com/api/location`, newLocation, {
+      const response = await axios.post(`http://localhost:4000/api/location`, newLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -128,8 +128,9 @@ const Location = () => {
         <p className={styles.locationCount}>Total Locations: {filteredLocations.length}</p>
 
         <button onClick={() => setIsModalOpen(true)} className={styles.createLocationButton}>
-          Create New Location
-        </button>
+  + Create New Location
+</button>
+
 
         {isModalOpen && (
           <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>

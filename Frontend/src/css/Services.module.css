@@ -1,0 +1,37 @@
+.servicesContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 30px; /* Reduced padding to bring content upwards */
+    padding-top: 10px; /* Adjust padding from the top */
+    background-color: white;
+    min-height: 80vh; /* Adjust height for more compact appearance */
+  }
+  
+  .title {
+    font-size: 48px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    margin-bottom: 10px; /* Reduce space below title */
+    color: #333;
+  }
+  
+  .subtitle {
+    font-size: 28px;
+    font-family: 'Cursive', sans-serif;
+    font-weight: 400;
+    margin-bottom: 10px; /* Reduce space below subtitle */
+    color: #333;
+  }
+  
+  .description {
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    line-height: 1.5;
+    color: #333;
+    max-width: 800px;
+  }
+  

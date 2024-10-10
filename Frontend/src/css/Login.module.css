@@ -31,8 +31,9 @@ body {
   color: #6b7c61;
 }
 
-.form1 input[type="Username"],
-.form1 input[type="password"] {
+/* Make both username and password input fields the same size */
+.form1 input[type="text"], /* Username field */
+.form1 input[type="password"] { /* Password field */
   width: 400px;
   border-radius: 30px;
   height: 50px;
@@ -72,4 +73,93 @@ body {
 .error1 {
   color: red;
   font-size: medium;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .Container {
+    margin-left: 10em;
+    gap: 5em;
+  }
+  
+  .TopSide h5 {
+    font-size: 40px;
+  }
+  
+  .TopSide p {
+    font-size: 18px;
+  }
+  
+  .form1 input[type="text"],
+  .form1 input[type="password"],
+  .form1 button {
+    width: 300px;
+  }
+}
+
+@media (max-width: 900px) {
+  .Container {
+    margin-left: 5em;
+    gap: 3em;
+  }
+  
+  .TopSide h5 {
+    font-size: 35px;
+  }
+  
+  .TopSide p {
+    font-size: 16px;
+  }
+  
+  .form1 input[type="text"],
+  .form1 input[type="password"],
+  .form1 button {
+    width: 250px;
+    height: 45px;
+  }
+}
+
+@media (max-width: 600px) {
+  .Container {
+    margin-left: 2em;
+    gap: 2em;
+  }
+  
+  .TopSide h5 {
+    font-size: 30px;
+  }
+  
+  .TopSide p {
+    font-size: 14px;
+  }
+  
+  .form1 input[type="text"],
+  .form1 input[type="password"],
+  .form1 button {
+    width: 220px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 400px) {
+  .Container {
+    margin-left: 0;
+    gap: 1.5em;
+    margin-top: 20px;
+  }
+  
+  .TopSide h5 {
+    font-size: 24px;
+  }
+  
+  .TopSide p {
+    font-size: 12px;
+  }
+  
+  .form1 input[type="text"],
+  .form1 input[type="password"],
+  .form1 button {
+    width: 180px;
+    height: 35px;
+  }
 }

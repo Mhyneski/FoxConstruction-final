@@ -13,45 +13,48 @@ const Modal = ({ isOpen, onClose, onSubmit, formData, handleChange, errors }) =>
             <div className={styles.modalContent}>
                 <h2>Enter Base Template Details</h2>
                 <form onSubmit={onSubmit}>
-                    <div className={styles.formGroup}>
-                        <label>Total Area (sqm)</label>
-                        <input type="number" name="totalArea" value={formData.totalArea} onChange={handleChange} required />
-                        {errors.totalArea && <span className={styles.error}>{errors.totalArea}</span>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Number of Floors</label>
-                        <input type="number" name="numFloors" value={formData.numFloors} onChange={handleChange} required />
-                        {errors.numFloors && <span className={styles.error}>{errors.numFloors}</span>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Average Floor Height (meters)</label>
-                        <input type="number" name="avgFloorHeight" value={formData.avgFloorHeight} onChange={handleChange} required />
-                        {errors.avgFloorHeight && <span className={styles.error}>{errors.avgFloorHeight}</span>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Template Tier</label>
-                        <select name="templateTier" value={formData.templateTier} onChange={handleChange} required>
-                            <option value="low">Low</option>
-                            <option value="mid">Mid</option>
-                            <option value="high">High</option>
-                        </select>
-                        {errors.templateTier && <span className={styles.error}>{errors.templateTier}</span>}
-                    </div>
-                    <button type="submit" className={styles.submitButton}>Generate BOM</button>
-                    <button type="button" onClick={onClose} className={styles.closeButton}>Close</button>
-                </form>
+    <div className={styles.formGroup}>
+        <label>Total Area (sqm)</label>
+        <input type="number" name="totalArea" value={formData.totalArea} onChange={handleChange} required />
+        {errors.totalArea && <span className={styles.error}>{errors.totalArea}</span>}
+    </div>
+    <div className={styles.formGroup}>
+        <label>Number of Floors</label>
+        <input type="number" name="numFloors" value={formData.numFloors} onChange={handleChange} required />
+        {errors.numFloors && <span className={styles.error}>{errors.numFloors}</span>}
+    </div>
+    <div className={styles.formGroup}>
+        <label>Average Floor Height (meters)</label>
+        <input type="number" name="avgFloorHeight" value={formData.avgFloorHeight} onChange={handleChange} required />
+        {errors.avgFloorHeight && <span className={styles.error}>{errors.avgFloorHeight}</span>}
+    </div>
+    <div className={styles.formGroup}>
+    <label>Template Tier</label>
+    <select name="templateTier" value={formData.templateTier} onChange={handleChange} required>
+        <option value="economy">Economy</option>
+        <option value="standard">Standard</option>
+        <option value="premium">Premium</option>
+    </select>
+    {errors.templateTier && <span className={styles.error}>{errors.templateTier}</span>}
+</div>
+
+    <button type="submit" className={styles.submitButton}>Generate BOM</button>
+    <button type="button" onClick={onClose} className={styles.closeButton}>Close</button>
+</form>
+
             </div>
         </div>
     );
 };
 
 const Generator = () => {
-    const [formData, setFormData] = useState({
-        totalArea: '',
-        numFloors: '',
-        avgFloorHeight: '',
-        templateTier: ''
-    });
+  const [formData, setFormData] = useState({
+    totalArea: '',
+    numFloors: '',
+    avgFloorHeight: '',
+    templateTier: 'economy' // Set default value to 'economy'
+});
+
 
     const [errors, setErrors] = useState({});
     const [bom, setBom] = useState(null); 
@@ -60,22 +63,54 @@ const Generator = () => {
     const [modalOpen, setModalOpen] = useState(false); // State to control modal visibility
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+      const { name, value } = e.target;
+  
+      // Limit the number of floors to a maximum of 5
+      if (name === 'numFloors') {
+          if (value > 5) {
+              setFormData({ ...formData, numFloors: 5 });
+              setErrors({ ...errors, numFloors: 'The number of floors cannot exceed 5.' });
+          } else if (value < 1) {
+              setFormData({ ...formData, numFloors: 1 });
+              setErrors({ ...errors, numFloors: 'The number of floors cannot be less than 1.' });
+          } else {
+              setFormData({ ...formData, numFloors: value });
+              setErrors({ ...errors, numFloors: '' }); // Clear the error message
+          }
+      }
+  
+      // Limit the average floor height to a maximum of 15 meters
+      else if (name === 'avgFloorHeight') {
+          if (value > 15) {
+              setFormData({ ...formData, avgFloorHeight: 15 });
+              setErrors({ ...errors, avgFloorHeight: 'The average floor height cannot exceed 15 meters.' });
+          } else if (value < 1) {
+              setFormData({ ...formData, avgFloorHeight: 1 });
+              setErrors({ ...errors, avgFloorHeight: 'The average floor height cannot be less than 1 meter.' });
+          } else {
+              setFormData({ ...formData, avgFloorHeight: value });
+              setErrors({ ...errors, avgFloorHeight: '' }); // Clear the error message
+          }
+      } else {
+          setFormData({ ...formData, [name]: value });
+      }
+  };
+  
 
-    const validateForm = () => {
-        const newErrors = {};
-        const requiredFields = ['totalArea', 'numFloors', 'avgFloorHeight', 'templateTier'];
+  const validateForm = () => {
+    const newErrors = {};
+    const requiredFields = ['totalArea', 'numFloors', 'avgFloorHeight', 'templateTier'];
 
-        requiredFields.forEach(field => {
-            if (!formData[field]) {
-                newErrors[field] = 'This field is required';
-            }
-        });
+    requiredFields.forEach(field => {
+        if (!formData[field]) {
+            newErrors[field] = 'This field is required';
+        }
+    });
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+};
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -91,7 +126,7 @@ const Generator = () => {
     
             console.log('Base Template Details:', payload);
     
-            Axios.post(`https://foxconstruction-backend.onrender.com/api/bom/generate`, payload, {
+            Axios.post(`http://localhost:4000/api/bom/generate`, payload, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${user.token}`
@@ -118,16 +153,8 @@ const Generator = () => {
     };
 
     // Function to group materials by category
-    const groupMaterialsByCategory = (materials) => {
-        return materials.reduce((acc, material) => {
-            const category = material.category && material.category.trim() !== '' ? material.category : 'UNCATEGORIZED';
-            if (!acc[category]) {
-                acc[category] = [];
-            }
-            acc[category].push(material);
-            return acc;
-        }, {});
-    };
+   
+    
 
     return (
         <>
@@ -161,10 +188,15 @@ const Generator = () => {
         </div>
 
         <div className={styles.costDetails}>
-          <h3>Cost Details</h3>
-          <p><strong>Labor Cost:</strong> ₱{bom.laborCost ? bom.laborCost.toFixed(2) : 'N/A'}</p>
-          <p><strong>Total Project Cost:</strong> ₱{bom.totalProjectCost ? bom.totalProjectCost.toFixed(2) : 'N/A'}</p>
-        </div>
+  <h3>Cost Details</h3>
+  <p><strong>Labor Cost:</strong> 
+    {bom.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.laborCost) : 'N/A'}
+  </p>
+  <p><strong>Total Project Cost:</strong> 
+    {bom.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.totalProjectCost) : 'N/A'}
+  </p>
+</div>
+
       </div>
 
       <h3>Materials</h3>
@@ -181,22 +213,24 @@ const Generator = () => {
             </tr>
           </thead>
           <tbody>
-            {Object.entries(bom.materials).map(([category, materials]) =>
-              materials.map((material, index) => {
-                const mat = material._doc || material;
-                return (
-                  <tr key={`${category}-${index}`}>
-                    <td>{category.toUpperCase()}</td>
-                    <td>{mat.item || 'N/A'}</td>
-                    <td>{mat.description || 'N/A'}</td>
-                    <td>{material.quantity ? material.quantity.toFixed(2) : 'N/A'}</td>
-                    <td>{mat.unitCost ? mat.unitCost.toFixed(2) : 'N/A'}</td>
-                    <td>{material.totalAmount ? material.totalAmount.toFixed(2) : 'N/A'}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
+  {Object.entries(bom.materials).map(([category, materials]) =>
+    materials.map((material, index) => {
+      const mat = material._doc || material;
+      return (
+        <tr key={`${category}-${index}`}>
+          <td>{category ? category.toUpperCase() : 'UNCATEGORIZED'}</td>
+          <td>{mat.item || 'N/A'}</td>
+          <td>{mat.description || 'N/A'}</td>
+          <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
+          <td>{mat.unitCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(mat.unitCost) : 'N/A'}</td>
+          <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
+        </tr>
+      );
+    })
+  )}
+</tbody>
+
+
         </table>
       </div>
     </div>

@@ -1,6 +1,6 @@
 const express = require('express')
-const {loginUser, signupUser, deleteUser, getUsers, getsUsers} = require('../controllers/userController')
-
+const {loginUser, signupUser, deleteUser, getUsers, getsUsers, resetPassword, changePassword, isDefaultPassword, forgotPassword} = require('../controllers/userController')
+const requireAuth = require('../middlewares/requireAuth');
 const router = express.Router();
 
 // get all locations
@@ -16,5 +16,13 @@ router.post('/signup', signupUser)
 router.delete('/:id', deleteUser)
 
 router.get('/get', getsUsers);
+
+router.patch('/reset-password/:id', resetPassword);
+
+router.patch('/change-password',requireAuth, changePassword);
+
+router.get('/is-default-password', requireAuth, isDefaultPassword);
+
+router.patch('/forgot-password/:Username', forgotPassword);
 
 module.exports = router

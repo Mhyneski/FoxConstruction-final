@@ -6,21 +6,22 @@ import { useSignup } from "../hooks/useSignup";
 import ConfirmModal from '../components/ConfirmModal';
 
 const Accounts = () => {
-  const [formData, setFormData] = useState({ Username: '', password: '', role: '' });
+  const [formData, setFormData] = useState({ Username: '', role: '' });
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]); // State for filtered users
+  const [searchQuery, setSearchQuery] = useState(""); // Search query state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { signup, isLoading, error, success } = useSignup();
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Fetch users on initial mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/user`);
+        const response = await axios.get(`http://localhost:4000/api/user`);
         setUsers(response.data);
+        setFilteredUsers(response.data); // Initialize filtered users
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -28,39 +29,52 @@ const Accounts = () => {
     fetchUsers();
   }, []);
 
-  const handleDeleteClick = (userId) => {
-    setSelectedUserId(userId);
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    try {
-      await axios.delete(`https://foxconstruction-backend.onrender.com/api/user/${selectedUserId}`);
-      setUsers(users.filter(user => user._id !== selectedUserId));
-      setShowDeleteModal(false);
-      setSelectedUserId(null);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteModal(false);
-    setSelectedUserId(null);
-  };
+  // Filter users based on search query
+  useEffect(() => {
+    setFilteredUsers(
+      users.filter(user =>
+        user.Username.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, users]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    // Call signup function
-    const result = await signup(formData.Username, formData.password, formData.role);
-
-    // If signup is successful, add the new user to the users state and close the modal
+    const result = await signup(formData.Username, "12345678", formData.role);
+  
     if (result && result.user) {
       setUsers(prevUsers => [...prevUsers, result.user]);
       setShowCreateModal(false);
-      setFormData({ Username: '', password: '', role: '' }); // Reset form fields
+      setFormData({ Username: '', role: '' });
     }
+  };
+
+  // Handle password reset confirmation
+  const handleResetPasswordClick = (userId) => {
+    setSelectedUserId(userId);
+    setShowConfirmModal(true); 
+  };
+
+  const handleConfirmReset = async () => {
+    try {
+      await axios.patch(`http://localhost:4000/api/user/reset-password/${selectedUserId}`);
+      // Update the user's forgotPassword status to false after resetting the password
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user._id === selectedUserId ? { ...user, forgotPassword: false } : user
+        )
+      );
+      alert("Password has been reset to the default value.");
+      setShowConfirmModal(false);
+      setSelectedUserId(null);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+    }
+  };
+
+  const handleCancelReset = () => {
+    setShowConfirmModal(false);
+    setSelectedUserId(null);
   };
 
   return (
@@ -68,6 +82,13 @@ const Accounts = () => {
       <Navbar />
       <div className={styles.headerContainer}>
         <h2>Accounts Management</h2>
+        <input 
+          type="text" 
+          placeholder="Search by Username..." 
+          value={searchQuery} 
+          onChange={(e) => setSearchQuery(e.target.value)} // Update search query on input change
+          className={styles.searchBar}
+        />
         <button onClick={() => setShowCreateModal(true)} className={styles.openModalButton}>Create Account</button>
       </div>
 
@@ -88,25 +109,6 @@ const Accounts = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="password">Password:</label>
-                <div className={styles.passwordInputContainer}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(prev => !prev)}
-                    className={styles.togglePasswordButton}
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-              <div className={styles.formGroup}>
                 <label htmlFor="role">Role:</label>
                 <select
                   id="role"
@@ -116,7 +118,7 @@ const Accounts = () => {
                 >
                   <option value="">Select Role</option>
                   <option value="admin">Admin</option>
-                  <option value="user">User</option>
+                  <option value="user">Client</option>
                   <option value="contractor">Contractor</option>
                 </select>
               </div>
@@ -140,17 +142,26 @@ const Accounts = () => {
               <tr>
                 <th>Username</th>
                 <th>Role</th>
+                <th>Forgot Password</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(user => (
+              {filteredUsers.map(user => (
                 <tr key={user._id}>
                   <td>{user.Username}</td>
                   <td>{user.role}</td>
+                  <td
+                    style={{
+                      backgroundColor: user.forgotPassword ? 'red' : 'transparent',
+                      color: user.forgotPassword ? 'white' : 'black',
+                    }}
+                  >
+                    {user.forgotPassword ? 'Requested' : 'No'}
+                  </td> {/* Show forgot password status with red background */}
                   <td>
-                    <button onClick={() => handleDeleteClick(user._id)} className={styles.deleteButton}>
-                      Delete
+                    <button onClick={() => handleResetPasswordClick(user._id)} className={styles.resetButton}>
+                      Reset Password
                     </button>
                   </td>
                 </tr>
@@ -160,11 +171,11 @@ const Accounts = () => {
         </div>
       </div>
 
-      {/* Confirm Delete Modal */}
+      {/* Confirm Reset Password Modal */}
       <ConfirmModal 
-        show={showDeleteModal} 
-        onConfirm={handleConfirmDelete} 
-        onCancel={handleCancelDelete}
+        show={showConfirmModal} 
+        onConfirm={handleConfirmReset} 
+        onCancel={handleCancelReset}
         user={users.find(user => user._id === selectedUserId)}
       />
     </>

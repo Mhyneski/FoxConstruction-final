@@ -12,14 +12,14 @@ const Materials = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newMaterial, setNewMaterial] = useState({ Description: '', unit: '', cost: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
+  
 
   useEffect(() => {
     if (!user || !user.token) return;
 
     const fetchMaterials = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-backend.onrender.com/api/materials`, {
+        const response = await axios.get(`http://localhost:4000/api/materials`, {
           headers: {
             Authorization: `Bearer ${user.token}`, // Corrected this part
           },
@@ -43,7 +43,7 @@ const Materials = () => {
       const updatedMaterial = { ...editedMaterial };
       
       // Send the updated material to the API
-      await axios.patch(`https://foxconstruction-backend.onrender.com/api/materials/${id}`, updatedMaterial, {
+      await axios.patch(`http://localhost:4000/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -63,7 +63,7 @@ const Materials = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`https://foxconstruction-backend.onrender.com/api/materials/${id}`, {
+      await axios.delete(`http://localhost:4000/api/materials/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -96,7 +96,7 @@ const Materials = () => {
         return;
       }
   
-      const response = await axios.post(`https://foxconstruction-backend.onrender.com/api/materials`, newMaterial, {
+      const response = await axios.post(`http://localhost:4000/api/materials`, newMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

@@ -1,0 +1,55 @@
+.aboutUsContainer {
+    width: 100vw; /* Full screen width */
+    padding: 0;
+    margin: 0;
+    background-color: #fff;
+  }
+  
+  .header {
+    background-color: #657354;
+    color: white;
+    padding: 20px;
+    text-align: left;
+  }
+  
+  .contentContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 40px 5%;
+    box-sizing: border-box; /* Ensures padding is inside the width */
+  }
+  
+  .textContainer {
+    max-width: 60%;
+  }
+  
+  .textContainer h1 {
+    font-size: 36px;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .textContainer p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 30px;
+  }
+  
+  .signature {
+    font-family: 'Cursive', sans-serif;
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .imageContainer {
+    max-width: 35%;
+  }
+  
+  .imageContainer img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  

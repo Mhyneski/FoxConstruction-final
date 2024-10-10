@@ -141,21 +141,22 @@
 }
 
 .createLocationButton {
-    width: 50px; /* Adjust to your preferred width */
-    height: 50px; /* Adjust to your preferred height */
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 24px;
-    font-weight: bold;
-    line-height: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px; /* Adjusted for a more rectangular shape */
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.createLocationButton:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
 .modalForm {
   display: flex;
   flex-direction: column;
@@ -213,15 +214,12 @@
   }
   
   .createLocationButton {
-    padding: 10px 15px;
-    background-color: #28a745;
-    color: #fff;
+    padding: 8px 12px;
     border: none;
-    border-radius: 50%;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 20px;
     font-weight: bold;
-    line-height: 1;
+    margin-right: 8px;
   }
   
   .locationCount {
