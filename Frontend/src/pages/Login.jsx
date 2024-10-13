@@ -1,11 +1,12 @@
 import { useState } from "react";
 import styles from "../css/Login.module.css";
 import { useLogin } from "../hooks/useLogin";
-import axios from "axios"; // Add axios to make API calls
+import axios from "axios";
 
 const Login = () => {
   const [Username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
   const { login, error, isLoading } = useLogin();
 
   const handleSubmit = async (e) => {
@@ -21,7 +22,7 @@ const Login = () => {
     }
     
     try {
-      await axios.patch(`http://localhost:4000/api/user/forgot-password/${Username}`); // API call to mark forgot password
+      await axios.patch(`http://localhost:4000/api/user/forgot-password/${Username}`);
       alert("Password reset request has been sent.");
     } catch (error) {
       console.error("Error sending password reset request", error);
@@ -40,21 +41,29 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
           <label>Username</label>
           <input
-            type="text" // Changed input type to "text"
+            type="text"
             onChange={(e) => setUsername(e.target.value)}
             value={Username}
-            placeholder="enter your Username"
+            placeholder="enter your username"
             required
           />
           <label>Password</label>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"} // Toggles between text and password
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             placeholder="enter your password"
             required
           />
-          <a href="#" onClick={handleForgotPassword}>Forgot password</a> {/* Call forgot password function */}
+          <label>
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={() => setShowPassword(!showPassword)}
+            />{" "}
+            Show Password
+          </label>
+          <a href="#" onClick={handleForgotPassword}>Forgot password</a>
           <button type="submit" disabled={isLoading}>LOG IN</button>
         </form>
         {error && <p className={styles.error1}>{error}</p>}

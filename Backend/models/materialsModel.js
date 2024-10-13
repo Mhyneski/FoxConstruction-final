@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
 const materialSchema = new schema({
-  Description: {
+  description: {
     type: String,
     required: true
   },

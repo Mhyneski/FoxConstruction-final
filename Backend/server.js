@@ -1,28 +1,33 @@
 require('dotenv').config();
 
 const express = require('express');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 const materialRoutes = require('./routes/materialsRoute');
 const locationRoutes = require('./routes/locationsRoute');
 const templatesRoutes = require('./routes/templatesRoute');
 const bomRoutes = require('./routes/bomRoute');
 const userRoutes = require('./routes/usersRoute');
-const projectRoutes = require('./routes/projectRoute')
-const {authMaterials, authTemplates, authLocations} = require('./middlewares/authMiddleware')
-const cors = require('cors')
+const projectRoutes = require('./routes/projectRoute');
+const { authMaterials, authTemplates, authLocations } = require('./middlewares/authMiddleware');
+const cors = require('cors');
 
 // express app
 const app = express();
 
 // middleware
 
-app.use(express.json())
+// Increase the limit to allow even larger payloads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use((req, res, next) => {
-  console.log(req.path, req.method)
+  console.log(req.path, req.method);
   next();
-})
+});
+
+// Enable CORS
 app.use(cors({
-  origin: 'http://localhost:5173' // Your frontend URL
+  origin: 'http://localhost:5173', // Your frontend URL
 }));
 
 // routes
@@ -36,16 +41,14 @@ app.use('/api/bom', authTemplates(['contractor', 'admin']), bomRoutes);
 app.use('/api/project', authTemplates(['contractor', 'admin', 'user']), projectRoutes);
 app.use('/api/user', userRoutes);
 
-
 // connect to mongodb
-mongoose.connect(process.env.MONGO_URI) 
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     // listen for requests
     app.listen(process.env.PORT, () => {
       console.log('connected to db and listening on ' + process.env.PORT);
-    })
+    });
   })
   .catch((error) => {
-    console.log(error)
-  })
-
+    console.log(error);
+  });

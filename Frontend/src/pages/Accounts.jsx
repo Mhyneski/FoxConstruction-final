@@ -14,6 +14,7 @@ const Accounts = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { signup, isLoading, error, success } = useSignup();
+  const [filterRole, setFilterRole] = useState("All"); // State to track the selected filter
 
   // Fetch users on initial mount
   useEffect(() => {
@@ -40,15 +41,38 @@ const Accounts = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const result = await signup(formData.Username, "12345678", formData.role);
+    
+    try {
+      const result = await signup(formData.Username, "12345678", formData.role);
+      
+      if (result && result.user) {
+        // Add the new user to the users state
+        const updatedUsers = [...users, result.user];
+        setUsers(updatedUsers);
   
-    if (result && result.user) {
-      setUsers(prevUsers => [...prevUsers, result.user]);
-      setShowCreateModal(false);
-      setFormData({ Username: '', role: '' });
+        // Update filtered users to include the newly added user
+        setFilteredUsers(updatedUsers.filter(user =>
+          user.Username.toLowerCase().includes(searchQuery.toLowerCase())
+        ));
+  
+        // Close the modal after creation
+        setShowCreateModal(false);
+        
+        // Reset the form data
+        setFormData({ Username: '', role: '' });
+      }
+    } catch (err) {
+      console.error("Error creating user: ", err);
     }
   };
 
+  // Filter users by role
+  const filterByRole = (role) => {
+    setFilterRole(role); // Track the current filter for the heading
+    const filtered = role === 'All' ? users : users.filter(user => user.role === role);
+    setFilteredUsers(filtered);
+  };
+  
   // Handle password reset confirmation
   const handleResetPasswordClick = (userId) => {
     setSelectedUserId(userId);
@@ -90,6 +114,14 @@ const Accounts = () => {
           className={styles.searchBar}
         />
         <button onClick={() => setShowCreateModal(true)} className={styles.openModalButton}>Create Account</button>
+      </div>
+
+      {/* Filter Buttons */}
+      <div className={styles.filterButtons}>
+        <button onClick={() => filterByRole('admin')} className={styles.filterButton}>Show Admins</button>
+        <button onClick={() => filterByRole('user')} className={styles.filterButton}>Show Users</button>
+        <button onClick={() => filterByRole('contractor')} className={styles.filterButton}>Show Contractors</button>
+        <button onClick={() => filterByRole('All')} className={styles.filterButton}>Show All</button>
       </div>
 
       {/* Create Account Modal */}
@@ -135,7 +167,7 @@ const Accounts = () => {
 
       {/* User List */}
       <div className={styles.userList}>
-        <h2>All Users</h2>
+        <h2 className={styles.centeredTitle}>{filteredUsers.length} {filterRole === 'All' ? 'Accounts' : `${filterRole}s`}</h2>
         <div className={styles.scrollableTableContainer}>
           <table className={styles.userTable}>
             <thead>
@@ -158,7 +190,7 @@ const Accounts = () => {
                     }}
                   >
                     {user.forgotPassword ? 'Requested' : 'No'}
-                  </td> {/* Show forgot password status with red background */}
+                  </td>
                   <td>
                     <button onClick={() => handleResetPasswordClick(user._id)} className={styles.resetButton}>
                       Reset Password

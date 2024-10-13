@@ -7,6 +7,20 @@ import Navbar from "../components/Navbar";
 import ChangePasswordModal from "../components/ChangePasswordModal"; // Import the modal component
 import axios from 'axios';
 
+// Progress calculation function
+const calculateProgress = (createdAt, timeline) => {
+  const currentDate = new Date();
+  const start = new Date(createdAt); // Use createdAt as the start date
+  const timelineInDays = timeline.unit === 'weeks'
+    ? timeline.duration * 7
+    : timeline.duration * 30; // Approximate months as 30 days
+
+  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24)); // Difference in days
+  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100); // Cap at 100%
+
+  return progress.toFixed(2); // Return progress as a percentage
+};
+
 const UserDashboard = () => {
   const { user } = useAuthContext();
   const [projects, setProjects] = useState([]);
@@ -21,7 +35,11 @@ const UserDashboard = () => {
             Authorization: `Bearer ${user.token}`
           }
         });
-        setProjects(response.data);
+        const projectsWithProgress = response.data.map(project => ({
+          ...project,
+          progress: calculateProgress(project.createdAt, project.timeline)
+        }));
+        setProjects(projectsWithProgress);
       } catch (error) {
         console.error('Error fetching projects:', error);
       }
@@ -85,6 +103,10 @@ const UserDashboard = () => {
                 <h1>{project.name}</h1>
                 <div className={styles.projectInfo}>
                   <p>{project.status === 'finished' ? 'Finished' : 'Ongoing'}</p>
+                </div>
+                {/* Display overall progress below the status */}
+                <div className={styles.projectProgress}>
+                  <p>Overall Progress: {project.progress}%</p>
                 </div>
               </div>
             </Link>

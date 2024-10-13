@@ -8,9 +8,11 @@ const {
   deleteProject,
   updateFloorProgress,
   getProjectForUser,
-  updateProjectStatus // Ensure to import the controller function
+  updateProjectStatus,
+  saveBOMToProject // Ensure to import the controller function
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const requireAuth = require('../middlewares/requireAuth');
 
 const router = express.Router();
 
@@ -41,5 +43,7 @@ router.patch('/:id', updateProject);
 
 // Update floor progress
 router.patch('/:projectId/floors/:floorId', updateFloorProgress);
+
+router.post('/:id/bom', saveBOMToProject);
 
 module.exports = router;

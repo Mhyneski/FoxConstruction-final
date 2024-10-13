@@ -5,6 +5,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State to handle password visibility
 
   if (!show) return null;
 
@@ -30,7 +31,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
           <div className={styles.formGroup}>
             <label htmlFor="newPassword">New Password:</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"} // Toggle between text and password input types
               id="newPassword"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -40,12 +41,23 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
           <div className={styles.formGroup}>
             <label htmlFor="confirmPassword">Confirm Password:</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"} // Toggle between text and password input types
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="showPassword">
+              <input
+                type="checkbox"
+                id="showPassword"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)} // Toggle showPassword state
+              />
+              Show Passwords
+            </label>
           </div>
           {error && <p className={styles.error}>{error}</p>}
           <div className={styles.buttonGroup}>

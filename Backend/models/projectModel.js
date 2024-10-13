@@ -51,11 +51,22 @@ const projectSchema = new Schema({
     duration: { type: Number, required: true }, // Duration value
     unit: { type: String, enum: ['weeks', 'months'], required: true } // Unit of the timeline
   },
+  location: {
+    type: String,  // Store the location name selected for the project
+    required: true
+  },
   status: {
     type: String,
     enum: ["ongoing", "finished"],
     default: "ongoing" // Default value
+  },
+  bom: {
+    type: mongoose.Schema.Types.Mixed, // Or another appropriate type, depending on how you store BOMs
+    default: null,
   }
 }, { timestamps: true });
+
+module.exports = mongoose.model('Project', projectSchema);
+
 
 module.exports = mongoose.model('Project', projectSchema);

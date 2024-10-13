@@ -225,4 +225,30 @@
     background-color: #0056b3;
   }
   
+  .modalScrollableContent {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  
+  .bomModalContent {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .downloadButton {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+  
+  .downloadButton:hover {
+    background-color: #0056b3;
+  }
+  
   

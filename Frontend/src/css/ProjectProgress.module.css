@@ -135,3 +135,11 @@
   text-align: right;
   margin-top: 10px;
 }
+
+.dateTitle {
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #666; /* Light gray for contrast */
+}
+

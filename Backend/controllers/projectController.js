@@ -3,7 +3,6 @@ const Project = require('../models/projectModel');
 const User = require('../models/usersModel');
 
 // Get projects for a specific contractor
-// Get projects for a specific contractor
 const getProjectsByContractor = async (req, res) => {
   const contractorUsername = req.user.Username;
 
@@ -12,7 +11,10 @@ const getProjectsByContractor = async (req, res) => {
   }
 
   try {
-    const projects = await Project.find({ contractor: contractorUsername }).sort({ createdAt: -1 });
+    const projects = await Project.find({ contractor: contractorUsername })
+      .populate('location')  // Make sure to populate location if using refs
+      .sort({ createdAt: -1 });
+
     res.status(200).json(projects);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -20,8 +22,11 @@ const getProjectsByContractor = async (req, res) => {
 };
 
 
+
+
+// Create a new project
 const createProject = async (req, res) => {
-  const { name, contractor: contractorUsername, user: userUsername, floors, template, timeline, status } = req.body;
+  const { name, contractor: contractorUsername, user: userUsername, floors, template, timeline, status, location } = req.body;
 
   try {
     const contractorObject = await User.findOne({ Username: contractorUsername });
@@ -38,12 +43,16 @@ const createProject = async (req, res) => {
       return res.status(400).json({ error: `Invalid template: ${template}. Must be 'economy', 'standard', or 'premium'.` });
     }
 
+    if (!location) {
+      return res.status(400).json({ error: "Location is required." });
+    }
+
     const formattedFloors = floors ? floors.map(floor => ({
       name: floor.name,
-      progress: floor.progress || 0,
+      progress: Math.round(floor.progress) || 0,
       tasks: floor.tasks ? floor.tasks.map(task => ({
         name: task.name,
-        progress: task.progress || 0
+        progress: Math.round(task.progress) || 0
       })) : []
     })) : [];
 
@@ -54,7 +63,8 @@ const createProject = async (req, res) => {
       floors: formattedFloors,
       template,
       timeline,
-      status: status || 'ongoing' // Use the provided status or default to 'ongoing'
+      location,  // Add location to the project
+      status: status || 'ongoing'
     });
 
     res.status(201).json({ success: true, data: project });
@@ -64,16 +74,33 @@ const createProject = async (req, res) => {
 };
 
 
-
-
-
-// get all projects
+// Get all projects
 const getProject = async (req, res) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 });
     res.status(200).json(projects);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Get all projects for the logged-in user
+const getProjectForUser = async (req, res) => {
+  try {
+    if (!req.user || !req.user.Username) {
+      return res.status(401).json({ error: "User information is missing" });
+    }
+
+    const username = req.user.Username;
+    const projects = await Project.find({ user: username }).sort({ createdAt: -1 });
+
+    if (!projects.length) {
+      return res.status(404).json({ message: 'No projects found for this user.' });
+    }
+
+    res.status(200).json(projects);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 };
 
@@ -95,114 +122,111 @@ const updateFloorProgress = async (req, res) => {
       return res.status(404).json({ message: 'Floor not found' });
     }
 
-    floor.progress = progress;
+    // Round the progress value before saving it
+    floor.progress = Math.round(progress);
     await project.save();
+
     res.status(200).json(project);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysElapsed) => {
+  let floorsProgress = new Array(numFloors).fill(0);
+  const progressPerFloor = 100 / numFloors; // Each floor gets equal share of total progress
+
+  for (let i = 0; i < numFloors; i++) {
+    const daysForFloor = (timelineInDays / numFloors) * (i + 1); // Days allocated for this floor
+    
+    if (daysElapsed >= daysForFloor) {
+      // If the days elapsed are more than the days required for this floor, it's fully completed
+      floorsProgress[i] = progressPerFloor;
+    } else if (daysElapsed >= (timelineInDays / numFloors) * i) {
+      // Calculate partial progress for the current floor
+      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * progressPerFloor;
+      floorsProgress[i] = Math.min(floorProgress, progressPerFloor); // Cap it at the floor's share of progress
+    }
+  }
+
+  return floorsProgress;
+};
+
+
+// Calculate progress based on project start date and timeline
+const calculateProgress = (createdAt, timeline) => {
+  const currentDate = new Date();
+  const start = new Date(createdAt);
+  const timelineInDays = timeline.unit === 'weeks'
+    ? timeline.duration * 7
+    : timeline.duration * 30;
+
+  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
+  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100);
+
+  return Math.round(progress); // Return progress as a whole number
+};
+
+// Get project by ID
 const getProjectById = async (req, res) => {
   try {
-    const projectId = req.params.id;
-    
-    // Check if projectId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      return res.status(400).json({ message: 'Invalid project ID' });
-    }
+    const project = await Project.findById(req.params.id);
 
-    const project = await Project.findById(projectId);
-    
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+
+    // Ensure that the progress for each floor and task is rounded to a whole number
+    project.floors.forEach(floor => {
+      floor.progress = Math.round(floor.progress); // Round floor progress
+      floor.tasks.forEach(task => {
+        task.progress = Math.round(task.progress); // Round task progress
+      });
+    });
+
     res.status(200).json(project);
   } catch (error) {
-    console.error('Error fetching project by ID:', error);
-    res.status(500).json({ message: 'Server error. Please try again later.' });
+    console.error('Error fetching project:', error);
+    res.status(500).json({ message: 'Error fetching project' });
   }
 };
 
-
-
-
-
-
-// get all projects for the logged-in user
-const getProjectForUser = async (req, res) => {
-  try {
-    if (!req.user || !req.user.Username) {
-      return res.status(401).json({ error: "User information is missing" });
-    }
-
-    const username = req.user.Username;
-    const projects = await Project.find({ user: username }).sort({ createdAt: -1 });
-
-    if (!projects.length) {
-      return res.status(404).json({ message: 'No projects found for this user.' });
-    }
-
-    res.status(200).json(projects);
-  } catch (error) {
-    console.error('Error fetching projects for user:', error);
-    res.status(500).json({ message: 'Server error. Please try again later.' });
-  }
-};
-
-
-
+// Update project progress and tasks
 const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    console.log("Received update data:", updateData);
-
     // Find the project by ID
     const project = await Project.findById(id);
     if (!project) {
-      console.log("Project not found");
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Handle template validation
-    if (updateData.template && !["economy", "standard", "premium"].includes(updateData.template)) {
-      return res.status(400).json({ error: `Invalid template: ${updateData.template}. Must be 'economy', 'standard', or 'premium'.` });
-    }
-
-    // Handle updating floors
+    // Update floors and tasks
     if (updateData.floors) {
       updateData.floors.forEach(newFloor => {
         const existingFloor = project.floors.id(newFloor._id);
         if (existingFloor) {
-          // Update existing floor
-          console.log("Updating existing floor:", newFloor);
           existingFloor.name = newFloor.name;
-          existingFloor.progress = newFloor.progress;
+          existingFloor.progress = Math.round(newFloor.progress); // Round progress before saving
 
           newFloor.tasks.forEach(newTask => {
             const existingTask = existingFloor.tasks.id(newTask._id);
             if (existingTask) {
-              // Update existing task
-              console.log(`Updating task ${newTask.name} progress to ${newTask.progress}`);
               existingTask.name = newTask.name;
-              existingTask.progress = newTask.progress;
+              existingTask.progress = Math.round(newTask.progress); // Round progress
             } else {
-              // Add new task
-              console.log(`Adding new task ${newTask.name} with progress ${newTask.progress}`);
-              existingFloor.tasks.push({ name: newTask.name, progress: newTask.progress });
+              existingFloor.tasks.push({ name: newTask.name, progress: Math.round(newTask.progress) });
             }
           });
         } else {
-          // Add new floor
-          console.log("Adding new floor:", newFloor);
           project.floors.push({
             name: newFloor.name,
-            progress: newFloor.progress,
+            progress: Math.round(newFloor.progress),
             tasks: newFloor.tasks.map(task => ({
               name: task.name,
-              progress: task.progress
+              progress: Math.round(task.progress)
             }))
           });
         }
@@ -211,20 +235,16 @@ const updateProject = async (req, res) => {
     }
 
     // Update other fields
-    for (const key in updateData) {
-      console.log(`Updating field ${key} to ${updateData[key]}`);
+    Object.keys(updateData).forEach(key => {
       project[key] = updateData[key];
-    }
+    });
 
     await project.save();
     res.status(200).json(project);
   } catch (error) {
-    console.error("Error in updateProject:", error);
     res.status(500).json({ error: "Failed to update project.", details: error.message });
   }
 };
-
-
 
 // Delete a project
 const deleteProject = async (req, res) => {
@@ -239,10 +259,9 @@ const deleteProject = async (req, res) => {
   }
 };
 
+// Update project status (ongoing/finished)
 const updateProjectStatus = async (req, res) => {
-  console.log("Received request to update status for project ID:", req.params.id); // Debug log
   const { status } = req.body;
-
   if (!["ongoing", "finished"].includes(status)) {
     return res.status(400).json({ error: 'Invalid status value. Must be "ongoing" or "finished".' });
   }
@@ -250,7 +269,6 @@ const updateProjectStatus = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) {
-      console.log("Project not found"); // Debug log
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -259,12 +277,29 @@ const updateProjectStatus = async (req, res) => {
 
     res.status(200).json({ project: updatedProject });
   } catch (error) {
-    console.error("Error updating project status:", error); // Debug log
     res.status(500).json({ error: error.message });
   }
 };
 
+// Save BOM to a project
+const saveBOMToProject = async (req, res) => {
+  const { id } = req.params;
+  const { bom } = req.body;
 
+  try {
+      const project = await Project.findById(id);
+      if (!project) {
+          return res.status(404).json({ message: 'Project not found' });
+      }
+
+      project.bom = bom; // Save BOM to the project
+      const updatedProject = await project.save();
+
+      res.status(200).json({ project: updatedProject });
+  } catch (error) {
+      res.status(500).json({ error: 'Failed to save BOM to project', details: error.message });
+  }
+};
 
 module.exports = {
   getProjectsByContractor,
@@ -275,5 +310,6 @@ module.exports = {
   deleteProject,
   updateFloorProgress,
   getProjectForUser,
-  updateProjectStatus
+  updateProjectStatus,
+  saveBOMToProject,
 };
