@@ -7,10 +7,10 @@ import Navbar from "../components/Navbar";
 const Materials = () => {
   const [materials, setMaterials] = useState([]);
   const [isEditing, setIsEditing] = useState(null);
-  const [editedMaterial, setEditedMaterial] = useState({ Description: '', unit: '', cost: '' });
+  const [editedMaterial, setEditedMaterial] = useState({ description: '', unit: '', cost: '' });
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState("");
-  const [newMaterial, setNewMaterial] = useState({ Description: '', unit: '', cost: '' });
+  const [newMaterial, setNewMaterial] = useState({ description: '', unit: '', cost: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   
 
@@ -35,7 +35,7 @@ const Materials = () => {
 
   const handleEdit = (material) => {
     setIsEditing(material._id);
-    setEditedMaterial({ Description: material.Description, unit: material.unit, cost: material.cost });
+    setEditedMaterial({ description: material.description, unit: material.unit, cost: material.cost });
   };
 
   const handleSave = async (id) => {
@@ -83,15 +83,15 @@ const Materials = () => {
 
     return materials.filter(
       (material) =>
-        material.Description &&
-        material.Description.toLowerCase().includes(searchTerm.toLowerCase())
+        material.description &&
+        material.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
   const handleCreate = async () => {
     try {
       // Make sure all fields are filled
-      if (!newMaterial.Description || !newMaterial.unit || !newMaterial.cost) {
+      if (!newMaterial.description || !newMaterial.unit || !newMaterial.cost) {
         console.error('All fields are required.');
         return;
       }
@@ -104,7 +104,7 @@ const Materials = () => {
   
       // Update materials state
       setMaterials((prevMaterials) => [...prevMaterials, response.data]);
-      setNewMaterial({ Description: '', unit: '', cost: '' }); // Reset the form fields
+      setNewMaterial({ description: '', unit: '', cost: '' }); // Reset the form fields
       setIsModalOpen(false); // Close modal after successful creation
     } catch (error) {
       console.error('Error creating material:', error.response?.data || error.message);
@@ -140,8 +140,8 @@ const Materials = () => {
                 <input
                   type="text"
                   placeholder="Material Description"
-                  value={newMaterial.Description}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, Description: e.target.value })}
+                  value={newMaterial.description}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
                   className={styles.inputField}
                 />
                 <input
@@ -182,8 +182,8 @@ const Materials = () => {
             {isEditing === material._id ? (
               <input
                 type="text"
-                value={editedMaterial.Description}
-                onChange={(e) => setEditedMaterial({ ...editedMaterial, Description: e.target.value })}
+                value={editedMaterial.description}
+                onChange={(e) => setEditedMaterial({ ...editedMaterial, description: e.target.value })}
                 className={styles.inputField}
               />
             ) : (

@@ -49,29 +49,32 @@ const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToRepl
           className={styles.searchInput}
         />
         <div className={styles.materialList}>
-          {filteredMaterials.length > 0 ? (
-            filteredMaterials.map((material) => (
-              <div
-                key={material._id}
-                className={styles.materialItem}
-                style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
-                onClick={() => onMaterialSelect(material)}
-              >
-                <p><strong>{material.description}</strong></p> {/* Ensure 'description' lowercase */}
-                <p>Cost: ₱{material.cost.toFixed(2)}</p> {/* Show price */}
-              </div>
-            ))
-          ) : (
-            <p>No materials found</p>
-          )}
+        {filteredMaterials.length > 0 ? (
+  filteredMaterials.map((material) => (
+    <div
+      key={material._id}
+      className={styles.materialItem}
+      style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
+      onClick={() => onMaterialSelect(material)}
+    >
+      {/* Make sure material.description exists */}
+      <p><strong>{material.description || 'No Description Available'}</strong></p> {/* Display the material description */}
+      <p>Cost: ₱{material.cost.toFixed(2)}</p>
+    </div>
+  ))
+) : (
+  <p>No materials found</p>
+)}
+
         </div>
+
         <button onClick={onClose} className={styles.closeButton}>Close</button>
       </div>
     </div>
   ) : null;
 };
 
-// Main Modal component definition for project or template input
+// Modal component for entering project or template details
 const Modal = ({ isOpen, onClose, onSubmit, formData, handleChange, errors, projects, handleProjectSelect, selectedProject, isProjectBased, locations, handleLocationSelect, selectedLocation }) => {
   if (!isOpen) return null;
 
@@ -252,7 +255,6 @@ const Generator = () => {
 
   }, [user]);
 
-  // Handle project selection
   const handleProjectSelect = (projectId) => {
     const project = projects.find(p => p._id === projectId);
     if (project) {
@@ -261,9 +263,9 @@ const Generator = () => {
         totalArea: '',
         avgFloorHeight: '',
         templateTier: project.template || '',
-        numFloors: project.floors.length.toString(),  // Update the number of floors
+        numFloors: project.floors.length.toString(),
       });
-      setSelectedLocation(project.location); // Set the location from the project
+      setSelectedLocation(project.location);
     }
   };
 
@@ -310,36 +312,39 @@ const Generator = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setServerError(null);
-
-    if (validateForm()) {
+  
+    if (validateForm()) {  // Ensure validation is successful
       const payload = {
         totalArea: parseFloat(formData.totalArea),
         numFloors: parseInt(formData.numFloors, 10),
         avgFloorHeight: parseFloat(formData.avgFloorHeight),
         templateTier: formData.templateTier,
-        locationName: selectedLocation,  // Use selected location
+        locationName: selectedLocation,
       };
-
+  
+      // Make the POST request to generate the BOM
       Axios.post(`http://localhost:4000/api/bom/generate`, payload, {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          Authorization: `Bearer ${user.token}`,
+        },
       })
-      .then(response => {
-        setBom(response.data.bom);
-        setModalOpen(false); // Close modal after submission
-      })
-      .catch(error => {
-        console.error('Error generating BOM:', error);
-        if (error.response && error.response.data && error.response.data.error) {
-          setServerError(error.response.data.error);
-        } else {
-          setServerError('An unexpected error occurred.');
-        }
-      });
+        .then((response) => {
+          console.log('Generated BOM:', response.data.bom); // Log the generated BOM to inspect
+          setBom(response.data.bom); // Set the BOM data for rendering
+          setModalOpen(false);  // Close the modal after successful generation
+        })
+        .catch((error) => {
+          console.error('Error generating BOM:', error);
+          if (error.response && error.response.data && error.response.data.error) {
+            setServerError(error.response.data.error);
+          } else {
+            setServerError('An unexpected error occurred.');
+          }
+        });
     }
   };
+  
 
   const closeModal = () => {
     setModalOpen(false);
@@ -359,62 +364,96 @@ const Generator = () => {
     setMaterialModalOpen(true);
   };
 
+  // Replace material and recalculate the project cost
   const handleMaterialSelect = (newMaterial) => {
     if (materialToReplace && bom) {
-      const updatedMaterials = bom.materials.UNCATEGORIZED.map((material) => {
-        if (material._id === materialToReplace._id) {
-          const newTotalAmount = material.quantity * newMaterial.cost;
-          return {
-            ...material,
-            description: newMaterial.description,
-            unitCost: newMaterial.cost,
-            totalAmount: newTotalAmount ? newTotalAmount.toFixed(2) : 'N/A',  // Ensure total amount is recalculated
-          };
-        }
-        return material;
+      const updatedCategories = bom.categories.map((category) => {
+        const updatedMaterials = category.materials.map((material) => {
+          if (material._id === materialToReplace._id) {
+            return {
+              ...material,
+              description: newMaterial.description,
+              cost: newMaterial.cost,
+              totalAmount: material.quantity * newMaterial.cost,
+            };
+          }
+          return material;
+        });
+        return { ...category, materials: updatedMaterials };
       });
-
+  
       const updatedBom = {
         ...bom,
-        materials: { ...bom.materials, UNCATEGORIZED: updatedMaterials },
-        totalProjectCost: calculateUpdatedCost(updatedMaterials),
+        categories: updatedCategories,
       };
-
-      setBom(updatedBom);
+  
+      const { originalTotalProjectCost, markedUpTotalProjectCost } = calculateUpdatedCosts(updatedBom);
+  
+      setBom({
+        ...updatedBom,
+        originalCosts: {
+          ...bom.originalCosts,
+          totalProjectCost: originalTotalProjectCost,
+        },
+        markedUpCosts: {
+          ...bom.markedUpCosts,
+          totalProjectCost: markedUpTotalProjectCost,
+        },
+      });
+  
       setMaterialModalOpen(false);
     }
   };
+  
 
-  const calculateUpdatedCost = (materials) => {
-    return materials.reduce((total, material) => {
-      const materialCost = material.quantity * material.unitCost;
-      return total + (materialCost || 0);
-    }, bom.laborCost || 0); // Include labor cost
+  // Function to calculate updated costs after replacing materials
+  const calculateUpdatedCosts = (bom) => {
+    // Calculate the total materials cost based on the new BOM structure
+    const totalMaterialsCost = bom.categories.reduce((sum, category) => {
+      return sum + category.materials.reduce((subSum, material) => subSum + material.totalAmount, 0);
+    }, 0);
+  
+    // Recalculate the labor cost (keeping your original logic)
+    const originalLaborCost = bom.originalCosts.laborCost;
+  
+    // Total project cost
+    const originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
+  
+    // Apply markup
+    const markupPercentage = bom.projectDetails.location.markup / 100;
+    const markedUpTotalProjectCost = originalTotalProjectCost + originalTotalProjectCost * markupPercentage;
+  
+    return {
+      originalTotalProjectCost,
+      markedUpTotalProjectCost,
+    };
   };
 
   const handleSaveBOM = () => {
-    // Ensure BOM contains original and marked-up costs when saving to the project
     const payload = {
       bom: {
         projectDetails: bom.projectDetails,
-        materials: bom.materials,
-        originalCosts: bom.originalCosts,  // Include original costs
-        markedUpCosts: bom.markedUpCosts   // Include marked-up costs
-      }
+        categories: bom.categories, // Ensure this contains materials
+        originalCosts: bom.originalCosts,
+        markedUpCosts: bom.markedUpCosts,
+      },
     };
-  
+    
+    console.log('Saving BOM Payload:', payload); // Log the payload before sending
+    
     Axios.post(`http://localhost:4000/api/project/${selectedProject._id}/bom`, payload, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then(response => {
+      .then((response) => {
         alert('BOM saved to the project!');
       })
-      .catch(error => {
+      .catch((error) => {
+        console.error('Failed to save BOM to project:', error);
         alert('Failed to save BOM to the project.');
       });
   };
   
-
+  
   return (
     <>
       <Navbar />
@@ -441,86 +480,87 @@ const Generator = () => {
         handleProjectSelect={handleProjectSelect}
         selectedProject={selectedProject}
         isProjectBased={isProjectBased}
-        locations={locations} // Pass locations
-        handleLocationSelect={handleLocationSelect} // Handle location select
-        selectedLocation={selectedLocation} // Pass selected location
+        locations={locations}
+        handleLocationSelect={handleLocationSelect}
+        selectedLocation={selectedLocation}
       />
 
       {serverError && <div className={styles.serverError}>{serverError}</div>}
 
       {bom && (
-  <div className={styles.bomContainer}>
-    <div className={styles.detailsContainer}>
-      <div className={styles.projectDetails}>
-        <h3>Project Details</h3>
-        {isProjectBased && selectedProject && (
-          <>
-            <p><strong>Project Name:</strong> {selectedProject.name}</p>
-            <p><strong>Project Owner:</strong> {selectedProject.user}</p>
-          </>
-        )}
-        <p><strong>Total Area:</strong> {bom.projectDetails.totalArea} sqm</p>
-        <p><strong>Number of Floors:</strong> {bom.projectDetails.numFloors}</p>
-        <p><strong>Average Floor Height:</strong> {bom.projectDetails.avgFloorHeight} meters</p>
-        <p><strong>Location:</strong> {bom.projectDetails.location.name}</p>
-<p><strong>Markup:</strong> {bom.projectDetails.location.markup}%</p>
+        <div className={styles.bomContainer}>
+          <div className={styles.detailsContainer}>
+            <div className={styles.projectDetails}>
+              <h3>Project Details</h3>
+              {isProjectBased && selectedProject && (
+                <>
+                  <p><strong>Project Name:</strong> {selectedProject.name}</p>
+                  <p><strong>Project Owner:</strong> {selectedProject.user}</p>
+                </>
+              )}
+              <p><strong>Total Area:</strong> {bom.projectDetails.totalArea} sqm</p>
+              <p><strong>Number of Floors:</strong> {bom.projectDetails.numFloors}</p>
+              <p><strong>Average Floor Height:</strong> {bom.projectDetails.avgFloorHeight} meters</p>
+              <p><strong>Location:</strong> {bom.projectDetails.location.name}</p>
+              <p><strong>Markup:</strong> {bom.projectDetails.location.markup}%</p>
+            </div>
 
-      </div>
+            <div className={styles.costDetails}>
+              <h3>Original Costs</h3>
+              <p><strong>Original Labor Cost:</strong>
+                {bom.originalCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.laborCost) : 'N/A'}
+              </p>
+              <p><strong>Original Total Project Cost:</strong>
+                {bom.originalCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.totalProjectCost) : 'N/A'}
+              </p>
 
-      <div className={styles.costDetails}>
-        <h3>Original Costs</h3>
-        <p><strong>Original Labor Cost:</strong>
-          {bom.originalCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.laborCost) : 'N/A'}
-        </p>
-        <p><strong>Original Total Project Cost:</strong>
-          {bom.originalCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.totalProjectCost) : 'N/A'}
-        </p>
-
-        <h3>Marked-Up Costs</h3>
-        <p><strong>Marked-Up Labor Cost:</strong>
-          {bom.markedUpCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.laborCost) : 'N/A'}
-        </p>
-        <p><strong>Marked-Up Total Project Cost:</strong>
-          {bom.markedUpCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.totalProjectCost) : 'N/A'}
-        </p>
+              <h3>Marked-Up Costs</h3>
+              <p><strong>Marked-Up Labor Cost:</strong>
+                {bom.markedUpCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.laborCost) : 'N/A'}
+              </p>
+              <p><strong>Marked-Up Total Project Cost:</strong>
+                {bom.markedUpCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.totalProjectCost) : 'N/A'}
+              </p>
             </div>
           </div>
 
           <h3>Materials</h3>
-          <div className={styles.scrollableTableContainer}>
-            <table className={styles.materialsTable}>
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Item</th>
-                  <th>Description</th>
-                  <th>Quantity</th>
-                  <th>Unit Cost (₱)</th>
-                  <th>Total Amount (₱)</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-              {Object.entries(bom.materials).map(([category, materials]) =>
-                materials.map((material, index) => {
-                  const mat = material._doc || material;
-                  return (
-                    <tr key={`${category}-${index}`}>
-                      <td>{category ? category.toUpperCase() : 'UNCATEGORIZED'}</td>
-                      <td>{mat.item || 'N/A'}</td>
-                      <td>{mat.description || 'N/A'}</td>
-                      <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
-                      <td>{mat.unitCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(mat.unitCost) : 'N/A'}</td>
-                      <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
-                      <td><button onClick={() => handleReplaceClick(material)}>Replace</button></td>
-                    </tr>
-                  );
-                })
-              )}
-
-              </tbody>
-            </table>
-          </div>
+          {bom && bom.categories && bom.categories.length > 0 ? (
+            <div className={styles.scrollableTableContainer}>
+              <table className={styles.materialsTable}>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Cost (₱)</th>
+                    <th>Total Amount (₱)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bom.categories.map((categoryData, categoryIndex) =>
+                    categoryData.materials.map((material, index) => {
+                      return (
+                        <tr key={`${categoryData.category}-${index}`}>
+                          <td>{categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}</td>
+                          <td>{material.item || 'N/A'}</td>
+                          <td>{material.description || 'N/A'}</td>
+                          <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
+                          <td>{material.cost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.cost) : 'N/A'}</td>
+                          <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
+                          <td><button onClick={() => handleReplaceClick(material)}>Replace</button></td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No materials found</p>
+          )}
           <button onClick={handleSaveBOM} className={styles.saveBOMButton}>
             Save BOM to Project
           </button>

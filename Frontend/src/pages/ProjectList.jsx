@@ -335,40 +335,40 @@ const ProjectList = () => {
   // Function to generate PDF for the selected project's BOM (client or contractor version)
   const handleGenerateBOMPDF = (version = 'client') => {
     if (!selectedProject || !selectedProject.bom) return;
-
+  
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text(`Project BOM: ${selectedProject.name}`, 10, 10);
-
+  
     const bomDetails = selectedProject.bom.projectDetails || {};
-
+  
     doc.setFontSize(12);
     doc.text(`Total Area: ${bomDetails.totalArea || 'N/A'} sqm`, 10, 20);
     doc.text(`Number of Floors: ${bomDetails.numFloors || 'N/A'}`, 10, 30);
     doc.text(`Average Floor Height: ${bomDetails.avgFloorHeight || 'N/A'} meters`, 10, 40);
-
+  
     doc.text(`Project Owner: ${selectedProject.user || 'N/A'}`, 10, 50);
     doc.text(`Project Contractor: ${selectedProject.contractor || 'N/A'}`, 10, 60);
-
+  
     if (version === 'client') {
       const formattedProjectCost = `${(selectedProject.bom.markedUpCosts.totalProjectCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
       const formattedLaborCost = `${(selectedProject.bom.markedUpCosts.laborCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-
+  
       doc.text(`Project Cost: ${formattedProjectCost}`, 10, 70);
       doc.text(`Labor Cost: ${formattedLaborCost}`, 10, 80);
-
+  
       // Show high-level material categories for simplicity (e.g., Earthworks, Concrete, Finishing)
-      const categories = Object.entries(selectedProject.bom.materials).map(([category, materials]) => ({
-        category: category.toUpperCase(),
-        totalAmount: materials.reduce((sum, material) => sum + material.totalAmount, 0),
+      const categories = selectedProject.bom.categories.map(category => ({
+        category: category.category.toUpperCase(),
+        totalAmount: category.materials.reduce((sum, material) => sum + material.totalAmount, 0),
       }));
-
+  
       const materials = categories.map((material, index) => [
         index + 1,
         material.category,
         `${material.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
       ]);
-
+  
       doc.autoTable({
         head: [['#', 'Category', 'Total Amount (₱)']],
         body: materials,
@@ -380,25 +380,28 @@ const ProjectList = () => {
       const formattedOriginalLaborCost = `${(selectedProject.bom.originalCosts.laborCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
       const formattedMarkedUpProjectCost = `${(selectedProject.bom.markedUpCosts.totalProjectCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
       const formattedMarkedUpLaborCost = `${(selectedProject.bom.markedUpCosts.laborCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-
+  
       doc.text(`Original Total Project Cost: ${formattedOriginalProjectCost}`, 10, 70);
       doc.text(`Original Labor Cost: ${formattedOriginalLaborCost}`, 10, 80);
       doc.text(`Marked-Up Total Project Cost: ${formattedMarkedUpProjectCost}`, 10, 90);
       doc.text(`Marked-Up Labor Cost: ${formattedMarkedUpLaborCost}`, 10, 100);
-
-      const uncategorizedMaterials = selectedProject.bom.materials?.UNCATEGORIZED || [];
-
-      if (uncategorizedMaterials.length > 0) {
-        const materials = uncategorizedMaterials.map((material, index) => [
+  
+      // Show detailed material list for the contractor version
+      const allMaterials = selectedProject.bom.categories.reduce((acc, category) => {
+        return acc.concat(category.materials);
+      }, []);
+  
+      if (allMaterials.length > 0) {
+        const materials = allMaterials.map((material, index) => [
           index + 1,
           material.item || 'N/A',
           material.description || 'N/A',
           Math.round(material.quantity || 0),
           material.unit || 'N/A',
-          `${(material.unitCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+          `${(material.cost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
           `${(material.totalAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
         ]);
-
+  
         doc.autoTable({
           head: [['#', 'Item', 'Description', 'Quantity', 'Unit', 'Unit Cost', 'Total Amount']],
           body: materials,
@@ -408,9 +411,11 @@ const ProjectList = () => {
         doc.text("No materials found for this project.", 10, 110);
       }
     }
-
+  
     doc.save(`BOM_${selectedProject.name}_${version}.pdf`);
   };
+  
+  
 
   const filterProjects = () => {
     if (!searchTerm) return projects;

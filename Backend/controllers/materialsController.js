@@ -13,11 +13,11 @@ const getMaterials = async(req, res) => {
 
 // create a new material
 const createMaterial = async(req, res) => {
-  const {Description, unit, cost} = req.body
+  const {description, unit, cost} = req.body
   
   //add this to db
   try {
-    const material = await Material.create({Description, unit, cost})
+    const material = await Material.create({description, unit, cost})
     res.status(200).json(material)
   } catch (error) {
     res.status(404).json({error: error.message})
