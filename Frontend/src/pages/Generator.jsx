@@ -5,11 +5,11 @@
   import { AuthContext } from "../context/AuthContext";
 
 
-  const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToReplace }) => {
+  const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToReplace, user }) => {
     const [materials, setMaterials] = useState([]);
     const [filteredMaterials, setFilteredMaterials] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-
+  
     useEffect(() => {
       if (isOpen && user && user.token) {  // Ensure the token is available
         Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
@@ -26,8 +26,7 @@
         });
       }
     }, [isOpen, user]);  // Also include 'user' as a dependency
-    
-    
+  
     useEffect(() => {
       if (searchTerm === "") {
         setFilteredMaterials(materials);
@@ -38,7 +37,7 @@
         setFilteredMaterials(filtered);
       }
     }, [searchTerm, materials]);
-
+  
     return isOpen ? (
       <div className={styles.modalOverlay}>
         <div className={styles.modalContent} style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -67,13 +66,13 @@
               <p>No materials found</p>
             )}
           </div>
-
-    
+  
           <button onClick={onClose} className={styles.closeButton}>Cancel</button>
         </div>
       </div>
     ) : null;
   };
+  
 
 
   const Modal = ({
