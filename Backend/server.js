@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // Enable CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Your frontend URL
+  origin: 'https://foxconstruction.netlify.app', // Your frontend URL
 }));
 
 // Apply authMiddleware and authorizeRoles only for protected routes

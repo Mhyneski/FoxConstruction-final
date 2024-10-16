@@ -58,7 +58,7 @@ const ProjectList = () => {
   
   const fetchProjectDetails = async (projectId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
+      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -80,10 +80,10 @@ const ProjectList = () => {
         setIsLoading(true); 
   
         const [projectsResponse, locationsResponse] = await Promise.all([
-          axios.get(`http://localhost:4000/api/project/contractor`, {
+          axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
             headers: { Authorization: `Bearer ${user.token}` },  // Include Authorization header
           }),
-          axios.get(`http://localhost:4000/api/locations`, {
+          axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
             headers: { Authorization: `Bearer ${user.token}` },  // Add Authorization header here
           }),
         ]);
@@ -105,7 +105,7 @@ const ProjectList = () => {
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
-        const response = await axios.get(`http://localhost:4000/api/user/get`, {
+        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
           headers: { Authorization: `Bearer ${user?.token || ""}` },
         });
         setUsers(response.data);
@@ -141,7 +141,7 @@ const ProjectList = () => {
       };
 
       const response = await axios.post(
-        `http://localhost:4000/api/project`,
+        `https://foxconstruction-final.onrender.com/api/project`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -171,7 +171,7 @@ const ProjectList = () => {
       const processedProject = { ...newProject };
 
       const response = await axios.patch(
-        `http://localhost:4000/api/project/${editProjectId}`,
+        `https://foxconstruction-final.onrender.com/api/project/${editProjectId}`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -193,7 +193,7 @@ const ProjectList = () => {
 
   const handleDeleteProject = async () => {
     try {
-      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
+      await axios.delete(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -261,7 +261,7 @@ const ProjectList = () => {
   const handleUpdateStatus = async (projectId, newStatus) => {
     try {
       const response = await axios.patch(
-        `http://localhost:4000/api/project/${projectId}/status`,
+        `https://foxconstruction-final.onrender.com/api/project/${projectId}/status`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${user.token}` },
