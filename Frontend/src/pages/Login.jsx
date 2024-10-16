@@ -6,7 +6,7 @@ import axios from "axios";
 const Login = () => {
   const [Username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false); 
   const { login, error, isLoading } = useLogin();
 
   const handleSubmit = async (e) => {
@@ -14,7 +14,7 @@ const Login = () => {
     login(Username, password);
   };
 
-  // Handle forgot password
+  
   const handleForgotPassword = async () => {
     if (!Username) {
       alert("Please enter your Username to reset the password.");
@@ -45,33 +45,38 @@ const Login = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <label>Username</label>
-            <input
-              type="text"
-              onChange={(e) => setUsername(e.target.value)}
-              value={Username}
-              placeholder="enter your username"
-              required
-            />
-            <label>Password</label>
-            <input
-              type={showPassword ? "text" : "password"} // Toggles between text and password
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-              placeholder="enter your password"
-              required
-            />
-            <label>
-              <input
-                type="checkbox"
-                checked={showPassword}
-                onChange={() => setShowPassword(!showPassword)}
-              />{" "}
-              Show Password
-            </label>
-            <a href="#" onClick={handleForgotPassword}>Forgot password</a>
-            <button type="submit" disabled={isLoading}>LOG IN</button>
-          </form>
+  <label className={styles.baller}>Username</label>
+  <input
+    type="text"
+    onChange={(e) => setUsername(e.target.value)}
+    value={Username}
+    placeholder="enter your username"
+    required
+  />
+  <label className={styles.baller}>Password</label>
+  <input
+    type={showPassword ? "text" : "password"} 
+    onChange={(e) => setPassword(e.target.value)}
+    value={password}
+    placeholder="enter your password"
+    required
+  />
+
+  <div className={styles.passwordOptions}>
+    <label className={styles.baller}>
+      <input
+        type="checkbox"
+        checked={showPassword}
+        onChange={() => setShowPassword(!showPassword)}
+      />{" "}
+      Show Password
+    </label>
+    <a href="#" onClick={handleForgotPassword}>Forgot password</a>
+  </div>
+
+  <button type="submit" disabled={isLoading}>LOG IN</button>
+</form>
+
         )}
         {error && <p className={styles.error1}>{error}</p>}
       </div>

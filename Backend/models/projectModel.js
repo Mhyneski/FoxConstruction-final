@@ -48,20 +48,20 @@ const projectSchema = new Schema({
   },
   floors: [floorSchema],
   timeline: {
-    duration: { type: Number, required: true }, // Duration value
-    unit: { type: String, enum: ['weeks', 'months'], required: true } // Unit of the timeline
+    duration: { type: Number, required: true }, 
+    unit: { type: String, enum: ['weeks', 'months'], required: true } 
   },
   location: {
-    type: String,  // Store the location name selected for the project
+    type: String,  
     required: true
   },
   status: {
     type: String,
     enum: ["ongoing", "finished"],
-    default: "ongoing" // Default value
+    default: "ongoing" 
   },
   bom: {
-    type: mongoose.Schema.Types.Mixed, // Or another appropriate type, depending on how you store BOMs
+    type: mongoose.Schema.Types.Mixed, 
     default: null,
   }
 }, { timestamps: true });

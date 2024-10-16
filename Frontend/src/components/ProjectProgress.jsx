@@ -63,16 +63,13 @@ const ProjectProgress = () => {
     <div className={styles.container}>
       <Navbar />
       <div className={styles.header}>
-        {/* Ensure project.name and project.status exist before rendering */}
         <h1 className={styles.title}>{project.name ? project.name.toUpperCase() : 'Untitled Project'}</h1>
       </div>
       <p className={styles.dateTitle}>Started on: {startDate}</p>
       <p className={styles.progressTitle}>STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}</p>
       
-      {/* Scrollable floors container */}
       <div className={styles.floorsContainer}>
         {project.floors && project.floors.map((floor, index) => {
-          // Use the stored progress from the database for floors and tasks
           const floorProgress = floor.progress || 0;
           const taskProgress = floor.tasks.map(task => task.progress || 0);
 
@@ -85,7 +82,7 @@ const ProjectProgress = () => {
                     className={styles.progress}
                     style={{ width: `${Math.round(floorProgress)}%` }}
                   >
-                    {Math.round(floorProgress)}%  {/* Display integer values */}
+                    {Math.round(floorProgress)}% 
                   </div>
                 </div>
               </div>

@@ -5,7 +5,6 @@ const generateBOM = async (req, res) => {
   let { totalArea, numFloors, avgFloorHeight, templateTier, locationName } = req.body;
 
   try {
-    // Convert input values to appropriate types
     totalArea = parseFloat(totalArea);
     numFloors = parseInt(numFloors, 10);
     avgFloorHeight = parseFloat(avgFloorHeight);
@@ -30,7 +29,6 @@ const generateBOM = async (req, res) => {
     const scaledCategories = baseTemplate.bom.categories.map((category) => {
       const scaledMaterials = category.materials.map((material) => {
         let scaledQuantity;
-    
 
         switch (category.category.toLowerCase().trim()) {
           case 'earthwork':
@@ -59,31 +57,31 @@ const generateBOM = async (req, res) => {
             scaledQuantity = material.quantity * scaleFactor;  // Default scaling
         }
 
-        // Ensure the totalAmount is calculated based on the scaled quantity and cost
+        // Total amount calculated based on scaled quantity and cost
         const scaledTotalAmount = material.cost * scaledQuantity;
-    
+
         return {
           ...material,
           quantity: scaledQuantity,
           totalAmount: scaledTotalAmount,
         };
       });
-    
-      return { ...category, materials: scaledMaterials };
+
+      // Calculate total for each category
+      const categoryTotal = scaledMaterials.reduce((sum, material) => sum + material.totalAmount, 0);
+
+      return { ...category, materials: scaledMaterials, categoryTotal };
     });
-    
-    
+
     // Recalculate labor costs
     let originalLaborCost = baseTemplate.bom.laborCost * (0.5 * areaFactor + 0.3 * floorFactor + 0.2 * heightFactor);
-    const totalMaterialsCost = scaledCategories.reduce((sum, category) => {
-      return sum + category.materials.reduce((subSum, material) => subSum + material.totalAmount, 0);
-    }, 0);
+    const totalMaterialsCost = scaledCategories.reduce((sum, category) => sum + category.categoryTotal, 0);
     let originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
 
     // Apply location markup if selected
     let markedUpLaborCost = originalLaborCost;
     let markedUpTotalProjectCost = originalTotalProjectCost;
-    let locationMarkup = 0; // Default markup to 0
+    let locationMarkup = 0;
 
     if (locationName) {
       const location = await Location.findOne({ name: locationName });
@@ -91,7 +89,7 @@ const generateBOM = async (req, res) => {
         return res.status(404).json({ error: "Location not found." });
       }
 
-      locationMarkup = location.markup; // Capture markup percentage
+      locationMarkup = location.markup;
       const markupPercentage = locationMarkup / 100;
       markedUpLaborCost += originalLaborCost * markupPercentage;
       markedUpTotalProjectCost += originalTotalProjectCost * markupPercentage;
@@ -102,7 +100,7 @@ const generateBOM = async (req, res) => {
         totalArea,
         numFloors,
         avgFloorHeight,
-        location: { name: locationName, markup: locationMarkup }, // Include location markup
+        location: { name: locationName, markup: locationMarkup },
       },
       categories: scaledCategories,
       originalCosts: {
@@ -126,6 +124,7 @@ const generateBOM = async (req, res) => {
     res.status(500).json({ error: "Failed to generate BOM.", details: error.message });
   }
 };
+
 
 
 module.exports = { generateBOM };

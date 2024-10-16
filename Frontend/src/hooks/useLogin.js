@@ -17,12 +17,16 @@ export const useLogin = () => {
       const response = await axios.post(`http://localhost:4000/api/user/login`, { Username, password });
       const json = response.data;
 
-      // save the user to local storage
+      // Log the user data after logging in
+      console.log('User login response:', json);
+
+      // Save the user details to localStorage
       localStorage.setItem('user', JSON.stringify(json));
 
-      // update the auth context
+      // Update the global auth context with the logged-in user
       dispatch({ type: 'LOGIN', payload: json });
 
+      // Redirect based on user role
       const { role } = json;
       if (role === 'admin') {
         navigate('/AdminDashboard');
@@ -31,7 +35,6 @@ export const useLogin = () => {
       } else if (role === 'contractor') {
         navigate('/ContractorDashboard');
       } else {
-        // Handle unknown role
         navigate('/UnknownRole');
       }
 
@@ -40,7 +43,8 @@ export const useLogin = () => {
       setIsLoading(false);
       setError(error.response ? error.response.data.error : 'Login failed. Please try again.');
     }
-  }
+  };
 
   return { login, isLoading, error };
-}
+};
+

@@ -1,65 +1,64 @@
-const user = require('../models/usersModel')
+const User = require('../models/usersModel');
 const bcryptjs = require('bcryptjs');
-const { default: mongoose } = require('mongoose');   
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
+// Helper function to create a JWT token
 const createToken = (_id) => {
- return jwt.sign({_id: _id}, process.env.SECRET, {expiresIn: '3d'})
-}
+  return jwt.sign({ _id }, process.env.SECRET, { expiresIn: '3d' });
+};
+
+// Login user
+const loginUser = async (req, res) => {
+  const { Username, password } = req.body;
+
+  try {
+    const USER = await User.findOne({ Username });
+    if (!USER) {
+      console.log('User not found:', Username);
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcryptjs.compare(password, USER.password);
+    if (!passwordMatch) {
+      console.log('Password mismatch for user:', Username);
+      return res.status(400).json({ error: 'Invalid password' });
+    }
+
+    // Create token
+    const token = createToken(USER._id);
+
+    // Respond with user details and token
+    return res.status(200).json({ Username, role: USER.role, token, id: USER._id });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ error: 'Server Error' });
+  }
+};
 
 // Fetch users with role 'user'
 const getsUsers = async (req, res) => {
   try {
     // Find only users with the role 'user'
-    const users = await user.find({ role: 'user' });
+    const users = await User.find({ role: 'user' });
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-
 // Fetch all users
 const getUsers = async (req, res) => {
   try {
-    const users = await user.find({}).sort({ createdAt: -1 });
+    const users = await User.find({}).sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
 };
 
-// login user
-const loginUser = async (req, res) => {
-  const { Username, password } = req.body;
-
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
-  }
-
-  try {
-    const USER = await user.findOne({ Username });
-    if (!USER) {
-      return res.status(400).json({ error: 'User not found' });
-    }
-    // Perform password comparison
-    const passwordMatch = await bcryptjs.compare(password, USER.password);
-    if (!passwordMatch) {
-      return res.status(400).json({ error: 'Invalid password' });
-    }
-
-    //create token
-    const token = createToken(USER._id)
-
-    // If authentication is successful
-    res.json({ Username, role: USER.role, token, id: USER._id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server Error' });
-  }
-}
-
-
+// Signup user
 const signupUser = async (req, res) => {
   const { Username, role } = req.body;
   const defaultPassword = "12345678";
@@ -70,7 +69,7 @@ const signupUser = async (req, res) => {
 
   try {
     // Check if the Username already exists
-    const existingUser = await user.findOne({ Username });
+    const existingUser = await User.findOne({ Username });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
     }
@@ -79,7 +78,7 @@ const signupUser = async (req, res) => {
     const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
 
     // Create a new user with the default password
-    const USER = await user.create({ Username, password: hashedPassword, role });
+    const USER = await User.create({ Username, password: hashedPassword, role });
 
     // Create a token
     const token = createToken(USER._id);
@@ -91,25 +90,26 @@ const signupUser = async (req, res) => {
   }
 };
 
+// Delete user
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
 
-const deleteUser = async(req, res) => {
-  const {id} = req.params
-
-  if(!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(404).json({error: 'id does not exist'})
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: 'Invalid user ID' });
   }
 
   try {
-    const deletedUser = await user.findOneAndDelete({_id: id})
-    if(!deletedUser) {
-      return res.status(404).json({error: 'Material does not exist'})
+    const deletedUser = await User.findOneAndDelete({ _id: id });
+    if (!deletedUser) {
+      return res.status(404).json({ error: 'User does not exist' });
     }
-    res.status(200).json(deletedUser + " is deleted")
+    res.status(200).json({ message: `User ${deletedUser.Username} is deleted` });
   } catch (error) {
-    res.status(500).json({error: 'error occured'})
+    res.status(500).json({ error: 'Error occurred while deleting user' });
   }
-}
+};
 
+// Reset password to default
 const resetPassword = async (req, res) => {
   const { id } = req.params;
   const defaultPassword = "12345678";
@@ -123,9 +123,9 @@ const resetPassword = async (req, res) => {
     const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
 
     // Update the user's password and reset the forgotPassword field to false
-    const updatedUser = await user.findByIdAndUpdate(
-      id, 
-      { password: hashedPassword, forgotPassword: false }, // Set forgotPassword to false
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { password: hashedPassword, forgotPassword: false },
       { new: true }
     );
 
@@ -140,21 +140,20 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Change password
 const changePassword = async (req, res) => {
   const { newPassword } = req.body;
 
-  // Check if the password meets the requirements
   if (!newPassword || newPassword.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   }
 
   try {
-    // Make sure req.user is defined
     if (!req.user || !req.user._id) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
 
     // Update the user's password in the database
     await User.findByIdAndUpdate(req.user._id, { password: hashedPassword });
@@ -165,28 +164,26 @@ const changePassword = async (req, res) => {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 };
-const bcrypt = require('bcryptjs');
-const User = require('../models/usersModel');
-// Default password
-const DEFAULT_PASSWORD = '12345678';
 
+// Check if the current password is the default one
 const isDefaultPassword = async (req, res) => {
+  const DEFAULT_PASSWORD = '12345678';  // Define the default password
   try {
-    const user = await User.findById(req.user._id);
+    const USER = await User.findById(req.user._id);
     
-    if (!user) {
+    if (!USER) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Compare if the current password is the default one
-    const isDefault = await bcrypt.compare(DEFAULT_PASSWORD, user.password);
-    
-    return res.status(200).json({ isDefault });
+    const isDefault = await bcryptjs.compare(DEFAULT_PASSWORD, USER.password);
+
+    res.status(200).json({ isDefault });
   } catch (error) {
-    return res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
+// Forgot password handler
 const forgotPassword = async (req, res) => {
   const { Username } = req.params;
 
@@ -208,7 +205,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-
 module.exports = {
   loginUser,
   signupUser,
@@ -218,5 +214,5 @@ module.exports = {
   resetPassword,
   changePassword,
   isDefaultPassword,
-  forgotPassword
+  forgotPassword,
 };

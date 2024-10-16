@@ -1,32 +1,36 @@
-import {createContext, useReducer, useEffect} from 'react'
+import { createContext, useReducer, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-export const AuthContext = createContext()
+export const AuthContext = createContext();
 
 export const authReducer = (state, action) => {
   switch (action.type) {
     case 'LOGIN':
-      return { user: action.payload, Username: action.payload.Username };
+      return { user: action.payload };
     case 'LOGOUT':
-      return { user: null, Username: null };
+      return { user: null };
     default:
       return state;
   }
-}
+};
 
 export const AuthContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
-    user: null,
-    Username: null
+    user: null
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'))
-
-    if (user) {
-      dispatch({type: 'LOGIN', payload: user})
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+  
+    if (storedUser) {
+      dispatch({ type: 'LOGIN', payload: storedUser });
+    } else {
+      console.warn('No user found in localStorage');  // Log a warning if no user is found
+      dispatch({ type: 'LOGOUT' });  // Ensure state is cleared if no user
     }
-  }, [])
+  }, [dispatch]);
+  
+  
 
   console.log('authcontext state: ', state);
 
@@ -35,9 +39,8 @@ export const AuthContextProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
 AuthContextProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
-

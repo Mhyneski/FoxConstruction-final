@@ -15,13 +15,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 10px; /* Reduced padding to save space */
+  padding: 10px 10px; 
 }
 
 .leftSide {
   display: flex;
-  align-items: baseline; /* This aligns both texts on the same baseline */
-  gap: 5px; /* Adjusts spacing between FOX and CONSTRUCTION CO. */
+  align-items: baseline; 
+  gap: 5px; 
 }
 
 .name1 {
@@ -45,7 +45,7 @@ body {
 .rightSide a {
   color: #3f5930;
   text-decoration: none;
-  font-size: 16px; /* Reduced font size */
+  font-size: 16px; 
   padding: 5px;
   transition: color 0.3s;
 }
@@ -57,7 +57,7 @@ body {
 .loginBtn {
   background-color: #3f5930;
   color: #fff !important;
-  padding: 8px 16px; /* Reduced padding */
+  padding: 8px 16px; 
   border-radius: 5px;
   transition: background-color 0.3s;
 }
@@ -69,8 +69,8 @@ body {
 .heroSection {
   position: relative;
   width: 100%;
-  height: 350px; /* Reduced height for hero section */
-  margin-bottom: 20px; /* Reduced margin */
+  height: 350px; 
+  margin-bottom: 20px; 
 }
 
 .heroImage {
@@ -91,12 +91,12 @@ body {
 }
 
 .heroText h1 {
-  font-size: 36px; /* Decreased font size */
+  font-size: 36px; 
   margin: 0;
 }
 
 .heroText h2 {
-  font-size: 20px; /* Decreased font size */
+  font-size: 20px; 
   margin: 10px 0 0 0;
 }
 
@@ -104,27 +104,27 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: 20px; /* Reduced padding */
-  margin-top: 10px; /* Reduced margin */
+  padding-bottom: 20px; 
+  margin-top: 10px; 
 }
 
 .galleryWrapper {
   display: flex;
   align-items: center;
   position: relative;
-  max-width: 900px; /* Reduced width to save space */
+  max-width: 900px; 
   overflow: hidden;
 }
 
 .gallery {
   display: flex;
-  gap: 20px; /* Reduced gap */
+  gap: 20px; 
   overflow: hidden;
 }
 
 .galleryImage {
-  width: 250px; /* Reduced image size */
-  height: 180px; /* Reduced image size */
+  width: 250px; 
+  height: 180px; 
   object-fit: cover;
   border-radius: 8px;
   transition: transform 0.3s;
@@ -138,10 +138,10 @@ body {
   background: #3f5930;
   color: #fff;
   border: none;
-  font-size: 20px; /* Reduced font size */
+  font-size: 20px; 
   padding: 8px;
-  width: 40px; /* Reduced width */
-  height: 40px; /* Reduced height */
+  width: 40px; 
+  height: 40px; 
   border-radius: 50%;
   cursor: pointer;
   transition: background 0.3s;

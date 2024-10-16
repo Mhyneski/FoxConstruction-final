@@ -1,5 +1,5 @@
 .aboutUsContainer {
-    width: 100vw; /* Full screen width */
+    width: 100vw;
     padding: 0;
     margin: 0;
     background-color: #fff;
@@ -17,7 +17,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 40px 5%;
-    box-sizing: border-box; /* Ensures padding is inside the width */
+    box-sizing: border-box; 
   }
   
   .textContainer {

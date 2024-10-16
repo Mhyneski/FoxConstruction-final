@@ -1,4 +1,4 @@
-/* Styles for the modal overlay and content */
+
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -31,20 +31,20 @@
     border-radius: 4px;
   }
   
-  /* Scrollable table container */
+  
   .scrollableTableContainer {
     width: 100%;
-    overflow-x: auto;  /* Enables horizontal scrolling */
-    overflow-y: auto;  /* Enables vertical scrolling */
+    overflow-x: auto;  
+    overflow-y: auto;  
     margin-top: 20px;
     border: 1px solid #ccc;
     padding: 10px;
     border-radius: 8px;
-    max-height: 400px; /* Ensures that the table has vertical scroll if necessary */
+    max-height: 400px; 
     background-color: #fff;
   }
   
-  /* User table styling */
+  
   .userTable {
     width: 100%;
     border-collapse: collapse;
@@ -70,7 +70,7 @@
     background-color: #f1f1f1;
   }
   
-  /* Styles for buttons */
+  
   .openModalButton {
     padding: 10px 20px;
     background-color: #007bff;
@@ -99,7 +99,6 @@
     background-color: #c0392b;
   }
   
-  /* Header container for title and create button */
   .headerContainer {
     display: flex;
     justify-content: space-between;
@@ -110,7 +109,7 @@
     border-radius: 8px;
   }
   
-  /* Modal overlay and content */
+  
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -144,20 +143,19 @@
     margin-top: 15px;
   }
   
-  /* Scrollable table container */
   .scrollableTableContainer {
     width: 100%;
-    overflow-x: auto;  /* Enables horizontal scrolling */
-    overflow-y: auto;  /* Enables vertical scrolling */
+    overflow-x: auto;  
+    overflow-y: auto;  
     margin-top: 20px;
     border: 1px solid #ccc;
     padding: 10px;
     border-radius: 8px;
-    max-height: 400px; /* Ensures that the table has vertical scroll if necessary */
+    max-height: 400px; 
     background-color: #fff;
   }
   
-  /* User table styling */
+ 
   .userTable {
     width: 100%;
     border-collapse: collapse;
@@ -183,7 +181,7 @@
     background-color: #f1f1f1;
   }
   
-  /* Modal overlay to create a blurred and darker background */
+  
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -191,7 +189,7 @@
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px); /* Adds a nice blur to the background */
+    backdrop-filter: blur(5px); 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -199,7 +197,7 @@
     animation: fadeIn 0.5s ease-in-out;
   }
   
-  /* Modal content with updated styling */
+
   .modalContent {
     background: #fff;
     padding: 30px;
@@ -211,7 +209,7 @@
     animation: slideIn 0.4s ease-in-out;
   }
   
-  /* Animation for opening modal */
+  
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -232,7 +230,7 @@
     }
   }
   
-  /* Close button for the modal */
+
   .closeModalButton {
     background-color: #e74c3c;
     color: #fff;
@@ -249,7 +247,7 @@
     background-color: #c0392b;
   }
   
-  /* Create Account button styling */
+ 
   .openModalButton {
     padding: 10px 20px;
     background-color: #4CAF50;
@@ -265,7 +263,7 @@
     background-color: #45a049;
   }
   
-  /* Form styling inside the modal */
+
   .formGroup {
     margin-bottom: 20px;
   }
@@ -286,7 +284,7 @@
     font-size: 16px;
   }
   
-  /* Password input container styling */
+
   .passwordInputContainer {
     display: flex;
     align-items: center;
@@ -294,7 +292,7 @@
   
   .passwordInputContainer input {
     flex: 1;
-    padding-right: 40px; /* Allow space for the show/hide button */
+    padding-right: 40px; 
   }
   
   .togglePasswordButton {
@@ -311,7 +309,6 @@
     color: #0056b3;
   }
   
-  /* Submit button styling */
   .modalContent button[type="submit"] {
     width: 100%;
     padding: 12px;
@@ -359,8 +356,8 @@
   }
   
   .centeredTitle {
-    text-align: center; /* Centers the text */
-    margin-bottom: 20px; /* Optional: Adds space below the title */
+    text-align: center; 
+    margin-bottom: 20px; 
   }
   
   .filterButtons {
@@ -393,8 +390,8 @@
   }
   
   .spinner {
-    border: 8px solid #f3f3f3; /* Light grey */
-    border-top: 8px solid #3498db; /* Blue */
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db; 
     border-radius: 50%;
     width: 60px;
     height: 60px;

@@ -2,15 +2,15 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px; /* Reduces space between cards */
+    gap: 15px; 
     flex-wrap: wrap;
     padding: 20px;
   }
   
   .dashboardCard {
     position: relative;
-    width: 280px; /* Adjust as needed for image size */
-    height: 400px; /* Adjust as needed for image size */
+    width: 280px; 
+    height: 400px; 
     overflow: hidden;
     cursor: pointer;
     text-decoration: none;

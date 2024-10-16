@@ -1,28 +1,35 @@
-const express = require('express')
-const {loginUser, signupUser, deleteUser, getUsers, getsUsers, resetPassword, changePassword, isDefaultPassword, forgotPassword} = require('../controllers/userController')
-const requireAuth = require('../middlewares/requireAuth');
+const express = require('express');
+const {
+  loginUser, signupUser, deleteUser, getUsers, getsUsers, resetPassword, changePassword, isDefaultPassword, forgotPassword
+} = require('../controllers/userController');
+const { authMiddleware, authorizeRoles } = require('../middlewares/authMiddleware'); // Make sure both middlewares are imported
 const router = express.Router();
 
-// get all locations
-router.get('/', getUsers)
+// get all users (for admin or roles allowed)
+router.get('/', authMiddleware, authorizeRoles(['admin']), getUsers);
 
-// login route 
-router.post('/login', loginUser)
+// login route (no authorization needed)
+router.post('/login', loginUser);
 
-// sign-up route
-router.post('/signup', signupUser)
+// sign-up route (no authorization needed)
+router.post('/signup', signupUser);
 
-// delete user
-router.delete('/:id', deleteUser)
+// delete user (authorized roles only)
+router.delete('/:id', authMiddleware, authorizeRoles(['admin']), deleteUser);
 
-router.get('/get', getsUsers);
+// get users with role 'user' (for admin or roles allowed)
+router.get('/get', authMiddleware, authorizeRoles(['admin']), getsUsers);
 
-router.patch('/reset-password/:id', resetPassword);
+// reset password to default (authorized roles only)
+router.patch('/reset-password/:id', authMiddleware, authorizeRoles(['admin']), resetPassword);
 
-router.patch('/change-password',requireAuth, changePassword);
+// change own password (authenticated user)
+router.patch('/change-password', authMiddleware, changePassword);
 
-router.get('/is-default-password', requireAuth, isDefaultPassword);
+// check if user is using the default password (authenticated user)
+router.get('/is-default-password', authMiddleware, isDefaultPassword);
 
+// forgot password route (public, no auth required)
 router.patch('/forgot-password/:Username', forgotPassword);
 
-module.exports = router
+module.exports = router;

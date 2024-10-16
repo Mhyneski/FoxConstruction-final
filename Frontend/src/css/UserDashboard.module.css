@@ -1,4 +1,4 @@
-/* Container for the cards */
+
 .cardContainer {
   display: flex;
   justify-content: center;
@@ -8,13 +8,13 @@
   padding: 0 20px;
 }
 
-/* Individual card styling */
+
 .card {
   width: 280px;
   border-radius: 20px;
   overflow: hidden;
   transition: transform 0.3s;
-  text-decoration: none; /* Remove link underline */
+  text-decoration: none; 
   background-color: #f5f5f5;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -55,12 +55,12 @@
   text-transform: uppercase;
 }
 
-/* Hover effect for the card */
+
 .card:hover {
   transform: translateY(-15px);
 }
 
-/* Name banner styling */
+
 .NameBanner {
   display: flex;
   justify-content: center;

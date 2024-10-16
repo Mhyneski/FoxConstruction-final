@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const mongoose = require('mongoose');
 const materialRoutes = require('./routes/materialsRoute');
@@ -8,15 +7,12 @@ const templatesRoutes = require('./routes/templatesRoute');
 const bomRoutes = require('./routes/bomRoute');
 const userRoutes = require('./routes/usersRoute');
 const projectRoutes = require('./routes/projectRoute');
-const { authMaterials, authTemplates, authLocations } = require('./middlewares/authMiddleware');
+const { authMiddleware, authorizeRoles } = require('./middlewares/authMiddleware');
 const cors = require('cors');
 
 // express app
 const app = express();
 
-// middleware
-
-// Increase the limit to allow even larger payloads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -30,23 +26,23 @@ app.use(cors({
   origin: 'http://localhost:5173', // Your frontend URL
 }));
 
-// routes
-// Apply the authentication middleware globally
+// Apply authMiddleware and authorizeRoles only for protected routes
 
-// Apply role-based access control for specific routes
-app.use('/api/materials', authTemplates(['contractor', 'admin', 'user']), materialRoutes);
-app.use('/api/locations', authTemplates(['contractor', 'admin', 'user']), locationRoutes);
-app.use('/api/templates', authTemplates(['contractor', 'admin']), templatesRoutes);
-app.use('/api/bom', authTemplates(['contractor', 'admin']), bomRoutes);
-app.use('/api/project', authTemplates(['contractor', 'admin', 'user']), projectRoutes);
-app.use('/api/user', userRoutes);
+// No auth required for login and signup routes
+app.use('/api/user', userRoutes); // These routes handle login/signup, so no auth middleware here
 
-// connect to mongodb
+// Protected routes
+app.use('/api/materials', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), materialRoutes);
+app.use('/api/locations', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), locationRoutes);
+app.use('/api/templates', authMiddleware, authorizeRoles(['contractor', 'admin']), templatesRoutes);
+app.use('/api/bom', authMiddleware, authorizeRoles(['contractor', 'admin']), bomRoutes);
+app.use('/api/project', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), projectRoutes);
+
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    // listen for requests
     app.listen(process.env.PORT, () => {
-      console.log('connected to db and listening on ' + process.env.PORT);
+      console.log('Connected to DB and listening on ' + process.env.PORT);
     });
   })
   .catch((error) => {

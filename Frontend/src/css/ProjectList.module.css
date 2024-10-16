@@ -1,4 +1,4 @@
-/* CSS for ProjectList */
+
 
 .locationsContainer {
     padding: 20px;
@@ -182,7 +182,6 @@
     font-weight: bold;
   }
   
-  /* Floors and Tasks */
   .floorContainer {
     margin-bottom: 20px;
     padding: 10px;
@@ -251,7 +250,7 @@
     background-color: #0056b3;
   }
   
-  /* CSS for loading spinner and message */
+ 
 .loadingSpinnerContainer {
   display: flex;
   flex-direction: column;
@@ -261,8 +260,8 @@
 }
 
 .spinner {
-  border: 4px solid #f3f3f3; /* Light grey */
-  border-top: 4px solid #3498db; /* Blue */
+  border: 4px solid #f3f3f3; 
+  border-top: 4px solid #3498db; 
   border-radius: 50%;
   width: 40px;
   height: 40px;

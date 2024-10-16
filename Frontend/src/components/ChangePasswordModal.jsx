@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import styles from "../css/ChangePasswordModal.module.css"; // Add your styling
+import styles from "../css/ChangePasswordModal.module.css"; 
 
 const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // State to handle password visibility
+  const [showPassword, setShowPassword] = useState(false); 
 
   if (!show) return null;
 
@@ -19,8 +19,8 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
       setError("Password must be at least 8 characters long");
       return;
     }
-    onSubmit(newPassword); // Send the new password to the parent component for submission
-    setError(""); // Clear the error once submission is successful
+    onSubmit(newPassword); 
+    setError(""); 
   };
 
   return (
@@ -31,7 +31,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
           <div className={styles.formGroup}>
             <label htmlFor="newPassword">New Password:</label>
             <input
-              type={showPassword ? "text" : "password"} // Toggle between text and password input types
+              type={showPassword ? "text" : "password"} 
               id="newPassword"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -41,7 +41,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
           <div className={styles.formGroup}>
             <label htmlFor="confirmPassword">Confirm Password:</label>
             <input
-              type={showPassword ? "text" : "password"} // Toggle between text and password input types
+              type={showPassword ? "text" : "password"} 
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -54,7 +54,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
                 type="checkbox"
                 id="showPassword"
                 checked={showPassword}
-                onChange={() => setShowPassword(!showPassword)} // Toggle showPassword state
+                onChange={() => setShowPassword(!showPassword)} 
               />
               Show Passwords
             </label>

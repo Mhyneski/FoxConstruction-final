@@ -12,7 +12,7 @@ const {
   saveBOMToProject // Ensure to import the controller function
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
-const requireAuth = require('../middlewares/requireAuth');
+
 
 const router = express.Router();
 

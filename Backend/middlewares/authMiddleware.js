@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/usersModel');
+
 const authMiddleware = async (req, res, next) => {
   const { authorization } = req.headers;
 
@@ -22,42 +23,19 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-
-const authMaterials = (permissions) => {
+// General role-based authorization middleware
+const authorizeRoles = (permissions) => {
   return (req, res, next) => {
-    const userRole = req.body.role
-    if(permissions.includes(userRole)) {
-      next()
+    const userRole = req.user.role; // Use req.user.role, as it's already attached in authMiddleware
+    if (permissions.includes(userRole)) {
+      next();
     } else {
-      return res.status(404).json("you dont have permission")
+      return res.status(403).json({ error: 'You do not have permission to perform this action' });
     }
-  }
-}
-
-// must change or update may mali ka dito linagyan mo lang ng lunas
-const authTemplates = (permissions) => {
-  return (req, res, next) => {
-    const userRole = req.body.role
-    next()
-  }
-}
-
-const authLocations = (permissions) => {
-  return (req, res, next) => {
-    const userRole = req.body.role
-    if(permissions.includes(userRole)) {
-      next()
-    } else {
-      return res.status(404).json("you dont have permission")
-    }
-  }
-}
-
-
+  };
+};
 
 module.exports = {
-  authMaterials,
-  authTemplates,
-  authLocations,
-  authMiddleware
-}
+  authMiddleware,   // Protects routes by verifying token and fetching user
+  authorizeRoles,   // Protects routes based on roles
+};

@@ -3,7 +3,7 @@ import axios from 'axios';
 import styles from '../css/Location.module.css';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
-import LocationDeleteModal from "../components/LocationDeleteModal"; // Import the delete modal
+import LocationDeleteModal from "../components/LocationDeleteModal"; 
 
 const Location = () => {
   const [locations, setLocations] = useState([]);
@@ -14,11 +14,11 @@ const Location = () => {
   const [newLocation, setNewLocation] = useState({ name: '', markup: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Delete confirmation modal state
+  
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState(null);
 
-  // Fetch all locations on component mount
+  
   useEffect(() => {
     if (!user || !user.token) return;
 
@@ -47,14 +47,14 @@ const Location = () => {
     try {
       const updatedLocation = { ...editedLocation };
       
-      // Send the updated location to the API
+      
       await axios.patch(`http://localhost:4000/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
 
-      // Update the locations state with the new data manually
+      
       setLocations((prevLocations) =>
         prevLocations.map((location) =>
           location._id === id ? { ...location, ...updatedLocation } : location
@@ -74,7 +74,7 @@ const Location = () => {
         },
       });
       setLocations((prevLocations) => prevLocations.filter((location) => location._id !== id));
-      setIsConfirmDeleteOpen(false); // Close the modal after deletion
+      setIsConfirmDeleteOpen(false); 
     } catch (error) {
       console.error('Error deleting location:', error);
     }
@@ -107,7 +107,7 @@ const Location = () => {
         },
       });
 
-      // Update locations state
+      
       setLocations((prevLocations) => [...prevLocations, response.data]);
       setNewLocation({ name: '', markup: '' });
       setIsModalOpen(false);
@@ -118,13 +118,13 @@ const Location = () => {
 
   const filteredLocations = filterLocations();
 
-  // Open the delete confirmation modal
+  
   const openConfirmDeleteModal = (location) => {
     setLocationToDelete(location);
     setIsConfirmDeleteOpen(true);
   };
 
-  // Handle confirming the delete action
+  
   const confirmDelete = () => {
     if (locationToDelete) {
       handleDelete(locationToDelete._id);

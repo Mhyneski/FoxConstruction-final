@@ -39,7 +39,7 @@ const calculateProgress = (createdAt, timeline) => {
 
   const timelineInDays = timeline.unit === 'weeks'
     ? timeline.duration * 7
-    : timeline.duration * 30;  // Assuming 30 days for months
+    : timeline.duration * 30; 
 
   const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
 
@@ -59,7 +59,7 @@ const getProjectsByContractor = async (req, res) => {
 
   try {
     const projects = await Project.find({ contractor: contractorUsername })
-      .populate('location')  // Make sure to populate location if using refs
+      .populate('location') 
       .sort({ createdAt: -1 });
 
     // Calculate and update progress for each project
@@ -82,8 +82,7 @@ const getProjectsByContractor = async (req, res) => {
         });
       });
 
-      // Optionally, save the updated progress to the database if necessary:
-      // await project.save();
+     project.save();
     });
 
     res.status(200).json(projects);
@@ -131,7 +130,7 @@ const createProject = async (req, res) => {
       floors: formattedFloors,
       template,
       timeline,
-      location,  // Add location to the project
+      location,  
       status: status || 'ongoing'
     });
 
@@ -315,10 +314,10 @@ const updateProject = async (req, res) => {
           });
         }
       });
-      delete updateData.floors; // Remove floors from updateData so we can handle other updates separately
+      delete updateData.floors;
     }
 
-    // Update other fields in the project if necessary
+    
     Object.keys(updateData).forEach(key => {
       project[key] = updateData[key];
     });
@@ -380,7 +379,7 @@ const saveBOMToProject = async (req, res) => {
       return res.status(400).json({ message: 'BOM must include categories and materials data' });
     }
 
-    // Format the materials within each category properly
+    // Format the materials within each category 
     const formattedCategories = bom.categories.map(category => ({
       category: category.category,
       materials: category.materials.map(material => ({
@@ -407,6 +406,7 @@ const saveBOMToProject = async (req, res) => {
     res.status(500).json({ error: 'Failed to save BOM to project', details: error.message });
   }
 };
+
 
 module.exports = {
   getProjectsByContractor,

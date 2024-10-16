@@ -19,13 +19,11 @@ const Navbar = () => {
 
   return (
     <div className={styles.topSIDE}>
-      {/* FOX CONSTRUCTION Co. section */}
       <div className={styles.companyInfo}>
         <p className={styles.name1}>FOX</p>
         <p className={styles.name2}>CONSTRUCTION CO.</p>
       </div>
       
-      {/* User Info section */}
       <div className={styles.userInfo}>
         <p className={styles.username}>Hi, {user && user.Username}</p>
         <FaUserCircle className={styles.profileIcon} onClick={toggleDropdown} />

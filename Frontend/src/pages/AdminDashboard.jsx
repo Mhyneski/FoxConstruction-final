@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
-import styles from "../css/AdminDashboard.module.css"; // Import the CSS file
+import styles from "../css/AdminDashboard.module.css"; 
 import Picture from "../assets/IMAGE1.jpg";
-import ChangePasswordModal from "../components/ChangePasswordModal"; // Import the modal component
+import ChangePasswordModal from "../components/ChangePasswordModal"; 
 import { useAuthContext } from "../hooks/useAuthContext";
 import axios from 'axios';
 
@@ -12,7 +12,7 @@ const AdminDashboard = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
-    // Check if the password is still the default one
+   
     const checkDefaultPassword = async () => {
       try {
         const response = await axios.get(`http://localhost:4000/api/user/is-default-password`, {
@@ -21,7 +21,7 @@ const AdminDashboard = () => {
           },
         });
 
-        // Show the modal if the password is the default one
+       
         if (response.data.isDefault) {
           setShowPasswordModal(true);
         }
@@ -41,7 +41,7 @@ const AdminDashboard = () => {
         }
       });
       alert("Password changed successfully.");
-      setShowPasswordModal(false); // Close the modal after successful change
+      setShowPasswordModal(false); 
     } catch (error) {
       console.error("Error changing password:", error);
       alert("Failed to change password.");

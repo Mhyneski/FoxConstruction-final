@@ -4,30 +4,30 @@ import image from "../assets/IMAGE1.jpg";
 import styles from "../css/UserDashboard.module.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
-import ChangePasswordModal from "../components/ChangePasswordModal"; // Import the modal component
+import ChangePasswordModal from "../components/ChangePasswordModal"; 
 import axios from 'axios';
 
-// Progress calculation function
+
 const calculateProgress = (createdAt, timeline) => {
   const currentDate = new Date();
-  const start = new Date(createdAt); // Use createdAt as the start date
+  const start = new Date(createdAt); 
   const timelineInDays = timeline.unit === 'weeks'
     ? timeline.duration * 7
-    : timeline.duration * 30; // Approximate months as 30 days
+    : timeline.duration * 30; 
 
-  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24)); // Difference in days
-  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100); // Cap at 100%
+  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24)); 
+  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100); 
 
-  return progress.toFixed(2); // Return progress as a percentage
+  return progress.toFixed(2); 
 };
 
 const UserDashboard = () => {
   const { user } = useAuthContext();
   const [projects, setProjects] = useState([]);
-  const [showPasswordModal, setShowPasswordModal] = useState(false); // Initially hide the modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false); 
 
   useEffect(() => {
-    // Fetch projects when component loads
+    
     const fetchProjects = async () => {
       try {
         const response = await axios.get(`http://localhost:4000/api/project/projectuser`, {
@@ -56,7 +56,7 @@ const UserDashboard = () => {
           },
         });
 
-        // Show the modal if the password is the default one
+        
         if (response.data.isDefault) {
           setShowPasswordModal(true);
         }
@@ -76,7 +76,7 @@ const UserDashboard = () => {
         }
       });
       alert("Password changed successfully.");
-      setShowPasswordModal(false); // Close the modal after successful change
+      setShowPasswordModal(false); 
     } catch (error) {
       console.error("Error changing password:", error);
       alert("Failed to change password.");
@@ -104,7 +104,7 @@ const UserDashboard = () => {
                 <div className={styles.projectInfo}>
                   <p>{project.status === 'finished' ? 'Finished' : 'Ongoing'}</p>
                 </div>
-                {/* Display overall progress below the status */}
+                
                 <div className={styles.projectProgress}>
                   <p>Overall Progress: {project.progress}%</p>
                 </div>

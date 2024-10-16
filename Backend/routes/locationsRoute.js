@@ -6,8 +6,11 @@ const {
   deleteLocation,
   updateLocation
 } = require('../controllers/locationController')
+const { authMiddleware } = require('../middlewares/authMiddleware');
+
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // get all locations
 router.get('/', getLocations)

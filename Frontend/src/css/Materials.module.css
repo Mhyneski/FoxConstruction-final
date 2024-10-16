@@ -104,8 +104,7 @@
     max-height: 400px;
     overflow-y: auto;
   }
-  
-  /* Modal Styles */
+
   .modalOverlay {
     position: fixed;
     top: 0;

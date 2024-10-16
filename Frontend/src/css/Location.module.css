@@ -145,7 +145,7 @@
   background-color: #28a745;
   color: white;
   border: none;
-  border-radius: 4px; /* Adjusted for a more rectangular shape */
+  border-radius: 4px; 
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
@@ -154,7 +154,7 @@
 }
 
 .createLocationButton:hover {
-  background-color: #218838; /* Darker green on hover */
+  background-color: #218838; 
 }
 
 .modalForm {
@@ -179,7 +179,6 @@
   font-weight: bold;
 }
 
-/* CSS for ProjectList */
 
 .locationsContainer {
     padding: 20px;
@@ -199,9 +198,9 @@
   
   .searchBarContainer {
     display: flex;
-    justify-content: center; /* Keeps elements centered */
+    justify-content: center; 
     align-items: center;
-    gap: 10px; /* Adds space between elements */
+    gap: 10px; 
   }
   
   
@@ -296,7 +295,7 @@
     color: #fff;
   }
   
-  /* Modal Styles */
+
   .modalOverlay {
     position: fixed;
     top: 0;
@@ -360,7 +359,7 @@
     font-weight: bold;
   }
   
-  /* Floors and Tasks */
+
   .floorContainer {
     margin-bottom: 20px;
     padding: 10px;

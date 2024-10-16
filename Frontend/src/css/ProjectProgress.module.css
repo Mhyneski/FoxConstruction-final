@@ -1,37 +1,37 @@
-/* Center only the header and progress title */
+
 .header {
   display: flex;
-  justify-content: center; /* Center the title horizontally */
-  margin-bottom: 20px; /* Space between title and the rest of the content */
+  justify-content: center; 
+  margin-bottom: 20px; 
 }
 
 .title {
   font-size: 32px;
   font-weight: bold;
-  color: #6F806A; /* Dark green shade */
+  color: #6F806A; 
   text-transform: uppercase;
 }
 
-/* Center the progress title */
+
 .progressTitle {
-  text-align: center; /* Center the progress title */
+  text-align: center; 
   font-size: 28px;
   margin-bottom: 20px;
-  color: #495b4a; /* Darker green for contrast */
+  color: #495b4a; 
 }
 
-/* Floors container remains scrollable, but not centered */
+
 .floorsContainer {
   max-height: 400px;
   overflow-y: auto;
   padding-right: 10px;
   margin-bottom: 20px;
-  width: 100%; /* Full width to avoid affecting layout */
+  width: 100%; 
 }
 
-/* Floor Progress */
+
 .floor {
-  margin-bottom: 5px; /* Reduce margin to bring the floors closer together */
+  margin-bottom: 5px; 
   border-radius: 5px;
 }
 
@@ -40,7 +40,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #d9d9d8; /* Lighter gray background */
+  background-color: #d9d9d8; 
   padding: 8px;
   border-radius: 5px;
   color: white;
@@ -53,8 +53,8 @@
 }
 
 .progressBar {
-  background-color: #d9d9d8; /* Slightly darker gray background */
-  height: 40px; /* Taller progress bar */
+  background-color: #d9d9d8; 
+  height: 40px; 
   border-radius: 10px;
   flex-grow: 1;
   margin-left: 10px;
@@ -63,17 +63,17 @@
 }
 
 .progress {
-  background-color: #a7b194; /* Light green color */
+  background-color: #a7b194; 
   height: 100%;
   border-radius: 10px;
-  text-align: center; /* Center the text within the bar */
+  text-align: center; 
   color: white;
-  line-height: 40px; /* Center the text vertically */
-  font-size: 18px; /* Larger font size for visibility */
+  line-height: 40px; 
+  font-size: 18px; 
   font-weight: bold;
 }
 
-/* Tasks Section */
+
 .tasks {
   background-color: #495b4a;
   padding: 10px;
@@ -94,12 +94,12 @@
 }
 
 .taskItem {
-  margin-bottom: 5px; /* Reduce space between tasks */
+  margin-bottom: 5px; 
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: white;
-  background-color: #495b4a; /* Slightly darker color for task section */
+  background-color: #495b4a; 
   padding: 5px 10px;
   border-radius: 5px;
 }
@@ -128,7 +128,7 @@
   font-weight: bold;
 }
 
-/* Last Update */
+
 .lastUpdate {
   font-size: 12px;
   color: #999;
@@ -140,7 +140,7 @@
   text-align: center;
   font-size: 16px;
   margin-bottom: 10px;
-  color: #666; /* Light gray for contrast */
+  color: #666; 
 }
 
 .loadingSpinnerContainer {

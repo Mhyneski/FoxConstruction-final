@@ -3,7 +3,7 @@ import axios from 'axios';
 import styles from '../css/Materials.module.css';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
-import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal"; // Updated import for the renamed modal
+import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal"; 
 
 const Materials = () => {
   const [materials, setMaterials] = useState([]);
@@ -13,9 +13,9 @@ const Materials = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newMaterial, setNewMaterial] = useState({ description: '', unit: '', cost: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true); // Loading state for fetching materials
+  const [loading, setLoading] = useState(true); 
   
-  // Delete confirmation modal state
+  
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [materialToDelete, setMaterialToDelete] = useState(null);
 
@@ -23,18 +23,18 @@ const Materials = () => {
     if (!user || !user.token) return;
 
     const fetchMaterials = async () => {
-      setLoading(true); // Start loading
+      setLoading(true); 
       try {
         const response = await axios.get(`http://localhost:4000/api/materials`, {
           headers: {
-            Authorization: `Bearer ${user.token}`, // Corrected this part
+            Authorization: `Bearer ${user.token}`, 
           },
         });
         setMaterials(response.data);
       } catch (error) {
         console.error('Error fetching materials:', error.response?.data || error.message);
       } finally {
-        setLoading(false); // Stop loading when request completes
+        setLoading(false); 
       }
     };
 
@@ -50,14 +50,14 @@ const Materials = () => {
     try {
       const updatedMaterial = { ...editedMaterial };
       
-      // Send the updated material to the API
+      
       await axios.patch(`http://localhost:4000/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
 
-      // Update the materials state with the new data manually
+      
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material._id === id ? { ...material, ...updatedMaterial } : material
@@ -77,7 +77,7 @@ const Materials = () => {
         },
       });
       setMaterials((prevMaterials) => prevMaterials.filter((material) => material._id !== id));
-      setIsConfirmDeleteOpen(false); // Close the modal after deletion
+      setIsConfirmDeleteOpen(false); 
     } catch (error) {
       console.error('Error deleting material:', error);
     }
@@ -99,7 +99,7 @@ const Materials = () => {
 
   const handleCreate = async () => {
     try {
-      // Make sure all fields are filled
+      
       if (!newMaterial.description || !newMaterial.unit || !newMaterial.cost) {
         console.error('All fields are required.');
         return;
@@ -111,10 +111,10 @@ const Materials = () => {
         },
       });
   
-      // Update materials state
+      
       setMaterials((prevMaterials) => [...prevMaterials, response.data]);
-      setNewMaterial({ description: '', unit: '', cost: '' }); // Reset the form fields
-      setIsModalOpen(false); // Close modal after successful creation
+      setNewMaterial({ description: '', unit: '', cost: '' }); 
+      setIsModalOpen(false); 
     } catch (error) {
       console.error('Error creating material:', error.response?.data || error.message);
     }
@@ -122,13 +122,13 @@ const Materials = () => {
 
   const filteredMaterials = filterMaterials();
 
-  // Open the delete confirmation modal
+  
   const openConfirmDeleteModal = (material) => {
     setMaterialToDelete(material);
     setIsConfirmDeleteOpen(true);
   };
 
-  // Handle confirming the delete action
+  
   const confirmDelete = () => {
     if (materialToDelete) {
       handleDelete(materialToDelete._id);
@@ -186,7 +186,7 @@ const Materials = () => {
           </div>
         )}
 
-        {/* Display loading spinner or materials list based on loading state */}
+       
         {loading ? (
           <div className={styles.loadingSpinnerContainer}>
             <div className={styles.spinner}></div>

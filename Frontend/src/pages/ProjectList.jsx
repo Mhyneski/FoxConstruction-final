@@ -7,7 +7,7 @@ import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// Modal Component for creating/editing/viewing project details
+
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
@@ -33,7 +33,7 @@ const LoadingSpinner = () => (
 
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true); 
   const [newProject, setNewProject] = useState({
     name: "",
     user: "",
@@ -42,20 +42,20 @@ const ProjectList = () => {
     floors: [],
     template: "economy",
     timeline: { duration: 0, unit: "months" },
-    location: "", // Added location field for selecting project location
+    location: "", 
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false); // For viewing project details
+  const [showDetailsModal, setShowDetailsModal] = useState(false); 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [users, setUsers] = useState([]);
-  const [locations, setLocations] = useState([]); // For fetching locations
+  const [locations, setLocations] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const { user } = useContext(AuthContext);
 
-  // Function to fetch project details
+  
   const fetchProjectDetails = async (projectId) => {
     try {
       const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
@@ -64,41 +64,44 @@ const ProjectList = () => {
         },
       });
 
-      setSelectedProject(response.data); // This should now contain the updated progress
-      setShowDetailsModal(true); // Show modal
+      setSelectedProject(response.data); 
+      setShowDetailsModal(true); 
     } catch (error) {
       console.error('Error fetching project details:', error);
     }
   };
 
-  // Fetch Projects and Locations
+  
   useEffect(() => {
     if (!user || !user.token) return;
-
+  
     const fetchProjectsAndLocations = async () => {
       try {
-        setIsLoading(true); // Set loading state to true while fetching
-
+        setIsLoading(true); 
+  
         const [projectsResponse, locationsResponse] = await Promise.all([
           axios.get(`http://localhost:4000/api/project/contractor`, {
-            headers: { Authorization: `Bearer ${user.token}` },
+            headers: { Authorization: `Bearer ${user.token}` },  // Include Authorization header
           }),
-          axios.get(`http://localhost:4000/api/locations`), // Fetch locations
+          axios.get(`http://localhost:4000/api/locations`, {
+            headers: { Authorization: `Bearer ${user.token}` },  // Add Authorization header here
+          }),
         ]);
-
+  
         setProjects(projectsResponse.data);
-        setLocations(locationsResponse.data); // Store locations
+        setLocations(locationsResponse.data); 
       } catch (error) {
         console.error("Error fetching projects or locations:", error);
       } finally {
-        setIsLoading(false); // Set loading to false after fetching is done
+        setIsLoading(false); 
       }
     };
-
+  
     fetchProjectsAndLocations();
   }, [user]);
+  
 
-  // Fetch Users for assigning project owners
+ 
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
@@ -112,7 +115,7 @@ const ProjectList = () => {
     }
   };
 
-  // Handle Project Creation
+  
   const handleCreateProject = async () => {
     try {
       if (!["economy", "standard", "premium"].includes(newProject.template)) {
@@ -124,7 +127,7 @@ const ProjectList = () => {
         return;
       }
 
-      // Generate default floors based on numFloors input
+      
       const defaultFloors = Array.from({ length: newProject.numFloors }, (_, i) => ({
         name: `FLOOR ${i + 1}`,
         progress: 0,
@@ -153,7 +156,7 @@ const ProjectList = () => {
     }
   };
 
-  // Handle Project Update
+  
   const handleUpdateProject = async () => {
     try {
       if (!["economy", "standard", "premium"].includes(newProject.template)) {
@@ -188,7 +191,6 @@ const ProjectList = () => {
     }
   };
 
-  // Handle Project Delete
   const handleDeleteProject = async () => {
     try {
       await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
@@ -215,7 +217,7 @@ const ProjectList = () => {
         duration: 0,
         unit: "months",
       },
-      location: "", // Reset location field
+      location: "", 
     });
   };
 
@@ -223,21 +225,21 @@ const ProjectList = () => {
     setIsEditing(true);
     setEditProjectId(project._id);
   
-    // Ensure floors and tasks progress is properly set
+    
     const floorsWithProgress = project.floors.map((floor) => ({
       ...floor,
-      progress: floor.progress || 0, // Ensure progress is set
+      progress: floor.progress || 0, 
       tasks: floor.tasks.map((task) => ({
         ...task,
-        progress: task.progress || 0, // Ensure task progress is set
+        progress: task.progress || 0, 
       })),
     }));
   
-    // Set the project location as well
+    
     setNewProject({ 
       ...project, 
       floors: floorsWithProgress, 
-      location: project.location || "" // Set location from the project data
+      location: project.location || "" 
     });
     setIsModalOpen(true);
   };
@@ -277,7 +279,7 @@ const ProjectList = () => {
     }
   };
 
-  // Handle Floor and Task Management
+ 
   const handleFloorChange = (index, key, value) => {
     if (key === "numFloors") {
       value = Math.max(1, Math.min(5, value));
@@ -338,13 +340,13 @@ const ProjectList = () => {
     setNewProject({ ...newProject, floors: updatedFloors });
   };
 
-  // Function to handle viewing project details
+ 
   const handleViewProjectDetails = (project) => {
-    setSelectedProject(project); // Set the project for which details will be shown
-    setShowDetailsModal(true);   // Show the modal with details
+    setSelectedProject(project); 
+    setShowDetailsModal(true);  
   };
 
-  // Function to generate PDF for the selected project's BOM (client or contractor version)
+  
   const handleGenerateBOMPDF = (version = 'client') => {
     if (!selectedProject || !selectedProject.bom) return;
   
@@ -369,7 +371,6 @@ const ProjectList = () => {
       doc.text(`Project Cost: ${formattedProjectCost}`, 10, 70);
       doc.text(`Labor Cost: ${formattedLaborCost}`, 10, 80);
   
-      // Show high-level material categories for simplicity (e.g., Earthworks, Concrete, Finishing)
       const categories = selectedProject.bom.categories.map(category => ({
         category: category.category.toUpperCase(),
         totalAmount: category.materials.reduce((sum, material) => sum + material.totalAmount, 0),
@@ -386,8 +387,8 @@ const ProjectList = () => {
         body: materials,
         startY: 90,
       });
+  
     } else if (version === 'contractor') {
-      // Add both original and marked-up costs for contractors
       const formattedOriginalProjectCost = `${(selectedProject.bom.originalCosts.totalProjectCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
       const formattedOriginalLaborCost = `${(selectedProject.bom.originalCosts.laborCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
       const formattedMarkedUpProjectCost = `${(selectedProject.bom.markedUpCosts.totalProjectCost || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
@@ -398,7 +399,6 @@ const ProjectList = () => {
       doc.text(`Marked-Up Total Project Cost: ${formattedMarkedUpProjectCost}`, 10, 90);
       doc.text(`Marked-Up Labor Cost: ${formattedMarkedUpLaborCost}`, 10, 100);
   
-      // Show detailed material list for the contractor version
       const allMaterials = selectedProject.bom.categories.reduce((acc, category) => {
         return acc.concat(category.materials);
       }, []);
@@ -419,6 +419,24 @@ const ProjectList = () => {
           body: materials,
           startY: 110,
         });
+  
+        // Add total amount per category for contractor
+        const categories = selectedProject.bom.categories.map(category => ({
+          category: category.category.toUpperCase(),
+          totalAmount: category.materials.reduce((sum, material) => sum + material.totalAmount, 0),
+        }));
+  
+        const categoryTotals = categories.map((category, index) => [
+          index + 1,
+          category.category,
+          `${category.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+        ]);
+  
+        doc.autoTable({
+          head: [['#', 'Category', 'Total Amount (₱)']],
+          body: categoryTotals,
+          startY: doc.lastAutoTable.finalY + 10,  // Start after the previous table
+        });
       } else {
         doc.text("No materials found for this project.", 10, 110);
       }
@@ -426,6 +444,7 @@ const ProjectList = () => {
   
     doc.save(`BOM_${selectedProject.name}_${version}.pdf`);
   };
+  
 
   const filterProjects = () => {
     if (!searchTerm) return projects;
@@ -444,9 +463,9 @@ const ProjectList = () => {
       <div className={styles.locationsContainer}>
         <h2 className={styles.heading}>Projects</h2>
 
-        {/* Check if loading */}
+        
         {isLoading ? (
-          <LoadingSpinner /> // Show spinner while loading
+          <LoadingSpinner /> 
         ) : (
           <>
             <div className={styles.searchBarContainer}>
@@ -752,7 +771,7 @@ const ProjectList = () => {
             <p><strong>Location:</strong> {selectedProject.location || 'N/A'}</p>
             <p><strong>Markup:</strong> {locations.find(loc => loc.name === selectedProject.location)?.markup || 'N/A'}%</p>
 
-            {/* Conditionally render the BOM download buttons */}
+            
             {selectedProject.bom && (
               <>
                 <button className={styles.downloadButton} onClick={() => handleGenerateBOMPDF('client')}>

@@ -4,35 +4,41 @@ import styles from '../css/Accounts.module.css';
 import axios from 'axios';
 import { useSignup } from "../hooks/useSignup";
 import ConfirmModal from '../components/ConfirmModal';
+import { useAuthContext } from '../hooks/useAuthContext'; // Import the useAuthContext hook
 
 const Accounts = () => {
   const [formData, setFormData] = useState({ Username: '', role: '' });
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]); // State for filtered users
-  const [searchQuery, setSearchQuery] = useState(""); // Search query state
+  const [filteredUsers, setFilteredUsers] = useState([]); 
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { signup, isLoading, error, success } = useSignup();
-  const [filterRole, setFilterRole] = useState("All"); // State to track the selected filter
-  const [loading, setLoading] = useState(true); // Loading state for fetching users
+  const [filterRole, setFilterRole] = useState("All"); 
+  const [loading, setLoading] = useState(true); 
+  const { user } = useAuthContext(); // Get the logged-in user from AuthContext
 
   // Fetch users on initial mount
   useEffect(() => {
     const fetchUsers = async () => {
-      setLoading(true); // Start loading
+      if (!user || !user.token) return;
+      setLoading(true); 
       try {
-        const response = await axios.get(`http://localhost:4000/api/user`);
+        const response = await axios.get(`http://localhost:4000/api/user`, {
+          headers: { Authorization: `Bearer ${user.token}` },  // Include Authorization header
+        });
+
         setUsers(response.data);
-        setFilteredUsers(response.data); // Initialize filtered users
+        setFilteredUsers(response.data); 
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {
-        setLoading(false); // Stop loading when request completes
+        setLoading(false); 
       }
     };
     fetchUsers();
-  }, []);
+  }, [user]);
 
   // Filter users based on search query
   useEffect(() => {
@@ -50,19 +56,19 @@ const Accounts = () => {
       const result = await signup(formData.Username, "12345678", formData.role);
       
       if (result && result.user) {
-        // Add the new user to the users state
+        
         const updatedUsers = [...users, result.user];
         setUsers(updatedUsers);
   
-        // Update filtered users to include the newly added user
+       
         setFilteredUsers(updatedUsers.filter(user =>
           user.Username.toLowerCase().includes(searchQuery.toLowerCase())
         ));
   
-        // Close the modal after creation
+       
         setShowCreateModal(false);
         
-        // Reset the form data
+        
         setFormData({ Username: '', role: '' });
       }
     } catch (err) {
@@ -72,7 +78,7 @@ const Accounts = () => {
 
   // Filter users by role
   const filterByRole = (role) => {
-    setFilterRole(role); // Track the current filter for the heading
+    setFilterRole(role); 
     const filtered = role === 'All' ? users : users.filter(user => user.role === role);
     setFilteredUsers(filtered);
   };
@@ -86,7 +92,7 @@ const Accounts = () => {
   const handleConfirmReset = async () => {
     try {
       await axios.patch(`http://localhost:4000/api/user/reset-password/${selectedUserId}`);
-      // Update the user's forgotPassword status to false after resetting the password
+     
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user._id === selectedUserId ? { ...user, forgotPassword: false } : user
@@ -114,7 +120,7 @@ const Accounts = () => {
           type="text" 
           placeholder="Search by Username..." 
           value={searchQuery} 
-          onChange={(e) => setSearchQuery(e.target.value)} // Update search query on input change
+          onChange={(e) => setSearchQuery(e.target.value)} 
           className={styles.searchBar}
         />
         <button onClick={() => setShowCreateModal(true)} className={styles.openModalButton}>Create Account</button>

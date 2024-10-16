@@ -1,4 +1,4 @@
-/* Styles for the form */
+
 .form {
   max-width: 600px;
   margin: 20px auto;
@@ -45,7 +45,7 @@
   font-size: 14px;
 }
 
-/* Styles for the BOM container */
+
 .bomContainer {
   margin: 20px;
   padding: 15px;
@@ -53,8 +53,8 @@
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-height: 500px; /* Limit the height */
-  overflow-y: auto; /* Enable scrolling when content exceeds height */
+  max-height: 500px; 
+  overflow-y: auto; 
 }
 
 .bomContainer h2,
@@ -68,7 +68,6 @@
   margin: 5px 0;
 }
 
-/* Header container for button */
 .headerContainer {
   display: flex;
   justify-content: space-between;
@@ -91,17 +90,17 @@
   background-color: #0056b3;
 }
 
-/* Project and Cost Details side by side */
+
 .detailsContainer {
   display: flex;
   justify-content: space-between;
   gap: 20px;
   margin-top: 20px;
   margin-bottom: 20px;
-  flex-wrap: wrap; /* Ensure contents adjust for screen size */
+  flex-wrap: wrap; 
 }
 
-/* Project and Cost details styling */
+
 .projectDetails, .costDetails {
   flex: 1;
   padding: 20px;
@@ -120,24 +119,24 @@
   margin: 5px 0;
 }
 
-/* Scrollable table container styling */
+
 .scrollableTableContainer {
   width: 100%;
-  overflow-x: auto;  /* Allows horizontal scrolling */
-  overflow-y: auto;  /* Allows vertical scrolling if needed */
+  overflow-x: auto;  
+  overflow-y: auto;  
   margin-top: 20px;
   border: 1px solid #ccc;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  max-height: 250px; /* Reduced max height to fit better on screen */
+  max-height: 250px; 
 }
 
-/* Styles for the materials table */
+
 .materialsTable {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;  /* Set a larger min-width to allow horizontal scrolling */
+  min-width: 1200px;  
 }
 
 .materialsTable th,
@@ -212,19 +211,18 @@
 .bomContainer li strong {
   font-size: 14px;
   display: inline-block;
-  width: 150px; /* Ensures label width is consistent */
+  width: 150px; 
   color: #555;
 }
 
 .bomContainer li:nth-child(odd) {
-  background-color: #f0f0f0; /* Different color for odd items */
+  background-color: #f0f0f0; 
 }
 
 .bomContainer li:nth-child(even) {
-  background-color: #fff; /* Default background for even items */
+  background-color: #fff; 
 }
 
-/* Save BOM Button */
 .saveBOMButton {
   display: block;
   width: 100%;
@@ -243,7 +241,6 @@
   background-color: #218838;
 }
 
-/* Replace Button Styling (same as Edit button or openModalButton) */
 .replaceButton {
   background-color: #007bff;
   color: white;
