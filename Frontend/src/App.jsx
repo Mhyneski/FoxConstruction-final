@@ -15,7 +15,7 @@ import Services from './pages/Services';
 import Contacts from './pages/Contacts';
 import Unauthorized from './pages/Unauthorized'; // Create this page to show unauthorized access
 import ProtectedRoute from './components/ProtectedRoute';
-import AboutUs from './pages/aboutUs';
+import AboutUs from './pages/AboutUs';
 
 function App() {
 
