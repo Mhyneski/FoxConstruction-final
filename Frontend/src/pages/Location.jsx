@@ -101,7 +101,7 @@ const Location = () => {
         return;
       }
 
-      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/location`, newLocation, {
+      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/locations`, newLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

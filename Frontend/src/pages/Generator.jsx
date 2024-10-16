@@ -1,3 +1,4 @@
+import React from 'react';
   import { useState, useContext, useEffect } from 'react';
   import Axios from 'axios';
   import Navbar from "../components/Navbar";
@@ -11,13 +12,17 @@
     const [searchTerm, setSearchTerm] = useState("");
   
     useEffect(() => {
-      if (isOpen && user && user.token) {  // Ensure the token is available
+      console.log('Modal open state:', isOpen); // Check if modal is open
+      console.log('User token:', user ? user.token : 'No user token'); // Check if the token exists
+    
+      if (isOpen && user && user.token) {
         Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
           headers: {
             Authorization: `Bearer ${user.token}`,  // Include the token in the request headers
           },
         })
         .then((response) => {
+          console.log('Materials fetched:', response.data);  // Log the response data to inspect
           setMaterials(response.data); 
           setFilteredMaterials(response.data); 
         })
@@ -25,18 +30,22 @@
           console.error('Error fetching materials:', error);
         });
       }
-    }, [isOpen, user]);  // Also include 'user' as a dependency
+    }, [isOpen, user]);
+    
+      // Also include 'user' as a dependency
   
-    useEffect(() => {
-      if (searchTerm === "") {
-        setFilteredMaterials(materials);
-      } else {
-        const filtered = materials.filter((material) =>
-          (material.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredMaterials(filtered);
-      }
-    }, [searchTerm, materials]);
+      useEffect(() => {
+        if (searchTerm === "") {
+          setFilteredMaterials(materials);
+        } else {
+          const filtered = materials.filter((material) =>
+            (material.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+          );
+          console.log('Filtered materials:', filtered);  // Log filtered materials for debugging
+          setFilteredMaterials(filtered);
+        }
+      }, [searchTerm, materials]);
+      
   
     return isOpen ? (
       <div className={styles.modalOverlay}>
@@ -50,21 +59,23 @@
             className={styles.searchInput}
           />
           <div className={styles.materialList}>
-            {filteredMaterials.length > 0 ? (
-              filteredMaterials.map((material) => (
-                <div
-                  key={material._id}
-                  className={styles.materialItem}
-                  style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
-                  onClick={() => onMaterialSelect(material)}
-                >
-                  <p><strong>{material.description || 'No Description Available'}</strong></p>
-                  <p>Cost: ₱{material.cost.toFixed(2)}</p>
-                </div>
-              ))
-            ) : (
-              <p>No materials found</p>
-            )}
+          {filteredMaterials.length > 0 ? (
+  filteredMaterials.map((material) => (
+    <div
+      key={material._id || index}  // Use material._id or index as a fallback
+      className={styles.materialItem}
+      style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
+      onClick={() => onMaterialSelect(material)}
+    >
+      <p><strong>{material.description || 'No Description Available'}</strong></p>
+      <p>Cost: ₱{material.cost.toFixed(2)}</p>
+    </div>
+  ))
+) : (
+  <p>No materials found</p>
+)}
+
+
           </div>
   
           <button onClick={onClose} className={styles.closeButton}>Cancel</button>
@@ -612,27 +623,27 @@
         </tr>
       </thead>
       <tbody>
-        {bom.categories.map((categoryData, categoryIndex) => (
-          <>
-            {categoryData.materials.map((material, index) => (
-              <tr key={`${categoryData.category}-${index}`}>
-                <td>{categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}</td>
-                <td>{material.item || 'N/A'}</td>
-                <td>{material.description || 'N/A'}</td>
-                <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
-                <td>{material.cost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.cost) : 'N/A'}</td>
-                <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
-                <td><button className={styles.replaceButton} onClick={() => handleReplaceClick(material)}>Replace</button></td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan="5" style={{ textAlign: 'right' }}><strong>Total for {categoryData.category.toUpperCase()}:</strong></td>
-              <td><strong>{new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(categoryData.categoryTotal)}</strong></td>
-              <td></td>
-            </tr>
-          </>
-        ))}
-      </tbody>
+  {bom.categories.map((categoryData, categoryIndex) => (
+    <React.Fragment key={categoryIndex}> {/* Ensure unique key for each category */}
+      {categoryData.materials.map((material, index) => (
+        <tr key={`${categoryData.category}-${material._id || index}`}> {/* Ensure unique key for each material */}
+          <td>{categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}</td>
+          <td>{material.item || 'N/A'}</td>
+          <td>{material.description || 'N/A'}</td>
+          <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
+          <td>{material.cost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.cost) : 'N/A'}</td>
+          <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
+          <td><button className={styles.replaceButton} onClick={() => handleReplaceClick(material)}>Replace</button></td>
+        </tr>
+      ))}
+      <tr>
+        <td colSpan="5" style={{ textAlign: 'right' }}><strong>Total for {categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}:</strong></td>
+        <td><strong>{new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(categoryData.categoryTotal)}</strong></td>
+        <td></td>
+      </tr>
+    </React.Fragment>
+  ))}
+</tbody>
     </table>
   </div>
 ) : (
@@ -647,12 +658,14 @@
           </div>
         )}
 
-        <MaterialSearchModal
-          isOpen={materialModalOpen}
-          onClose={() => setMaterialModalOpen(false)}
-          onMaterialSelect={handleMaterialSelect}
-          materialToReplace={materialToReplace}
-        />
+<MaterialSearchModal
+  isOpen={materialModalOpen}
+  onClose={() => setMaterialModalOpen(false)}
+  onMaterialSelect={handleMaterialSelect}
+  materialToReplace={materialToReplace}
+  user={user} // Pass the user object here
+/>
+
       </>
     );
   };
