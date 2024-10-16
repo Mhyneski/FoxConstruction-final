@@ -90,11 +90,23 @@ const Accounts = () => {
   };
 
   const handleConfirmReset = async () => {
+    if (!user || !user.token) {
+      console.error("Authorization token is missing.");
+      return;
+    }
+  
     try {
-      await axios.patch(`https://foxconstruction-final.onrender.com/api/user/reset-password/${selectedUserId}`);
-     
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
+      await axios.patch(
+        `https://foxconstruction-final.onrender.com/api/user/reset-password/${selectedUserId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` }, // Include the token in headers
+        }
+      );
+  
+      // Update the user list after successful reset
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
           user._id === selectedUserId ? { ...user, forgotPassword: false } : user
         )
       );
@@ -105,6 +117,7 @@ const Accounts = () => {
       console.error("Error resetting password:", error);
     }
   };
+  
 
   const handleCancelReset = () => {
     setShowConfirmModal(false);

@@ -11,19 +11,22 @@
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-      if (isOpen) {
-        
-        Axios.get('https://foxconstruction-final.onrender.com/api/materials')
-          .then((response) => {
-            setMaterials(response.data); 
-            setFilteredMaterials(response.data); 
-          })
-          .catch((error) => {
-            console.error('Error fetching materials:', error);
-          });
+      if (isOpen && user && user.token) {  // Ensure the token is available
+        Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,  // Include the token in the request headers
+          },
+        })
+        .then((response) => {
+          setMaterials(response.data); 
+          setFilteredMaterials(response.data); 
+        })
+        .catch((error) => {
+          console.error('Error fetching materials:', error);
+        });
       }
-    }, [isOpen]);
-
+    }, [isOpen, user]);  // Also include 'user' as a dependency
+    
     
     useEffect(() => {
       if (searchTerm === "") {
