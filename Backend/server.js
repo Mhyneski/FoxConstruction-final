@@ -23,7 +23,11 @@ app.use((req, res, next) => {
 
 // Enable CORS
 app.use(cors({
-  origin: 'https://foxconstructionsite.netlify.app', // Your frontend URL
+  origin: 'https://foxconsturctionsite.netlify.app', // Your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  optionsSuccessStatus: 200, // For legacy browsers (IE11, etc.) that handle preflight requests incorrectly
 }));
 
 // Apply authMiddleware and authorizeRoles only for protected routes
