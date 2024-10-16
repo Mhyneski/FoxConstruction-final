@@ -38,34 +38,41 @@ const Login = () => {
       </div>
 
       <div className={styles.form1}>
-        <form onSubmit={handleSubmit}>
-          <label>Username</label>
-          <input
-            type="text"
-            onChange={(e) => setUsername(e.target.value)}
-            value={Username}
-            placeholder="enter your username"
-            required
-          />
-          <label>Password</label>
-          <input
-            type={showPassword ? "text" : "password"} // Toggles between text and password
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
-            placeholder="enter your password"
-            required
-          />
-          <label>
+        {isLoading ? (
+          <div className={styles.loadingSpinnerContainer}>
+            <div className={styles.spinner}></div>
+            <p>Logging in, please wait...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <label>Username</label>
             <input
-              type="checkbox"
-              checked={showPassword}
-              onChange={() => setShowPassword(!showPassword)}
-            />{" "}
-            Show Password
-          </label>
-          <a href="#" onClick={handleForgotPassword}>Forgot password</a>
-          <button type="submit" disabled={isLoading}>LOG IN</button>
-        </form>
+              type="text"
+              onChange={(e) => setUsername(e.target.value)}
+              value={Username}
+              placeholder="enter your username"
+              required
+            />
+            <label>Password</label>
+            <input
+              type={showPassword ? "text" : "password"} // Toggles between text and password
+              onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              placeholder="enter your password"
+              required
+            />
+            <label>
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+              />{" "}
+              Show Password
+            </label>
+            <a href="#" onClick={handleForgotPassword}>Forgot password</a>
+            <button type="submit" disabled={isLoading}>LOG IN</button>
+          </form>
+        )}
         {error && <p className={styles.error1}>{error}</p>}
       </div>
     </div>

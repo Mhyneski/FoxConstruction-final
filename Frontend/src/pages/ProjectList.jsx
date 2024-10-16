@@ -23,8 +23,17 @@ const Modal = ({ isOpen, onClose, children }) => {
   );
 };
 
+// Loading Spinner Component
+const LoadingSpinner = () => (
+  <div className={styles.loadingSpinnerContainer}>
+    <div className={styles.spinner}></div>
+    <p>Please wait, fetching projects...</p>
+  </div>
+);
+
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
   const [newProject, setNewProject] = useState({
     name: "",
     user: "",
@@ -68,6 +77,8 @@ const ProjectList = () => {
 
     const fetchProjectsAndLocations = async () => {
       try {
+        setIsLoading(true); // Set loading state to true while fetching
+
         const [projectsResponse, locationsResponse] = await Promise.all([
           axios.get(`http://localhost:4000/api/project/contractor`, {
             headers: { Authorization: `Bearer ${user.token}` },
@@ -79,6 +90,8 @@ const ProjectList = () => {
         setLocations(locationsResponse.data); // Store locations
       } catch (error) {
         console.error("Error fetching projects or locations:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching is done
       }
     };
 
@@ -228,7 +241,6 @@ const ProjectList = () => {
     });
     setIsModalOpen(true);
   };
-  
 
   const handleDeleteClick = (project) => {
     setSelectedProject(project);
@@ -414,8 +426,6 @@ const ProjectList = () => {
   
     doc.save(`BOM_${selectedProject.name}_${version}.pdf`);
   };
-  
-  
 
   const filterProjects = () => {
     if (!searchTerm) return projects;
@@ -433,87 +443,95 @@ const ProjectList = () => {
       <Navbar />
       <div className={styles.locationsContainer}>
         <h2 className={styles.heading}>Projects</h2>
-        <div className={styles.searchBarContainer}>
-          <input
-            type="text"
-            placeholder="Search project list"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              resetProjectForm();
-              setIsModalOpen(true);
-            }}
-            className={styles.createButton}
-          >
-            + Create Project
-          </button>
-        </div>
-        <p className={styles.locationCount}>
-          Total Projects: {filteredProjects.length}
-        </p>
 
-        {/* Projects Table */}
-        <div className={styles.scrollableTableContainer}>
-          <table className={styles.locationsTable}>
-            <thead>
-              <tr>
-                <th>Project Name</th>
-                <th>Project Owner</th>
-                <th>Project Contractor</th>
-                <th>Date Created</th>
-                <th>Cost Tier</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProjects.map((project) => (
-                <tr key={project._id}>
-                  <td onClick={() => handleViewProjectDetails(project)}>{project.name}</td>
-                  <td onClick={() => handleViewProjectDetails(project)}>{project.user}</td>
-                  <td onClick={() => handleViewProjectDetails(project)}>{project.contractor}</td>
-                  <td onClick={() => handleViewProjectDetails(project)}>
-                    {new Date(project.createdAt).toLocaleDateString()}
-                  </td>
-                  <td>
-                    {project.template.charAt(0).toUpperCase() +
-                      project.template.slice(1)}
-                  </td>
-                  <td>{project.status}</td>
-                  <td>
-                    <button
-                      onClick={() => handleEditProject(project)}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleUpdateStatus(
-                          project._id,
-                          project.status === "ongoing" ? "finished" : "ongoing"
-                        )
-                      }
-                      className={styles.editButton}
-                    >
-                      Mark as {project.status === "ongoing" ? "Finished" : "Ongoing"}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(project)}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Check if loading */}
+        {isLoading ? (
+          <LoadingSpinner /> // Show spinner while loading
+        ) : (
+          <>
+            <div className={styles.searchBarContainer}>
+              <input
+                type="text"
+                placeholder="Search project list"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={styles.searchInput}
+              />
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  resetProjectForm();
+                  setIsModalOpen(true);
+                }}
+                className={styles.createButton}
+              >
+                + Create Project
+              </button>
+            </div>
+            <p className={styles.locationCount}>
+              Total Projects: {filteredProjects.length}
+            </p>
+
+            {/* Projects Table */}
+            <div className={styles.scrollableTableContainer}>
+              <table className={styles.locationsTable}>
+                <thead>
+                  <tr>
+                    <th>Project Name</th>
+                    <th>Project Owner</th>
+                    <th>Project Contractor</th>
+                    <th>Date Created</th>
+                    <th>Cost Tier</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProjects.map((project) => (
+                    <tr key={project._id}>
+                      <td onClick={() => handleViewProjectDetails(project)}>{project.name}</td>
+                      <td onClick={() => handleViewProjectDetails(project)}>{project.user}</td>
+                      <td onClick={() => handleViewProjectDetails(project)}>{project.contractor}</td>
+                      <td onClick={() => handleViewProjectDetails(project)}>
+                        {new Date(project.createdAt).toLocaleDateString()}
+                      </td>
+                      <td>
+                        {project.template.charAt(0).toUpperCase() +
+                          project.template.slice(1)}
+                      </td>
+                      <td>{project.status}</td>
+                      <td>
+                        <button
+                          onClick={() => handleEditProject(project)}
+                          className={styles.editButton}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleUpdateStatus(
+                              project._id,
+                              project.status === "ongoing" ? "finished" : "ongoing"
+                            )
+                          }
+                          className={styles.editButton}
+                        >
+                          Mark as {project.status === "ongoing" ? "Finished" : "Ongoing"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(project)}
+                          className={styles.deleteButton}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
         {/* Modal for Create/Edit Project */}
         {isModalOpen && (

@@ -15,16 +15,20 @@ const Accounts = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { signup, isLoading, error, success } = useSignup();
   const [filterRole, setFilterRole] = useState("All"); // State to track the selected filter
+  const [loading, setLoading] = useState(true); // Loading state for fetching users
 
   // Fetch users on initial mount
   useEffect(() => {
     const fetchUsers = async () => {
+      setLoading(true); // Start loading
       try {
         const response = await axios.get(`http://localhost:4000/api/user`);
         setUsers(response.data);
         setFilteredUsers(response.data); // Initialize filtered users
       } catch (error) {
         console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false); // Stop loading when request completes
       }
     };
     fetchUsers();
@@ -124,6 +128,54 @@ const Accounts = () => {
         <button onClick={() => filterByRole('All')} className={styles.filterButton}>Show All</button>
       </div>
 
+      {/* Display loading spinner or user list based on loading state */}
+      {loading ? (
+        <div className={styles.loadingSpinnerContainer}>
+          <div className={styles.spinner}></div>
+          <p>Loading accounts...</p>
+        </div>
+      ) : (
+        <>
+          {/* User List */}
+          <div className={styles.userList}>
+            <h2 className={styles.centeredTitle}>{filteredUsers.length} {filterRole === 'All' ? 'Accounts' : `${filterRole}s`}</h2>
+            <div className={styles.scrollableTableContainer}>
+              <table className={styles.userTable}>
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Forgot Password</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map(user => (
+                    <tr key={user._id}>
+                      <td>{user.Username}</td>
+                      <td>{user.role}</td>
+                      <td
+                        style={{
+                          backgroundColor: user.forgotPassword ? 'red' : 'transparent',
+                          color: user.forgotPassword ? 'white' : 'black',
+                        }}
+                      >
+                        {user.forgotPassword ? 'Requested' : 'No'}
+                      </td>
+                      <td>
+                        <button onClick={() => handleResetPasswordClick(user._id)} className={styles.resetButton}>
+                          Reset Password
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Create Account Modal */}
       {showCreateModal && (
         <div className={styles.modalOverlay}>
@@ -164,44 +216,6 @@ const Accounts = () => {
           </div>
         </div>
       )}
-
-      {/* User List */}
-      <div className={styles.userList}>
-        <h2 className={styles.centeredTitle}>{filteredUsers.length} {filterRole === 'All' ? 'Accounts' : `${filterRole}s`}</h2>
-        <div className={styles.scrollableTableContainer}>
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Forgot Password</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user._id}>
-                  <td>{user.Username}</td>
-                  <td>{user.role}</td>
-                  <td
-                    style={{
-                      backgroundColor: user.forgotPassword ? 'red' : 'transparent',
-                      color: user.forgotPassword ? 'white' : 'black',
-                    }}
-                  >
-                    {user.forgotPassword ? 'Requested' : 'No'}
-                  </td>
-                  <td>
-                    <button onClick={() => handleResetPasswordClick(user._id)} className={styles.resetButton}>
-                      Reset Password
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {/* Confirm Reset Password Modal */}
       <ConfirmModal 

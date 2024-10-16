@@ -2,6 +2,53 @@ const { default: mongoose } = require('mongoose');
 const Project = require('../models/projectModel');
 const User = require('../models/usersModel');
 
+// Distribute task progress based on floor progress
+const distributeTaskProgress = (floorProgress, numTasks) => {
+  if (numTasks === 0) return []; // If no tasks, return an empty array
+  const progressPerTask = floorProgress / numTasks;  // Distribute floor progress across tasks
+  let taskProgress = new Array(numTasks).fill(0).map(() => Math.round(progressPerTask));  // Assign progress to each task, rounded
+  return taskProgress;
+};
+
+// Distribute floor progress
+const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysElapsed) => {
+  let floorsProgress = new Array(numFloors).fill(0);
+  const progressPerFloor = 100 / numFloors;  // Each floor gets an equal share of total progress
+
+  for (let i = 0; i < numFloors; i++) {
+    const daysForFloor = (timelineInDays / numFloors) * (i + 1);  // Days allocated for each floor
+
+    if (daysElapsed >= daysForFloor) {
+      floorsProgress[i] = progressPerFloor;
+    } else if (daysElapsed >= (timelineInDays / numFloors) * i) {
+      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * progressPerFloor;
+      floorsProgress[i] = Math.min(floorProgress, progressPerFloor);  
+    }
+
+    // Round progress to 0 decimal places (integer value)
+    floorsProgress[i] = Math.round(floorsProgress[i]);
+  }
+
+  return floorsProgress;
+};
+
+// Calculate project-level progress
+const calculateProgress = (createdAt, timeline) => {
+  const currentDate = new Date();
+  const start = new Date(createdAt);
+
+  const timelineInDays = timeline.unit === 'weeks'
+    ? timeline.duration * 7
+    : timeline.duration * 30;  // Assuming 30 days for months
+
+  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
+
+  // Round progress to the nearest whole number
+  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100);
+
+  return Math.round(progress);  // Return progress as a whole number
+};
+
 // Get projects for a specific contractor
 const getProjectsByContractor = async (req, res) => {
   const contractorUsername = req.user.Username;
@@ -15,14 +62,35 @@ const getProjectsByContractor = async (req, res) => {
       .populate('location')  // Make sure to populate location if using refs
       .sort({ createdAt: -1 });
 
+    // Calculate and update progress for each project
+    projects.forEach((project) => {
+      const totalProgress = calculateProgress(project.createdAt, project.timeline);
+      const updatedFloorsProgress = distributeFloorProgress(
+        totalProgress,
+        project.floors.length,
+        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
+        Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
+      );
+
+      project.floors.forEach((floor, index) => {
+        floor.progress = updatedFloorsProgress[index];
+
+        // Distribute progress to tasks
+        const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+        floor.tasks.forEach((task, taskIndex) => {
+          task.progress = updatedTaskProgress[taskIndex];
+        });
+      });
+
+      // Optionally, save the updated progress to the database if necessary:
+      // await project.save();
+    });
+
     res.status(200).json(projects);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
 
 // Create a new project
 const createProject = async (req, res) => {
@@ -73,7 +141,6 @@ const createProject = async (req, res) => {
   }
 };
 
-
 // Get all projects
 const getProject = async (req, res) => {
   try {
@@ -97,6 +164,30 @@ const getProjectForUser = async (req, res) => {
     if (!projects.length) {
       return res.status(404).json({ message: 'No projects found for this user.' });
     }
+
+    // Calculate and update progress for each project
+    projects.forEach((project) => {
+      const totalProgress = calculateProgress(project.createdAt, project.timeline);
+      const updatedFloorsProgress = distributeFloorProgress(
+        totalProgress,
+        project.floors.length,
+        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
+        Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
+      );
+
+      project.floors.forEach((floor, index) => {
+        floor.progress = updatedFloorsProgress[index];
+
+        // Distribute progress to tasks
+        const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+        floor.tasks.forEach((task, taskIndex) => {
+          task.progress = updatedTaskProgress[taskIndex];
+        });
+      });
+
+      // Optionally, save the updated progress to the database if necessary:
+      // await project.save();
+    });
 
     res.status(200).json(projects);
   } catch (error) {
@@ -124,10 +215,11 @@ const updateFloorProgress = async (req, res) => {
 
     // Round and update the progress value before saving it
     floor.progress = Math.round(progress);
-    
-    // If tasks exist, we can also calculate task-level progress if needed
-    floor.tasks.forEach(task => {
-      task.progress = Math.round(task.progress);
+
+    // Distribute floor progress to tasks
+    const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+    floor.tasks.forEach((task, index) => {
+      task.progress = updatedTaskProgress[index];
     });
 
     await project.save();
@@ -138,46 +230,7 @@ const updateFloorProgress = async (req, res) => {
   }
 };
 
-
-const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysElapsed) => {
-  let floorsProgress = new Array(numFloors).fill(0);
-  const progressPerFloor = 100 / numFloors;  // Each floor gets an equal share of total progress
-
-  for (let i = 0; i < numFloors; i++) {
-    const daysForFloor = (timelineInDays / numFloors) * (i + 1);  // Days allocated for each floor
-    
-    if (daysElapsed >= daysForFloor) {
-      // If days elapsed are more than required for this floor, it's fully completed
-      floorsProgress[i] = progressPerFloor;
-    } else if (daysElapsed >= (timelineInDays / numFloors) * i) {
-      // Calculate partial progress for the current floor
-      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * progressPerFloor;
-      floorsProgress[i] = Math.min(floorProgress, progressPerFloor);  // Cap the progress at the floor's share
-    }
-  }
-
-  return floorsProgress;
-};
-
-
-// Calculate progress based on project start date and timeline
-const calculateProgress = (createdAt, timeline) => {
-  const currentDate = new Date();
-  const start = new Date(createdAt);
-  
-  const timelineInDays = timeline.unit === 'weeks'
-    ? timeline.duration * 7
-    : timeline.duration * 30;  // Assuming 30 days for months
-
-  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
-
-  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100); // Ensure max progress is 100%
-
-  return Math.round(progress);  // Return progress as a whole number
-};
-
-
-// Get project by ID
+// Get project by ID and update progress
 const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
@@ -200,6 +253,12 @@ const getProjectById = async (req, res) => {
     // Update each floor's progress
     project.floors.forEach((floor, index) => {
       floor.progress = updatedFloorsProgress[index];
+
+      // Distribute progress to tasks
+      const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+      floor.tasks.forEach((task, taskIndex) => {
+        task.progress = updatedTaskProgress[taskIndex];
+      });
     });
 
     // Save updated project with recalculated floor progress
@@ -212,8 +271,6 @@ const getProjectById = async (req, res) => {
     res.status(500).json({ message: 'Error fetching project' });
   }
 };
-
-
 
 // Update project progress and tasks
 const updateProject = async (req, res) => {
@@ -269,10 +326,9 @@ const updateProject = async (req, res) => {
     await project.save();
     res.status(200).json(project);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update project.", details: error.message });
+    res.status500.json({ error: "Failed to update project.", details: error.message });
   }
 };
-
 
 // Delete a project
 const deleteProject = async (req, res) => {
@@ -351,8 +407,6 @@ const saveBOMToProject = async (req, res) => {
     res.status(500).json({ error: 'Failed to save BOM to project', details: error.message });
   }
 };
-
-
 
 module.exports = {
   getProjectsByContractor,

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import styles from '../css/Location.module.css';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
+import LocationDeleteModal from "../components/LocationDeleteModal"; // Import the delete modal
 
 const Location = () => {
   const [locations, setLocations] = useState([]);
@@ -12,7 +13,10 @@ const Location = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newLocation, setNewLocation] = useState({ name: '', markup: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
+  // Delete confirmation modal state
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [locationToDelete, setLocationToDelete] = useState(null);
 
   // Fetch all locations on component mount
   useEffect(() => {
@@ -70,6 +74,7 @@ const Location = () => {
         },
       });
       setLocations((prevLocations) => prevLocations.filter((location) => location._id !== id));
+      setIsConfirmDeleteOpen(false); // Close the modal after deletion
     } catch (error) {
       console.error('Error deleting location:', error);
     }
@@ -113,6 +118,19 @@ const Location = () => {
 
   const filteredLocations = filterLocations();
 
+  // Open the delete confirmation modal
+  const openConfirmDeleteModal = (location) => {
+    setLocationToDelete(location);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  // Handle confirming the delete action
+  const confirmDelete = () => {
+    if (locationToDelete) {
+      handleDelete(locationToDelete._id);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -128,9 +146,8 @@ const Location = () => {
         <p className={styles.locationCount}>Total Locations: {filteredLocations.length}</p>
 
         <button onClick={() => setIsModalOpen(true)} className={styles.createLocationButton}>
-  + Create New Location
-</button>
-
+          + Create New Location
+        </button>
 
         {isModalOpen && (
           <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
@@ -206,7 +223,7 @@ const Location = () => {
                         Edit
                       </button>
                     )}
-                    <button onClick={() => handleDelete(location._id)} className={styles.deleteButton}>
+                    <button onClick={() => openConfirmDeleteModal(location)} className={styles.deleteButton}>
                       Delete
                     </button>
                   </td>
@@ -215,6 +232,14 @@ const Location = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Confirm Delete Modal */}
+        <LocationDeleteModal
+          isOpen={isConfirmDeleteOpen}
+          onClose={() => setIsConfirmDeleteOpen(false)}
+          onConfirm={confirmDelete}
+          locationName={locationToDelete?.name}
+        />
       </div>
     </>
   );

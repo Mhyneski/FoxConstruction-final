@@ -3,6 +3,7 @@ import axios from 'axios';
 import styles from '../css/Materials.module.css';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
+import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal"; // Updated import for the renamed modal
 
 const Materials = () => {
   const [materials, setMaterials] = useState([]);
@@ -12,12 +13,17 @@ const Materials = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newMaterial, setNewMaterial] = useState({ description: '', unit: '', cost: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true); // Loading state for fetching materials
   
+  // Delete confirmation modal state
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState(null);
 
   useEffect(() => {
     if (!user || !user.token) return;
 
     const fetchMaterials = async () => {
+      setLoading(true); // Start loading
       try {
         const response = await axios.get(`http://localhost:4000/api/materials`, {
           headers: {
@@ -27,6 +33,8 @@ const Materials = () => {
         setMaterials(response.data);
       } catch (error) {
         console.error('Error fetching materials:', error.response?.data || error.message);
+      } finally {
+        setLoading(false); // Stop loading when request completes
       }
     };
 
@@ -69,6 +77,7 @@ const Materials = () => {
         },
       });
       setMaterials((prevMaterials) => prevMaterials.filter((material) => material._id !== id));
+      setIsConfirmDeleteOpen(false); // Close the modal after deletion
     } catch (error) {
       console.error('Error deleting material:', error);
     }
@@ -112,6 +121,19 @@ const Materials = () => {
   };
 
   const filteredMaterials = filterMaterials();
+
+  // Open the delete confirmation modal
+  const openConfirmDeleteModal = (material) => {
+    setMaterialToDelete(material);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  // Handle confirming the delete action
+  const confirmDelete = () => {
+    if (materialToDelete) {
+      handleDelete(materialToDelete._id);
+    }
+  };
 
   return (
     <>
@@ -164,76 +186,92 @@ const Materials = () => {
           </div>
         )}
 
-<div className={styles.scrollableTableContainer}>
-  <table className={styles.materialsTable}>
-    <thead>
-      <tr>
-        <th>Material</th>
-        <th>Unit</th>
-        <th>Unit Cost</th>
-        <th>Date Created</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filteredMaterials.map((material) => (
-        <tr key={material._id}>
-          <td>
-            {isEditing === material._id ? (
-              <input
-                type="text"
-                value={editedMaterial.description}
-                onChange={(e) => setEditedMaterial({ ...editedMaterial, description: e.target.value })}
-                className={styles.inputField}
-              />
-            ) : (
-              material.Description
-            )}
-          </td>
-          <td>
-            {isEditing === material._id ? (
-              <input
-                type="text"
-                value={editedMaterial.unit}
-                onChange={(e) => setEditedMaterial({ ...editedMaterial, unit: e.target.value })}
-                className={styles.inputField}
-              />
-            ) : (
-              material.unit
-            )}
-          </td>
-          <td>
-            {isEditing === material._id ? (
-              <input
-                type="number"
-                value={editedMaterial.cost}
-                onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: e.target.value })}
-                className={styles.inputField}
-              />
-            ) : (
-              `₱${material.cost}`
-            )}
-          </td>
-          <td>{new Date(material.createdAt).toLocaleDateString()}</td>
-          <td>
-            {isEditing === material._id ? (
-              <button onClick={() => handleSave(material._id)} className={styles.saveButton}>
-                Save
-              </button>
-            ) : (
-              <button onClick={() => handleEdit(material)} className={styles.editButton}>
-                Edit
-              </button>
-            )}
-            <button onClick={() => handleDelete(material._id)} className={styles.deleteButton}>
-              Delete
-            </button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+        {/* Display loading spinner or materials list based on loading state */}
+        {loading ? (
+          <div className={styles.loadingSpinnerContainer}>
+            <div className={styles.spinner}></div>
+            <p>Loading materials...</p>
+          </div>
+        ) : (
+          <div className={styles.scrollableTableContainer}>
+            <table className={styles.materialsTable}>
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Unit</th>
+                  <th>Unit Cost</th>
+                  <th>Date Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMaterials.map((material) => (
+                  <tr key={material._id}>
+                    <td>
+                      {isEditing === material._id ? (
+                        <input
+                          type="text"
+                          value={editedMaterial.description}
+                          onChange={(e) => setEditedMaterial({ ...editedMaterial, description: e.target.value })}
+                          className={styles.inputField}
+                        />
+                      ) : (
+                        material.description
+                      )}
+                    </td>
+                    <td>
+                      {isEditing === material._id ? (
+                        <input
+                          type="text"
+                          value={editedMaterial.unit}
+                          onChange={(e) => setEditedMaterial({ ...editedMaterial, unit: e.target.value })}
+                          className={styles.inputField}
+                        />
+                      ) : (
+                        material.unit
+                      )}
+                    </td>
+                    <td>
+                      {isEditing === material._id ? (
+                        <input
+                          type="number"
+                          value={editedMaterial.cost}
+                          onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: e.target.value })}
+                          className={styles.inputField}
+                        />
+                      ) : (
+                        `₱${material.cost}`
+                      )}
+                    </td>
+                    <td>{new Date(material.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      {isEditing === material._id ? (
+                        <button onClick={() => handleSave(material._id)} className={styles.saveButton}>
+                          Save
+                        </button>
+                      ) : (
+                        <button onClick={() => handleEdit(material)} className={styles.editButton}>
+                          Edit
+                        </button>
+                      )}
+                      <button onClick={() => openConfirmDeleteModal(material)} className={styles.deleteButton}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Confirm Delete Modal */}
+        <ConfirmDeleteMaterialModal
+          isOpen={isConfirmDeleteOpen}
+          onClose={() => setIsConfirmDeleteOpen(false)}
+          onConfirm={confirmDelete}
+          materialDescription={materialToDelete?.description}
+        />
       </div>
     </>
   );

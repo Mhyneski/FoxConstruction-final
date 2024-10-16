@@ -10,6 +10,7 @@ const ProjectProgress = () => {
   const [project, setProject] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -24,6 +25,8 @@ const ProjectProgress = () => {
         setProject(fetchedProject);
       } catch (error) {
         console.error('Error fetching project:', error);
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching
       }
     };
 
@@ -36,8 +39,17 @@ const ProjectProgress = () => {
     setSelectedFloor(selectedFloor === floorId ? null : floorId);
   };
 
+  if (isLoading) {
+    return (
+      <div className={styles.loadingSpinnerContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading project details...</p>
+      </div>
+    );
+  }
+
   if (!project) {
-    return <div className={styles.loading}>Loading...</div>;
+    return <div className={styles.loading}>Project not found.</div>;
   }
 
   // Format the start date (createdAt) in the desired format
@@ -71,9 +83,9 @@ const ProjectProgress = () => {
                 <div className={styles.progressBar}>
                   <div
                     className={styles.progress}
-                    style={{ width: `${floorProgress}%` }}
+                    style={{ width: `${Math.round(floorProgress)}%` }}
                   >
-                    {floorProgress.toFixed(2)}%  
+                    {Math.round(floorProgress)}%  {/* Display integer values */}
                   </div>
                 </div>
               </div>
