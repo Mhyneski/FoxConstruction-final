@@ -38,7 +38,7 @@ router.post('/', createProject);
 // Delete a project
 router.delete('/:id', deleteProject);
 
-// Update a project
+// Update a project   
 router.patch('/:id', updateProject);
 
 // Update floor progress
