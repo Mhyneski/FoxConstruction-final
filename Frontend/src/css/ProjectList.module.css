@@ -277,5 +277,26 @@
   }
 }
 
+/* Status for ongoing projects */
+.ongoingStatus {
+  color: green;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Status for finished projects */
+.finishedStatus {
+  color: red;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-align: center;
+  display: inline-block;
+}
+
+
 
   

@@ -22,7 +22,7 @@ const Login = () => {
     }
     
     try {
-      await axios.patch(`https://foxconstruction-final.onrender.com/api/user/forgot-password/${Username}`);
+      await axios.patch(`http://localhost:4000/api/user/forgot-password/${Username}`);
       alert("Password reset request has been sent.");
     } catch (error) {
       console.error("Error sending password reset request", error);

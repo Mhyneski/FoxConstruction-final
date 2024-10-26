@@ -20,7 +20,7 @@ const Contacts = () => {
             <FaEnvelope /> foxcondesignandbuild@gmail.com
           </div>
           <div className={styles.social}>
-            <FaFacebookF /> Fox Construction
+            <FaFacebookF /> <a href="https://www.facebook.com/foxconst" target="_blank" className={styles.facebook}>Fox Construction</a>
           </div>
         </div>
       </div>

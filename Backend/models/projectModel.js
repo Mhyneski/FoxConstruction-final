@@ -48,25 +48,32 @@ const projectSchema = new Schema({
   },
   floors: [floorSchema],
   timeline: {
-    duration: { type: Number, required: true }, 
-    unit: { type: String, enum: ['weeks', 'months'], required: true } 
+    duration: { type: Number, required: true },
+    unit: { type: String, enum: ['weeks', 'months'], required: true }
   },
   location: {
-    type: String,  
+    type: String,
     required: true
   },
   status: {
     type: String,
     enum: ["ongoing", "finished"],
-    default: "ongoing" 
+    default: "ongoing"
   },
   bom: {
-    type: mongoose.Schema.Types.Mixed, 
+    type: mongoose.Schema.Types.Mixed,
     default: null,
+  },
+  totalArea: {
+    type: Number,
+    required: false
+  },
+  avgFloorHeight: {
+    type: Number,
+    required: false
   }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Project', projectSchema);
 
 
-module.exports = mongoose.model('Project', projectSchema);

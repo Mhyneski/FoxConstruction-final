@@ -1,9 +1,30 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from "../css/Homepage.module.css";
-import Picture from "../assets/IMAGE1.jpg";
-import Hero from "../assets/Heropicture.jpg";
+import HeroVideo from "../assets/Hevabi.mp4";
 
 const Homepage = () => {
+  const [isTextLoaded, setIsTextLoaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Start with muted video
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsTextLoaded(true);
+    }, 100);
+
+    const handleUserInteraction = () => {
+      setIsMuted(false); // Unmute when user interacts
+      document.removeEventListener("click", handleUserInteraction); // Remove listener after first interaction
+    };
+
+    document.addEventListener("click", handleUserInteraction);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleUserInteraction);
+    };
+  }, []);
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -21,22 +42,17 @@ const Homepage = () => {
       </header>
 
       <section className={styles.heroSection}>
-        <img src={Hero} alt="Hero Image" className={styles.heroImage} />
-        <div className={styles.heroText}>
+        <video
+          src={HeroVideo}
+          autoPlay
+          loop
+          muted={isMuted}
+          playsInline
+          className={styles.heroVideo}
+        ></video>
+        <div className={`${styles.heroText} ${isTextLoaded ? styles.loaded : ''}`}>
           <h1>BUILDING YOUR DREAMS.</h1>
           <h2>CREATING REALITY.</h2>
-        </div>
-      </section>
-
-      <section className={styles.gallerySection}>
-        <div className={styles.galleryWrapper}>
-          <button className={styles.arrowButton}>&#8249;</button>
-          <div className={styles.gallery}>
-            <img src={Picture} alt="House 1" className={styles.galleryImage} />
-            <img src={Picture} alt="House 2" className={styles.galleryImage} />
-            <img src={Picture} alt="House 3" className={styles.galleryImage} />
-          </div>
-          <button className={styles.arrowButton}>&#8250;</button>
         </div>
       </section>
     </div>

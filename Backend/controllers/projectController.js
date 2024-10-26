@@ -10,19 +10,29 @@ const distributeTaskProgress = (floorProgress, numTasks) => {
   return taskProgress;
 };
 
-// Distribute floor progress
+// Distribute floor progress with cumulative reduction in progress for later floors
+// Distribute floor progress with cumulative reduction in progress for later floors
 const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysElapsed) => {
   let floorsProgress = new Array(numFloors).fill(0);
-  const progressPerFloor = 100 / numFloors;  // Each floor gets an equal share of total progress
+
+  // Check if the project has reached 100% progress (i.e., finished)
+  if (daysElapsed >= timelineInDays || totalProgress >= 100) {
+    // If finished, set all floor progress to 100%
+    floorsProgress = floorsProgress.map(() => 100);
+    return floorsProgress;
+  }
 
   for (let i = 0; i < numFloors; i++) {
     const daysForFloor = (timelineInDays / numFloors) * (i + 1);  // Days allocated for each floor
 
+    // Progress reduces by 15% for each floor (custom rule for progressive reduction)
+    const floorProgressReduction = 15 * i;
+
     if (daysElapsed >= daysForFloor) {
-      floorsProgress[i] = progressPerFloor;
+      floorsProgress[i] = Math.max(100 - floorProgressReduction, 0);
     } else if (daysElapsed >= (timelineInDays / numFloors) * i) {
-      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * progressPerFloor;
-      floorsProgress[i] = Math.min(floorProgress, progressPerFloor);  
+      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * (100 - floorProgressReduction);
+      floorsProgress[i] = Math.min(floorProgress, 100 - floorProgressReduction);
     }
 
     // Round progress to 0 decimal places (integer value)
@@ -32,22 +42,26 @@ const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysE
   return floorsProgress;
 };
 
-// Calculate project-level progress
-const calculateProgress = (createdAt, timeline) => {
-  const currentDate = new Date();
-  const start = new Date(createdAt);
 
-  const timelineInDays = timeline.unit === 'weeks'
-    ? timeline.duration * 7
-    : timeline.duration * 30; 
+
+// Calculate project-level progress and update status if necessary
+const calculateProgress = async (project) => {
+  const currentDate = new Date();
+  const start = new Date(project.createdAt);
+  const timelineInDays = project.timeline.unit === 'weeks' ? project.timeline.duration * 7 : project.timeline.duration * 30;
 
   const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
-
-  // Round progress to the nearest whole number
   const progress = Math.min((daysElapsed / timelineInDays) * 100, 100);
 
-  return Math.round(progress);  // Return progress as a whole number
+  // Automatically mark project as 'finished' when the timeline is completed
+  if (daysElapsed >= timelineInDays && project.status === 'ongoing') {
+    project.status = 'finished';
+    await project.save();
+  }
+
+  return Math.round(progress);
 };
+
 
 // Get projects for a specific contractor
 const getProjectsByContractor = async (req, res) => {
@@ -62,28 +76,29 @@ const getProjectsByContractor = async (req, res) => {
       .populate('location') 
       .sort({ createdAt: -1 });
 
-    // Calculate and update progress for each project
-    projects.forEach((project) => {
-      const totalProgress = calculateProgress(project.createdAt, project.timeline);
-      const updatedFloorsProgress = distributeFloorProgress(
-        totalProgress,
-        project.floors.length,
-        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-        Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
-      );
+    // Example usage within getProjectsByContractor or similar routes
+projects.forEach(async (project) => {
+  const totalProgress = await calculateProgress(project);
+  const updatedFloorsProgress = distributeFloorProgress(
+    totalProgress,
+    project.floors.length,
+    project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
+    Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
+  );
 
-      project.floors.forEach((floor, index) => {
-        floor.progress = updatedFloorsProgress[index];
+  project.floors.forEach((floor, index) => {
+    floor.progress = updatedFloorsProgress[index];
 
-        // Distribute progress to tasks
-        const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-        floor.tasks.forEach((task, taskIndex) => {
-          task.progress = updatedTaskProgress[taskIndex];
-        });
-      });
-
-     project.save();
+    // Distribute progress to tasks
+    const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+    floor.tasks.forEach((task, taskIndex) => {
+      task.progress = updatedTaskProgress[taskIndex];
     });
+  });
+
+  await project.save();
+});
+
 
     res.status(200).json(projects);
   } catch (error) {
@@ -93,7 +108,7 @@ const getProjectsByContractor = async (req, res) => {
 
 // Create a new project
 const createProject = async (req, res) => {
-  const { name, contractor: contractorUsername, user: userUsername, floors, template, timeline, status, location } = req.body;
+  const { name, contractor: contractorUsername, user: userUsername, floors, template, timeline, status, location, totalArea, avgFloorHeight } = req.body;
 
   try {
     const contractorObject = await User.findOne({ Username: contractorUsername });
@@ -114,6 +129,14 @@ const createProject = async (req, res) => {
       return res.status(400).json({ error: "Location is required." });
     }
 
+    if (!totalArea || totalArea <= 0) {
+      return res.status(400).json({ error: "Total area is required and must be greater than 0." });
+    }
+
+    if (!avgFloorHeight || avgFloorHeight <= 0) {
+      return res.status(400).json({ error: "Average floor height is required and must be greater than 0." });
+    }
+
     const formattedFloors = floors ? floors.map(floor => ({
       name: floor.name,
       progress: Math.round(floor.progress) || 0,
@@ -131,6 +154,8 @@ const createProject = async (req, res) => {
       template,
       timeline,
       location,  
+      totalArea,
+      avgFloorHeight,
       status: status || 'ongoing'
     });
 
@@ -139,6 +164,7 @@ const createProject = async (req, res) => {
     res.status(500).json({ error: "Failed to create project.", details: error.message });
   }
 };
+
 
 // Get all projects
 const getProject = async (req, res) => {
@@ -164,29 +190,29 @@ const getProjectForUser = async (req, res) => {
       return res.status(404).json({ message: 'No projects found for this user.' });
     }
 
-    // Calculate and update progress for each project
-    projects.forEach((project) => {
-      const totalProgress = calculateProgress(project.createdAt, project.timeline);
-      const updatedFloorsProgress = distributeFloorProgress(
-        totalProgress,
-        project.floors.length,
-        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-        Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
-      );
+   // Example usage within getProjectsByContractor or similar routes
+projects.forEach(async (project) => {
+  const totalProgress = await calculateProgress(project);
+  const updatedFloorsProgress = distributeFloorProgress(
+    totalProgress,
+    project.floors.length,
+    project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
+    Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
+  );
 
-      project.floors.forEach((floor, index) => {
-        floor.progress = updatedFloorsProgress[index];
+  project.floors.forEach((floor, index) => {
+    floor.progress = updatedFloorsProgress[index];
 
-        // Distribute progress to tasks
-        const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-        floor.tasks.forEach((task, taskIndex) => {
-          task.progress = updatedTaskProgress[taskIndex];
-        });
-      });
-
-      // Optionally, save the updated progress to the database if necessary:
-      // await project.save();
+    // Distribute progress to tasks
+    const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
+    floor.tasks.forEach((task, taskIndex) => {
+      task.progress = updatedTaskProgress[taskIndex];
     });
+  });
+
+  await project.save();
+});
+
 
     res.status(200).json(projects);
   } catch (error) {
@@ -239,28 +265,40 @@ const getProjectById = async (req, res) => {
     }
 
     // Calculate the overall project progress based on the timeline and creation date
-    const totalProgress = calculateProgress(project.createdAt, project.timeline);
+    const currentDate = new Date();
+    const start = new Date(project.createdAt);
+    const timelineInDays = project.timeline.unit === 'weeks'
+      ? project.timeline.duration * 7
+      : project.timeline.duration * 30;
 
-    // Distribute progress across floors based on elapsed time
+    const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
+    const totalProgress = Math.min((daysElapsed / timelineInDays) * 100, 100);
+
+    // Automatically update the project status to 'finished' if the timeline has been exceeded
+    if (daysElapsed >= timelineInDays && project.status === 'ongoing') {
+      project.status = 'finished';
+    }
+
+    // Distribute progress across floors based on elapsed time or mark all 100% if finished
     const updatedFloorsProgress = distributeFloorProgress(
       totalProgress,
       project.floors.length,
-      project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-      Math.floor((new Date() - new Date(project.createdAt)) / (1000 * 60 * 60 * 24))
+      timelineInDays,
+      daysElapsed
     );
 
     // Update each floor's progress
     project.floors.forEach((floor, index) => {
       floor.progress = updatedFloorsProgress[index];
 
-      // Distribute progress to tasks
+      // Distribute progress to tasks based on floor progress
       const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
       floor.tasks.forEach((task, taskIndex) => {
         task.progress = updatedTaskProgress[taskIndex];
       });
     });
 
-    // Save updated project with recalculated floor progress
+    // Save the updated project with recalculated progress and updated status (if changed)
     await project.save();
 
     // Return the updated project with the new progress
@@ -270,6 +308,8 @@ const getProjectById = async (req, res) => {
     res.status(500).json({ message: 'Error fetching project' });
   }
 };
+
+
 
 // Update project progress and tasks
 const updateProject = async (req, res) => {

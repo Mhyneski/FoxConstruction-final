@@ -1,56 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../css/AboutUs.module.css';
-import personImage from '../assets/contractor.jpg'; 
+import personImage from '../assets/HECTOR.jpeg';
 
 const AboutUs = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true); // Set visible for content only after component mounts
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className={styles.aboutUsContainer}>
       <div className={styles.header}>
         <h2>About Us</h2>
       </div>
       <div className={styles.contentContainer}>
-        <div className={styles.textContainer}>
+        <div className={`${styles.textContainer} ${isVisible ? styles.visible : ''}`}>
           <h1>Welcome To Fox Construction Company</h1>
           <p>
-          Charlie Puth - Attention [Official Video]
-From Charlie's album Voicenotes!
-Download/Stream: https://Atlantic.lnk.to/VoicenotesID
-
-Light Switch out now!
-Download/stream: https://charlieputh.lnk.to/LightSwitchID
-
-Video Directed by Emil Nava
-
-Written By: Charlie Puth and Jacob Kasher
-Produced By: Charlie Puth
-Vocal Production: Charlie Puth
-Instruments: Korg Triton Studio, Juno 60, Omnisphere, Trillian for the Bass, Rhodes 77, Yamaha DX7, Pro Tools I2, Fender Stratocaster, Martin HD-28 Acoustic
-Mixed By: Manny Marroquin & Charlie Puth at Larrabee Sound Studios
-Recorded At: Home Studio of Charlie Puth & Tour Bus of Charlie Puth
-Mastered By: Dave Kutch at the Mastering Palace
-
-Store - http://smarturl.it/CPAttentionMerchYT
-
-Subscribe for more official content from Charlie Puth:
-https://Atlantic.lnk.to/CPsubscribeID
-
-Follow Charlie
-http://charlieputh.com 
-  / charlieputh   
-  / charlieputh   
-  / charlieputh  
-  / charlieputh  
-  / charlieputh  
-
-The official YouTube channel of Atlantic Records artist Charlie Puth. Subscribe for the latest music videos, performances, and more.
-
-#CharliePuth #Attention #MusicVideo
+            Since 1999, Fox Construction has been quietly building a reputation in Pateros—literally.
+            We don’t say much; we let the hammer do the talking. Founded by Hector Manalo, we bring
+            expert craftsmanship to every project, covering all bases: carpentry, masonry, metal works,
+            painting, plumbing, electrical, air conditioning, and landscaping. Whether you’re renovating
+            or building from the ground up, we’re here to turn your vision into rock-solid reality.
+            Quality, reliability, and precision—that’s the Fox Construction promise.
           </p>
           <div className={styles.signature}>
             <p>Hector Manalo</p>
           </div>
         </div>
-        <div className={styles.imageContainer}>
+        <div className={`${styles.imageContainer} ${isVisible ? styles.visible : ''}`}>
           <img src={personImage} alt="Hector Manalo" />
         </div>
       </div>

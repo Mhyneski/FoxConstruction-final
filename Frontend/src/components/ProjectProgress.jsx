@@ -15,10 +15,10 @@ const ProjectProgress = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
+        const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
           headers: {
-            Authorization: `Bearer ${user?.token}`
-          }
+            Authorization: `Bearer ${user?.token}`,
+          },
         });
 
         const fetchedProject = response.data.project || response.data; // Depending on API response format
@@ -52,11 +52,10 @@ const ProjectProgress = () => {
     return <div className={styles.loading}>Project not found.</div>;
   }
 
-  // Format the start date (createdAt) in the desired format
   const startDate = new Date(project.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 
   return (
@@ -88,7 +87,7 @@ const ProjectProgress = () => {
               </div>
               {selectedFloor === floor._id && (
                 <div className={styles.tasks}>
-                  <h3 className={styles.tasksTitle}>TASK</h3>
+                  <h3 className={styles.tasksTitle}>TASKS</h3>
                   <ul className={styles.taskList}>
                     {floor.tasks && floor.tasks.map((task, taskIndex) => (
                       <li key={task._id} className={styles.taskItem}>

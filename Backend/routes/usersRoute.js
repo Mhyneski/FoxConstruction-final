@@ -18,7 +18,7 @@ router.post('/signup', signupUser);
 router.delete('/:id', authMiddleware, authorizeRoles(['admin']), deleteUser);
 
 // get users with role 'user' (for admin or roles allowed)
-router.get('/get', authMiddleware, authorizeRoles(['admin']), getsUsers);
+router.get('/get', authMiddleware, authorizeRoles(['admin','contractor']), getsUsers);
 
 // reset password to default (authorized roles only)
 router.patch('/reset-password/:id', authMiddleware, authorizeRoles(['admin']), resetPassword);

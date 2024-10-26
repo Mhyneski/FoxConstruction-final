@@ -25,7 +25,7 @@ const Accounts = () => {
       if (!user || !user.token) return;
       setLoading(true); 
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user`, {
+        const response = await axios.get(`http://localhost:4000/api/user`, {
           headers: { Authorization: `Bearer ${user.token}` },  // Include Authorization header
         });
 
@@ -97,7 +97,7 @@ const Accounts = () => {
   
     try {
       await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/user/reset-password/${selectedUserId}`,
+        `http://localhost:4000/api/user/reset-password/${selectedUserId}`,
         {},
         {
           headers: { Authorization: `Bearer ${user.token}` }, // Include the token in headers
@@ -169,26 +169,35 @@ const Accounts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map(user => (
-                    <tr key={user._id}>
-                      <td>{user.Username}</td>
-                      <td>{user.role}</td>
-                      <td
-                        style={{
-                          backgroundColor: user.forgotPassword ? 'red' : 'transparent',
-                          color: user.forgotPassword ? 'white' : 'black',
-                        }}
-                      >
-                        {user.forgotPassword ? 'Requested' : 'No'}
-                      </td>
-                      <td>
-                        <button onClick={() => handleResetPasswordClick(user._id)} className={styles.resetButton}>
-                          Reset Password
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+  {filteredUsers.map(user => (
+    <tr key={user._id}>
+      <td>{user.Username}</td>
+      <td>{user.role}</td>
+      <td
+        style={{
+          backgroundColor: user.forgotPassword ? 'red' : 'transparent',
+          color: user.forgotPassword ? 'white' : 'black',
+        }}
+      >
+        {user.forgotPassword ? 'Requested' : 'No'}
+      </td>
+      <td>
+        <button
+          onClick={() => handleResetPasswordClick(user._id)}
+          className={styles.resetButton}
+          disabled={!user.forgotPassword} // Disable button if forgotPassword is false
+          style={{
+            backgroundColor: user.forgotPassword ? '#657354' : '#ccc', // Optional: styling for disabled button
+            cursor: user.forgotPassword ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Reset Password
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
               </table>
             </div>
           </div>

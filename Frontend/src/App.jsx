@@ -13,9 +13,9 @@ import Location from './pages/Location';
 import Collection from './pages/Collection';
 import Services from './pages/Services';
 import Contacts from './pages/Contacts';
-import Unauthorized from './pages/Unauthorized'; // Create this page to show unauthorized access
+import Unauthorized from './pages/Unauthorized'; 
 import ProtectedRoute from './components/ProtectedRoute';
-import AboutUs from './pages/AboutUs';
+import AboutUs from './pages/aboutUs';
 
 function App() {
 
@@ -110,7 +110,7 @@ function App() {
         <Route path="/Contacts" element={<Contacts />} />
 
         {/* Unauthorized page */}
-        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/Unauthorized" element={<Unauthorized />} />
       </Routes>
     </Router>
   );

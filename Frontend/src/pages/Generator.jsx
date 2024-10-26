@@ -12,17 +12,13 @@ import React from 'react';
     const [searchTerm, setSearchTerm] = useState("");
   
     useEffect(() => {
-      console.log('Modal open state:', isOpen); // Check if modal is open
-      console.log('User token:', user ? user.token : 'No user token'); // Check if the token exists
-    
       if (isOpen && user && user.token) {
-        Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
+        Axios.get('http://localhost:4000/api/materials', {
           headers: {
-            Authorization: `Bearer ${user.token}`,  // Include the token in the request headers
+            Authorization: `Bearer ${user.token}`,
           },
         })
         .then((response) => {
-          console.log('Materials fetched:', response.data);  // Log the response data to inspect
           setMaterials(response.data); 
           setFilteredMaterials(response.data); 
         })
@@ -31,54 +27,48 @@ import React from 'react';
         });
       }
     }, [isOpen, user]);
-    
-      // Also include 'user' as a dependency
   
-      useEffect(() => {
-        if (searchTerm === "") {
-          setFilteredMaterials(materials);
-        } else {
-          const filtered = materials.filter((material) =>
-            (material.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-          );
-          console.log('Filtered materials:', filtered);  // Log filtered materials for debugging
-          setFilteredMaterials(filtered);
-        }
-      }, [searchTerm, materials]);
+    useEffect(() => {
+      if (searchTerm === "") {
+        setFilteredMaterials(materials);
+      } else {
+        const filtered = materials.filter((material) =>
+          (material.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredMaterials(filtered);
+      }
+    }, [searchTerm, materials]);
       
   
     return isOpen ? (
       <div className={styles.modalOverlay}>
         <div className={styles.modalContent} style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <button onClick={onClose} className={styles.closeButton}>Close</button>
           <h2>Replace Material: {materialToReplace?.description || ''}</h2>
           <input
             type="text"
             placeholder="Search materials"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)} 
+            onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
           <div className={styles.materialList}>
-          {filteredMaterials.length > 0 ? (
-  filteredMaterials.map((material) => (
-    <div
-      key={material._id || index}  // Use material._id or index as a fallback
-      className={styles.materialItem}
-      style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
-      onClick={() => onMaterialSelect(material)}
-    >
-      <p><strong>{material.description || 'No Description Available'}</strong></p>
-      <p>Cost: ₱{material.cost.toFixed(2)}</p>
-    </div>
-  ))
-) : (
-  <p>No materials found</p>
-)}
-
-
+            {filteredMaterials.length > 0 ? (
+              filteredMaterials.map((material) => (
+                <div
+                  key={material._id}
+                  className={styles.materialItem}
+                  style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
+                  onClick={() => onMaterialSelect(material)}
+                >
+                  <p><strong>{material.description || 'No Description Available'}</strong></p>
+                  <p>Cost: ₱{material.cost.toFixed(2)}</p>
+                </div>
+              ))
+            ) : (
+              <p>No materials found</p>
+            )}
           </div>
-  
-          <button onClick={onClose} className={styles.closeButton}>Cancel</button>
         </div>
       </div>
     ) : null;
@@ -265,7 +255,7 @@ import React from 'react';
         setIsLoadingProjects(true);
         
         // Fetch projects for the contractor
-        Axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
+        Axios.get(`http://localhost:4000/api/project/contractor`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -281,7 +271,7 @@ import React from 'react';
         });
     
         // Fetch locations
-        Axios.get('https://foxconstruction-final.onrender.com/api/locations', {
+        Axios.get('http://localhost:4000/api/locations', {
           headers: {
             Authorization: `Bearer ${user.token}`,  // Include Authorization header here
           },
@@ -303,23 +293,16 @@ import React from 'react';
       const project = projects.find(p => p._id === projectId);
       if (project) {
         setSelectedProject(project);
-    
-        
-        if (!project.template || project.floors.length === 0) {
-          setServerError('Selected project is missing a template or floors');
-          return;
-        }
-    
         setFormData({
-          totalArea: '',  
-          avgFloorHeight: '',
-          templateTier: project.template || '',  
-          numFloors: project.floors.length.toString(),  
+          totalArea: project.totalArea || '',
+          avgFloorHeight: project.avgFloorHeight || '',
+          templateTier: project.template || '',
+          numFloors: project.floors.length.toString(),
         });
-    
         setSelectedLocation(project.location);
       }
     };
+    
 
     const handleLocationSelect = (locationName) => {
       setSelectedLocation(locationName);
@@ -402,7 +385,7 @@ import React from 'react';
         console.log('Payload to generate BOM:', payload);
 
         // Make the POST request to generate the BOM
-        Axios.post(`https://foxconstruction-final.onrender.com/api/bom/generate`, payload, {
+        Axios.post(`http://localhost:4000/api/bom/generate`, payload, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
@@ -522,7 +505,7 @@ import React from 'react';
         },
       };
       
-      Axios.post(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}/bom`, payload, {
+      Axios.post(`http://localhost:4000/api/project/${selectedProject._id}/bom`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
         .then((response) => {

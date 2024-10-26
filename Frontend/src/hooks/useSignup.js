@@ -11,7 +11,7 @@ export const useSignup = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/user/signup`, {
+      const response = await axios.post(`http://localhost:4000/api/user/signup`, {
         Username,
         password,
         role

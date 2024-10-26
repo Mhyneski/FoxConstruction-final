@@ -10,7 +10,7 @@ export const useFetchUsers = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user`);
+                const response = await axios.get(`http://localhost:4000/api/user`);
                 setUsers(response.data);
             } catch (error) {
                 setError('Failed to fetch users');

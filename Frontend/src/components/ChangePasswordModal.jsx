@@ -27,6 +27,7 @@ const ChangePasswordModal = ({ show, onClose, onSubmit }) => {
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <h2>Change Your Password</h2>
+        <p>NOTE: WE SUGGEST YOU TO CHANGE YOU'RE PASSWORD</p>
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <label htmlFor="newPassword">New Password:</label>

@@ -42,7 +42,9 @@ const ProjectList = () => {
     floors: [],
     template: "economy",
     timeline: { duration: 0, unit: "months" },
-    location: "", 
+    location: "",
+    totalArea: 0,  // Add totalArea field
+    avgFloorHeight: 0,  // Add avgFloorHeight field
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -54,11 +56,13 @@ const ProjectList = () => {
   const [locations, setLocations] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const { user } = useContext(AuthContext);
+  const [heightError, setHeightError] = useState(""); // To track avgFloorHeight error
+const [floorError, setFloorError] = useState(""); 
 
-  
+  // Fetch project details for the modal
   const fetchProjectDetails = async (projectId) => {
     try {
-      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
+      const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -71,7 +75,7 @@ const ProjectList = () => {
     }
   };
 
-  
+  // Fetch all projects and locations
   useEffect(() => {
     if (!user || !user.token) return;
   
@@ -80,11 +84,11 @@ const ProjectList = () => {
         setIsLoading(true); 
   
         const [projectsResponse, locationsResponse] = await Promise.all([
-          axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
-            headers: { Authorization: `Bearer ${user.token}` },  // Include Authorization header
+          axios.get(`http://localhost:4000/api/project/contractor`, {
+            headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
-            headers: { Authorization: `Bearer ${user.token}` },  // Add Authorization header here
+          axios.get(`http://localhost:4000/api/locations`, {
+            headers: { Authorization: `Bearer ${user.token}` },
           }),
         ]);
   
@@ -99,13 +103,37 @@ const ProjectList = () => {
   
     fetchProjectsAndLocations();
   }, [user]);
-  
 
- 
+  const handleFloorHeightChange = (e) => {
+    const value = parseFloat(e.target.value);
+    if (value > 15) {
+      setHeightError("The average floor height cannot exceed 15 meters.");
+    } else if (value < 0) {
+      setHeightError("The average floor height cannot be negative.");
+    } else {
+      setHeightError(""); // Clear error if valid
+      setNewProject({ ...newProject, avgFloorHeight: value });
+    }
+  };
+  
+  // Handle input change for numFloors with validation
+  const handleNumFloorsChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    if (value > 5) {
+      setFloorError("The number of floors cannot exceed 5.");
+    } else if (value < 1) {
+      setFloorError("The number of floors cannot be less than 1.");
+    } else {
+      setFloorError(""); // Clear error if valid
+      setNewProject({ ...newProject, numFloors: value });
+    }
+  };
+
+  // Fetch users when dropdown is clicked
   const handleDropdownClick = async () => {
     if (users.length === 0) {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
+        const response = await axios.get(`http://localhost:4000/api/user/get`, {
           headers: { Authorization: `Bearer ${user?.token || ""}` },
         });
         setUsers(response.data);
@@ -115,7 +143,24 @@ const ProjectList = () => {
     }
   };
 
-  
+  // Function to handle project deletion after confirmation
+const handleConfirmDelete = () => {
+  if (selectedProject) {
+    handleDeleteProject();
+  } else {
+    console.error("No project selected for deletion.");
+  }
+};
+
+// Function to handle when the user cancels the delete operation
+const handleCancelDelete = () => {
+  setShowDeleteModal(false); // Close the delete confirmation modal
+  setSelectedProject(null);  // Clear the selected project
+};
+
+
+
+  // Handle creating a new project
   const handleCreateProject = async () => {
     try {
       if (!["economy", "standard", "premium"].includes(newProject.template)) {
@@ -127,7 +172,6 @@ const ProjectList = () => {
         return;
       }
 
-      
       const defaultFloors = Array.from({ length: newProject.numFloors }, (_, i) => ({
         name: `FLOOR ${i + 1}`,
         progress: 0,
@@ -141,7 +185,7 @@ const ProjectList = () => {
       };
 
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/project`,
+        `http://localhost:4000/api/project`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -156,7 +200,7 @@ const ProjectList = () => {
     }
   };
 
-  
+  // Handle updating an existing project
   const handleUpdateProject = async () => {
     try {
       if (!["economy", "standard", "premium"].includes(newProject.template)) {
@@ -171,7 +215,7 @@ const ProjectList = () => {
       const processedProject = { ...newProject };
 
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${editProjectId}`,
+        `http://localhost:4000/api/project/${editProjectId}`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -191,9 +235,10 @@ const ProjectList = () => {
     }
   };
 
+  // Handle deleting a project
   const handleDeleteProject = async () => {
     try {
-      await axios.delete(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}`, {
+      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -205,6 +250,7 @@ const ProjectList = () => {
     }
   };
 
+  // Reset the project form
   const resetProjectForm = () => {
     setNewProject({
       name: "",
@@ -218,14 +264,16 @@ const ProjectList = () => {
         unit: "months",
       },
       location: "", 
+      totalArea: 0,  // Reset totalArea
+      avgFloorHeight: 0,  // Reset avgFloorHeight
     });
   };
 
+  // Handle editing a project
   const handleEditProject = (project) => {
     setIsEditing(true);
     setEditProjectId(project._id);
   
-    
     const floorsWithProgress = project.floors.map((floor) => ({
       ...floor,
       progress: floor.progress || 0, 
@@ -235,33 +283,21 @@ const ProjectList = () => {
       })),
     }));
   
-    
     setNewProject({ 
       ...project, 
       floors: floorsWithProgress, 
-      location: project.location || "" 
+      location: project.location || "",
+      totalArea: project.totalArea || 0,  // Set totalArea
+      avgFloorHeight: project.avgFloorHeight || 0,  // Set avgFloorHeight
     });
     setIsModalOpen(true);
   };
 
-  const handleDeleteClick = (project) => {
-    setSelectedProject(project);
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmDelete = () => {
-    handleDeleteProject();
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteModal(false);
-    setSelectedProject(null);
-  };
-
+  // Handle updating project status
   const handleUpdateStatus = async (projectId, newStatus) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/status`,
+        `http://localhost:4000/api/project/${projectId}/status`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -279,14 +315,8 @@ const ProjectList = () => {
     }
   };
 
- 
+  // Helper functions for floors and tasks
   const handleFloorChange = (index, key, value) => {
-    if (key === "numFloors") {
-      value = Math.max(1, Math.min(5, value));
-    } else if (value < 0) {
-      value = 0;
-    }
-
     const updatedFloors = newProject.floors.map((floor, i) =>
       i === index ? { ...floor, [key]: value } : floor
     );
@@ -294,7 +324,6 @@ const ProjectList = () => {
   };
 
   const handleTaskChange = (floorIndex, taskIndex, key, value) => {
-    if (value < 0) value = 0;
     const updatedTasks = newProject.floors[floorIndex].tasks.map((task, i) =>
       i === taskIndex ? { ...task, [key]: value } : task
     );
@@ -340,13 +369,13 @@ const ProjectList = () => {
     setNewProject({ ...newProject, floors: updatedFloors });
   };
 
- 
+  // View project details in the modal
   const handleViewProjectDetails = (project) => {
     setSelectedProject(project); 
     setShowDetailsModal(true);  
   };
 
-  
+  // Generate BOM PDF
   const handleGenerateBOMPDF = (version = 'client') => {
     if (!selectedProject || !selectedProject.bom) return;
   
@@ -420,7 +449,6 @@ const ProjectList = () => {
           startY: 110,
         });
   
-        // Add total amount per category for contractor
         const categories = selectedProject.bom.categories.map(category => ({
           category: category.category.toUpperCase(),
           totalAmount: category.materials.reduce((sum, material) => sum + material.totalAmount, 0),
@@ -444,11 +472,10 @@ const ProjectList = () => {
   
     doc.save(`BOM_${selectedProject.name}_${version}.pdf`);
   };
-  
 
+  // Filter projects based on search term
   const filterProjects = () => {
     if (!searchTerm) return projects;
-
     return projects.filter(
       (project) =>
         project.name && project.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -463,7 +490,6 @@ const ProjectList = () => {
       <div className={styles.locationsContainer}>
         <h2 className={styles.heading}>Projects</h2>
 
-        
         {isLoading ? (
           <LoadingSpinner /> 
         ) : (
@@ -491,7 +517,6 @@ const ProjectList = () => {
               Total Projects: {filteredProjects.length}
             </p>
 
-            {/* Projects Table */}
             <div className={styles.scrollableTableContainer}>
               <table className={styles.locationsTable}>
                 <thead>
@@ -515,32 +540,22 @@ const ProjectList = () => {
                         {new Date(project.createdAt).toLocaleDateString()}
                       </td>
                       <td>
-                        {project.template.charAt(0).toUpperCase() +
-                          project.template.slice(1)}
+                        {project.template.charAt(0).toUpperCase() + project.template.slice(1)}
                       </td>
-                      <td>{project.status}</td>
+                      <td className={project.status === "ongoing" ? styles.ongoingStatus : styles.finishedStatus}>
+                        {project.status}
+                      </td>
                       <td>
-                        <button
-                          onClick={() => handleEditProject(project)}
-                          className={styles.editButton}
-                        >
+                        <button onClick={() => handleEditProject(project)} className={styles.editButton}>
                           Edit
                         </button>
                         <button
-                          onClick={() =>
-                            handleUpdateStatus(
-                              project._id,
-                              project.status === "ongoing" ? "finished" : "ongoing"
-                            )
-                          }
+                          onClick={() => handleUpdateStatus(project._id, project.status === "ongoing" ? "finished" : "ongoing")}
                           className={styles.editButton}
                         >
                           Mark as {project.status === "ongoing" ? "Finished" : "Ongoing"}
                         </button>
-                        <button
-                          onClick={() => handleDeleteClick(project)}
-                          className={styles.deleteButton}
-                        >
+                        <button onClick={() => handleDeleteClick(project)} className={styles.deleteButton}>
                           Delete
                         </button>
                       </td>
@@ -552,7 +567,6 @@ const ProjectList = () => {
           </>
         )}
 
-        {/* Modal for Create/Edit Project */}
         {isModalOpen && (
           <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
             <div className={styles.modalForm}>
@@ -595,7 +609,6 @@ const ProjectList = () => {
                 <option value="premium">Premium</option>
               </select>
 
-              {/* Added location dropdown for selecting project location */}
               <select
                 value={newProject.location}
                 onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
@@ -617,6 +630,25 @@ const ProjectList = () => {
                 )}
               </select>
 
+              <h3>Total Area</h3>
+              <input
+                type="number"
+                placeholder="Total Area (sqm)"
+                value={newProject.totalArea}
+                onChange={(e) => setNewProject({ ...newProject, totalArea: parseInt(e.target.value, 10) })}
+                className={styles.inputField}
+              />
+
+              <h3>Average Floor Height</h3>
+              <input
+                type="number"
+                placeholder="Average Floor Height (m)"
+                value={newProject.avgFloorHeight}
+                onChange={handleFloorHeightChange}
+                className={styles.inputField}
+              />
+               {heightError && <p style={{ color: "red" }}>{heightError}</p>} {/* Error message */}
+
               {!isEditing && (
                 <>
                   <h3>Number of Floors</h3>
@@ -624,19 +656,13 @@ const ProjectList = () => {
                     type="number"
                     placeholder="Number of Floors"
                     value={newProject.numFloors}
-                    onChange={(e) => {
-                      const value = Math.max(
-                        1,
-                        Math.min(5, parseInt(e.target.value, 10))
-                      );
-                      setNewProject({ ...newProject, numFloors: value });
-                    }}
+                    onChange={handleNumFloorsChange}
                     className={styles.inputField}
                   />
+                    {floorError && <p style={{ color: "red" }}>{floorError}</p>} {/* Error message */}
                 </>
               )}
 
-              {/* Timeline fields */}
               <h3>Project Timeline</h3>
               <input
                 type="number"
@@ -749,8 +775,7 @@ const ProjectList = () => {
           </Modal>
         )}
 
-        {/* Modal to View Project Details */}
-         {showDetailsModal && selectedProject && (
+        {showDetailsModal && selectedProject && (
           <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)}>
             <h3>Project Details - {selectedProject.name}</h3>
             <h4>Floors:</h4>
@@ -771,7 +796,6 @@ const ProjectList = () => {
             <p><strong>Location:</strong> {selectedProject.location || 'N/A'}</p>
             <p><strong>Markup:</strong> {locations.find(loc => loc.name === selectedProject.location)?.markup || 'N/A'}%</p>
 
-            
             {selectedProject.bom && (
               <>
                 <button className={styles.downloadButton} onClick={() => handleGenerateBOMPDF('client')}>
@@ -785,7 +809,6 @@ const ProjectList = () => {
           </Modal>
         )}
 
-        {/* Confirm Delete Modal */}
         <ConfirmDeleteModal
           show={showDeleteModal}
           onConfirm={handleConfirmDelete}

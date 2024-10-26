@@ -176,22 +176,25 @@
 }
 
 .modalContent {
-  background: white;
+  position: relative; /* Position for absolute children */
   padding: 20px;
+  background-color: white;
   border-radius: 8px;
-  width: 80%;
-  max-width: 500px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .closeButton {
+  position: sticky;
+  top: 0;
+  right: 0;
   background-color: #f44336;
   color: white;
   border: none;
-  padding: 10px;
+  padding: 8px 12px;
+  border-radius: 5px;
   cursor: pointer;
-  border-radius: 4px;
-  float: right;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+  z-index: 10; /* Ensures the button is always on top */
 }
 
 /* General list styling for BOM */
@@ -278,3 +281,15 @@
     transform: rotate(360deg);
   }
 }
+
+.buttonContainer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+
+
+.closeButton:hover {
+  background-color: #d32f2f;
+}
+
