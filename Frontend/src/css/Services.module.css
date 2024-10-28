@@ -4,10 +4,10 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 30px; 
-    padding-top: 10px; 
+    padding:30px; 
+    padding-top: 0px; 
     background-color: white;
-    min-height: 80vh; 
+    min-height: 70vh; 
   }
   
   .title {

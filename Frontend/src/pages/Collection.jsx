@@ -6,6 +6,7 @@ import Image3 from "../assets/IMAGE3.jpg";
 import Image4 from "../assets/IMAGE4.jpg";
 import Image5 from "../assets/IMAGE5.jpg";
 import Image6 from "../assets/IMAGE6.jpg";
+import Header from '../components/Header'
 
 const Collection = () => {
   const collections = [
@@ -35,6 +36,7 @@ const Collection = () => {
 
   return (
     <div className={styles.collectionContainer}>
+      <Header/>
       <h2 className={styles.header}>Our Collections</h2>
       <div className={styles.carousel}>
         <div className={styles.carouselInner} style={{ transform: `translateX(-${currentIndex * 100}%)` }}>

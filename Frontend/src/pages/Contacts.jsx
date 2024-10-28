@@ -1,9 +1,12 @@
 import React from 'react';
 import styles from '../css/Contacts.module.css';
 import { FaPhoneAlt, FaEnvelope, FaFacebookF } from 'react-icons/fa';
+import Header from '../components/Header'
 
 const Contacts = () => {
   return (
+    <>
+    <Header/>
     <div className={styles.contactsContainer}>
       <div className={styles.header}>
         <h1>FOX CONSTRUCTION</h1>
@@ -25,6 +28,7 @@ const Contacts = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

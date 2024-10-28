@@ -2,6 +2,7 @@ import { useState } from "react";
 import styles from "../css/Login.module.css";
 import { useLogin } from "../hooks/useLogin";
 import axios from "axios";
+import Header from '../components/Header'
 
 const Login = () => {
   const [Username, setUsername] = useState('');
@@ -30,6 +31,8 @@ const Login = () => {
   };
 
   return (
+    <>
+    <Header/>
     <div className={styles.Container}>
       <div className={styles.TopSide}>
         <h5>Get Ready.</h5>
@@ -81,6 +84,7 @@ const Login = () => {
         {error && <p className={styles.error1}>{error}</p>}
       </div>
     </div>
+    </>
   );
 };
 

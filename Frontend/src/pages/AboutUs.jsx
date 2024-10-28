@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import styles from '../css/AboutUs.module.css';
 import personImage from '../assets/HECTOR.jpeg';
+import Header from '../components/Header'
 
 const AboutUs = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsVisible(true); // Set visible for content only after component mounts
+      setIsVisible(true); 
     }, 100);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className={styles.aboutUsContainer}>
+      <Header/>
       <div className={styles.header}>
         <h2>About Us</h2>
       </div>

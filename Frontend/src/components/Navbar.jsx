@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { useAuthContext } from "../hooks/useAuthContext"; // Import the user context
+import { useAuthContext } from "../hooks/useAuthContext";
 import { useLogout } from "../hooks/useLogout";
+import { useNavigate } from "react-router-dom";
 import styles from "../css/Navbar.module.css";
-import { FaUserCircle } from 'react-icons/fa'; // You can use a profile icon from react-icons or any other library
+import { FaUserCircle, FaHome } from 'react-icons/fa';
 
 const Navbar = () => {
   const { logout } = useLogout();
-  const { user } = useAuthContext(); // Get the logged-in user
-  const [dropdownOpen, setDropdownOpen] = useState(false); // State to toggle the dropdown
+  const { user } = useAuthContext();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleClick = () => {
     logout();
@@ -17,13 +19,29 @@ const Navbar = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
+  const handleDashboardNavigation = () => {
+    if (user.role === "contractor") {
+      navigate("/ContractorDashboard");
+    } else if (user.role === "user") {
+      navigate("/UserDashboard");
+    } else if (user.role === "admin") {
+      navigate("/AdminDashboard");
+    }
+  };
+
   return (
     <div className={styles.topSIDE}>
       <div className={styles.companyInfo}>
         <p className={styles.name1}>FOX</p>
         <p className={styles.name2}>CONSTRUCTION CO.</p>
       </div>
-      
+
+      {/* Center Content */}
+      <div className={styles.centerContent} onClick={handleDashboardNavigation}>
+        <FaHome className={styles.homeIcon} />
+        <span className={styles.goToHomeText}>Dashboard</span>
+      </div>
+
       <div className={styles.userInfo}>
         <p className={styles.username}>Hi, {user && user.Username}</p>
         <FaUserCircle className={styles.profileIcon} onClick={toggleDropdown} />
