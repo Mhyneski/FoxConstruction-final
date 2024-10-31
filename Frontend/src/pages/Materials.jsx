@@ -5,17 +5,21 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
 import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal"; 
 
+const validUnits = [
+  'lot', 'cu.m', 'bags', 'pcs', 'shts', 'kgs', 'gal', 'liters',
+  'set', 'm', 'L-m', 'sheets', 'pieces', 'meters',
+  // Add other units as needed
+];
+
 const Materials = () => {
   const [materials, setMaterials] = useState([]);
   const [isEditing, setIsEditing] = useState(null);
-  const [editedMaterial, setEditedMaterial] = useState({ description: '', unit: '', cost: '' });
+  const [editedMaterial, setEditedMaterial] = useState({ description: '', unit: '', cost: 0 });
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState("");
-  const [newMaterial, setNewMaterial] = useState({ description: '', unit: '', cost: '' });
+  const [newMaterial, setNewMaterial] = useState({ description: '', unit: validUnits[0], cost: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true); 
-  
-  
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [materialToDelete, setMaterialToDelete] = useState(null);
 
@@ -50,14 +54,12 @@ const Materials = () => {
     try {
       const updatedMaterial = { ...editedMaterial };
       
-      
       await axios.patch(`http://localhost:4000/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
 
-      
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material._id === id ? { ...material, ...updatedMaterial } : material
@@ -99,9 +101,8 @@ const Materials = () => {
 
   const handleCreate = async () => {
     try {
-      
-      if (!newMaterial.description || !newMaterial.unit || !newMaterial.cost) {
-        console.error('All fields are required.');
+      if (!newMaterial.description || !newMaterial.unit || newMaterial.cost < 0) {
+        console.error('All fields are required and cost cannot be negative.');
         return;
       }
   
@@ -111,9 +112,8 @@ const Materials = () => {
         },
       });
   
-      
       setMaterials((prevMaterials) => [...prevMaterials, response.data]);
-      setNewMaterial({ description: '', unit: '', cost: '' }); 
+      setNewMaterial({ description: '', unit: validUnits[0], cost: 0 }); 
       setIsModalOpen(false); 
     } catch (error) {
       console.error('Error creating material:', error.response?.data || error.message);
@@ -122,13 +122,11 @@ const Materials = () => {
 
   const filteredMaterials = filterMaterials();
 
-  
   const openConfirmDeleteModal = (material) => {
     setMaterialToDelete(material);
     setIsConfirmDeleteOpen(true);
   };
 
-  
   const confirmDelete = () => {
     if (materialToDelete) {
       handleDelete(materialToDelete._id);
@@ -161,32 +159,38 @@ const Materials = () => {
               <div className={styles.modalForm}>
                 <input
                   type="text"
-                  placeholder="Material Description"
+                  placeholder="Material Name"
                   value={newMaterial.description}
                   onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
                   className={styles.inputField}
                 />
-                <input
-                  type="text"
-                  placeholder="Unit"
+                <select
                   value={newMaterial.unit}
                   onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
                   className={styles.inputField}
-                />
+                >
+                  {validUnits.map((unit, index) => (
+                    <option key={index} value={unit}>{unit}</option>
+                  ))}
+                </select>
                 <input
-                  type="number"
-                  placeholder="Cost"
-                  value={newMaterial.cost}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, cost: e.target.value })}
-                  className={styles.inputField}
-                />
+  type="number"
+  placeholder="Cost"
+  value={newMaterial.cost === 0 ? "" : newMaterial.cost} // Show empty string if cost is 0
+  min="0"
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow empty string to temporarily clear the field
+    setNewMaterial({ ...newMaterial, cost: value === "" ? "" : Math.max(0, parseFloat(value)) });
+  }}
+  className={styles.inputField}
+/>
                 <button onClick={handleCreate} className={styles.createButton}>Create Material</button>
               </div>
             </div>
           </div>
         )}
 
-       
         {loading ? (
           <div className={styles.loadingSpinnerContainer}>
             <div className={styles.spinner}></div>
@@ -221,12 +225,15 @@ const Materials = () => {
                     </td>
                     <td>
                       {isEditing === material._id ? (
-                        <input
-                          type="text"
+                        <select
                           value={editedMaterial.unit}
                           onChange={(e) => setEditedMaterial({ ...editedMaterial, unit: e.target.value })}
                           className={styles.inputField}
-                        />
+                        >
+                          {validUnits.map((unit, index) => (
+                            <option key={index} value={unit}>{unit}</option>
+                          ))}
+                        </select>
                       ) : (
                         material.unit
                       )}
@@ -235,12 +242,13 @@ const Materials = () => {
                       {isEditing === material._id ? (
                         <input
                           type="number"
+                          min="0"
                           value={editedMaterial.cost}
-                          onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: e.target.value })}
+                          onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: Math.max(0, e.target.value) || 0 })}
                           className={styles.inputField}
                         />
                       ) : (
-                        `₱${material.cost}`
+                        `₱${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`
                       )}
                     </td>
                     <td>{new Date(material.createdAt).toLocaleDateString()}</td>
@@ -265,7 +273,6 @@ const Materials = () => {
           </div>
         )}
 
-        {/* Confirm Delete Modal */}
         <ConfirmDeleteMaterialModal
           isOpen={isConfirmDeleteOpen}
           onClose={() => setIsConfirmDeleteOpen(false)}

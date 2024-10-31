@@ -2,62 +2,81 @@ const Location = require('../models/locationsModel');
 const Template = require('../models/templatesModel');
 
 const generateBOM = async (req, res) => {
-  let { totalArea, numFloors, avgFloorHeight, templateTier, locationName } = req.body;
+  let { totalArea, numFloors, avgFloorHeight, templateId, roomCount, foundationDepth, locationName } = req.body;
 
   try {
     totalArea = parseFloat(totalArea);
     numFloors = parseInt(numFloors, 10);
     avgFloorHeight = parseFloat(avgFloorHeight);
+    roomCount = roomCount ? parseInt(roomCount, 10) : 6; 
+    foundationDepth = foundationDepth ? parseFloat(foundationDepth) : 1.5; 
 
-    const validTiers = ['economy', 'standard', 'premium'];
-    if (!validTiers.includes(templateTier)) {
-      return res.status(400).json({ error: "Invalid template tier. Must be one of: economy, standard, premium." });
-    }
-
-    const baseTemplate = await Template.findOne({ tier: templateTier }).lean();
+  
+    const baseTemplate = await Template.findById(templateId).lean();
     if (!baseTemplate) {
-      return res.status(404).json({ error: "Base template not found." });
+      return res.status(404).json({ error: "Template not found." });
     }
 
     // Calculate scale factors
     const areaFactor = totalArea / baseTemplate.bom.totalArea;
     const floorFactor = numFloors / baseTemplate.bom.numFloors;
     const heightFactor = avgFloorHeight / baseTemplate.bom.avgFloorHeight;
+    const roomFactor = roomCount / baseTemplate.bom.roomCount;
+    const foundationFactor = foundationDepth / baseTemplate.bom.foundationDepth;
     const scaleFactor = areaFactor * floorFactor * heightFactor;
 
-    // Scale the materials based on the category
+    // Scale the materials based on the category and scaling factors
     const scaledCategories = baseTemplate.bom.categories.map((category) => {
       const scaledMaterials = category.materials.map((material) => {
         let scaledQuantity;
 
+        // Category-specific scaling logic with additional factors if needed
         switch (category.category.toLowerCase().trim()) {
           case 'earthwork':
             scaledQuantity = material.quantity * areaFactor * heightFactor;
             break;
           case 'concrete':
-            scaledQuantity = material.quantity * areaFactor * floorFactor * heightFactor;
-            break;
           case 'rebars':
             scaledQuantity = material.quantity * areaFactor * floorFactor * heightFactor;
             break;
           case 'formworks':
+          case 'scaffoldings':
+            scaledQuantity = material.quantity * areaFactor * floorFactor;
+            break;
+          case 'masonry':
+            scaledQuantity = material.quantity * areaFactor * floorFactor;
+            break;
+          case 'architectural - tiles':
+          case 'architectural - painting':
             scaledQuantity = material.quantity * areaFactor * floorFactor;
             break;
           case 'roofing':
             scaledQuantity = material.quantity * areaFactor;
             break;
-          case 'painting':
-            scaledQuantity = material.quantity * areaFactor * floorFactor;
+          case 'doors and windows':
+            scaledQuantity = material.quantity * roomFactor;
             break;
           case 'electrical':
           case 'plumbing':
-            scaledQuantity = material.quantity * areaFactor * floorFactor;
+            scaledQuantity = material.quantity * areaFactor * floorFactor * roomFactor;
+            break;
+          case 'septic tank and catch basins':
+            scaledQuantity = material.quantity * foundationFactor;
             break;
           default:
-            scaledQuantity = material.quantity * scaleFactor;  // Default scaling
+            scaledQuantity = material.quantity * scaleFactor; 
         }
 
-        // Total amount calculated based on scaled quantity and cost
+        // Apply additional scaling based on material-specific factors
+        scaledQuantity *= material.scaling.roomCountFactor ? roomFactor : 1;
+        scaledQuantity *= material.scaling.foundationDepthFactor ? foundationFactor : 1;
+
+        const unitsToRound = ['bags', 'pieces', 'units', 'pcs', 'shts', 'set', 'lot'];
+        if (unitsToRound.includes(material.unit.toLowerCase())) {
+          scaledQuantity = Math.ceil(scaledQuantity);
+        }
+
+  
         const scaledTotalAmount = material.cost * scaledQuantity;
 
         return {
@@ -73,9 +92,10 @@ const generateBOM = async (req, res) => {
       return { ...category, materials: scaledMaterials, categoryTotal };
     });
 
-    // Recalculate labor costs
-    let originalLaborCost = baseTemplate.bom.laborCost * (0.5 * areaFactor + 0.3 * floorFactor + 0.2 * heightFactor);
+    // Recalculate labor and project costs
     const totalMaterialsCost = scaledCategories.reduce((sum, category) => sum + category.categoryTotal, 0);
+
+    let originalLaborCost = totalMaterialsCost * 0.35;
     let originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
 
     // Apply location markup if selected
@@ -100,6 +120,8 @@ const generateBOM = async (req, res) => {
         totalArea,
         numFloors,
         avgFloorHeight,
+        roomCount,
+        foundationDepth,
         location: { name: locationName, markup: locationMarkup },
       },
       categories: scaledCategories,
@@ -124,7 +146,5 @@ const generateBOM = async (req, res) => {
     res.status(500).json({ error: "Failed to generate BOM.", details: error.message });
   }
 };
-
-
 
 module.exports = { generateBOM };

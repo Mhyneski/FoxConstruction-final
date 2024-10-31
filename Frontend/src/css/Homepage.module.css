@@ -93,26 +93,26 @@ body {
   top: 0;
   left: 0;
   z-index: -1;
-  background-color: black; /* Ensures visibility if the video fails to load */
+  background-color: black; 
 }
 
 .heroText {
-  position: absolute; /* Ensures the text is positioned relative to .heroSection */
+  position: absolute; 
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Centers the text horizontally and vertically */
+  transform: translate(-50%, -50%); 
   text-align: center;
   color: #fff;
   text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
   z-index: 1;
-  opacity: 0; /* Start hidden */
-  transform: translate(-50%, -50%) translateY(20px); /* Add translateY for the animation */
+  opacity: 0; 
+  transform: translate(-50%, -50%) translateY(20px); 
   transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
 .heroText.loaded {
-  opacity: 1; /* Show the text */
-  transform: translate(-50%, -50%) translateY(0); /* Reset position for the animation */
+  opacity: 1; 
+  transform: translate(-50%, -50%) translateY(0); 
 }
 
 .heroText h1 {
@@ -143,7 +143,7 @@ body {
   background-color: #3f5930;
 }
 
-/* Hamburger Button Styles */
+
 .hamburger {
   display: none;
   flex-direction: column;
@@ -151,7 +151,7 @@ body {
   width: 30px;
   height: 25px;
   cursor: pointer;
-  z-index: 10; /* Ensure it's on top of other elements */
+  z-index: 10; 
 }
 
 .hamburger span {
@@ -162,13 +162,13 @@ body {
   transition: all 0.3s;
 }
 
-/* Show the hamburger button on smaller screens */
+
 @media (max-width: 768px) {
   .hamburger {
     display: flex;
   }
 
-  /* Hide the navigation links initially on small screens */
+ 
   .rightSide {
     display: none;
     flex-direction: column;
@@ -179,10 +179,10 @@ body {
     padding: 10px;
     border-radius: 5px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-    z-index: 9; /* Place it above other content but below the hamburger */
+    z-index: 9; 
   }
 
-  /* Show navigation links when menu is open */
+
   .rightSide.open {
     display: flex;
   }

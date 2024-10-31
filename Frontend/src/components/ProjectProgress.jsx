@@ -10,7 +10,7 @@ const ProjectProgress = () => {
   const [project, setProject] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [isLoading, setIsLoading] = useState(true); 
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -21,12 +21,12 @@ const ProjectProgress = () => {
           },
         });
 
-        const fetchedProject = response.data.project || response.data; // Depending on API response format
+        const fetchedProject = response.data.project || response.data; 
         setProject(fetchedProject);
       } catch (error) {
         console.error('Error fetching project:', error);
       } finally {
-        setIsLoading(false); // Set loading to false after fetching
+        setIsLoading(false); 
       }
     };
 
@@ -52,11 +52,11 @@ const ProjectProgress = () => {
     return <div className={styles.loading}>Project not found.</div>;
   }
 
-  const startDate = new Date(project.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+    const startDate = new Date(project.startDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
   return (
     <div className={styles.container}>
@@ -109,7 +109,14 @@ const ProjectProgress = () => {
           );
         })}
       </div>
-      <p className={styles.lastUpdate}>LAST UPDATE: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A'}</p>
+      <p className={styles.lastUpdate}>
+  LAST UPDATE: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }) : 'No updates available'}
+</p>
+
     </div>
   );
 };

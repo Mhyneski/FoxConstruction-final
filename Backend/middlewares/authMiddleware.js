@@ -12,7 +12,7 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.SECRET);
-    req.user = await User.findOne({ _id: decoded._id }).select('_id role Username'); // Attach role and Username for permission checks
+    req.user = await User.findOne({ _id: decoded._id }).select('_id role Username'); 
     if (!req.user) {
       return res.status(401).json({ error: 'User not found' });
     }
@@ -26,7 +26,7 @@ const authMiddleware = async (req, res, next) => {
 // General role-based authorization middleware
 const authorizeRoles = (permissions) => {
   return (req, res, next) => {
-    const userRole = req.user.role; // Use req.user.role, as it's already attached in authMiddleware
+    const userRole = req.user.role; 
     if (permissions.includes(userRole)) {
       next();
     } else {

@@ -25,8 +25,8 @@ export const AuthContextProvider = ({ children }) => {
     if (storedUser) {
       dispatch({ type: 'LOGIN', payload: storedUser });
     } else {
-      console.warn('No user found in localStorage');  // Log a warning if no user is found
-      dispatch({ type: 'LOGOUT' });  // Ensure state is cleared if no user
+      console.warn('No user found in localStorage');  
+      dispatch({ type: 'LOGOUT' });  
     }
   }, [dispatch]);
   

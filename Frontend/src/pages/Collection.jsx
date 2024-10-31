@@ -20,16 +20,16 @@ const Collection = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-scroll every second
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % collections.length);
-    }, 2000); // 1 second
+    }, 2000); 
 
-    return () => clearInterval(interval); // Clean up interval on unmount
+    return () => clearInterval(interval); 
   }, [collections.length]);
 
-  // Handler for when a dot is clicked
+  
   const handleDotClick = (index) => {
     setCurrentIndex(index);
   };

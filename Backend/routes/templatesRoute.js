@@ -1,20 +1,38 @@
-const express = require('express')
+// routes/templateRoutes.js
 
+const express = require('express');
 const router = express.Router();
 
-// get all templates
-router.get('/')
+const {
+  createCustomTemplate,
+  addMaterialToCategory,
+  getTemplates,
+  getTemplateById,
+  deleteTemplate,
+  updateTemplate,
+  removeMaterialFromCategory
+} = require('../controllers/templateController');
 
-// get specific template
-router.get('/:id')
+const { authMiddleware, authorizeRoles } = require('../middlewares/authMiddleware');
 
-// create a new template
-router.post('/')
+// Get all templates
+router.get('/', authMiddleware, getTemplates);
 
-// delete a template
-router.delete('/:id')
+// Get specific template by ID
+router.get('/:id', authMiddleware, getTemplateById);
 
-// update a template
-router.patch('/:id')
+// Create a new template
+router.post('/', authMiddleware, createCustomTemplate);
 
-module.exports = router
+// Add material to a category in a template
+router.post('/:templateId/categories/:categoryName/materials', authMiddleware, addMaterialToCategory);
+
+// Delete a template
+router.delete('/:id', authMiddleware, deleteTemplate);
+
+router.delete('/:templateId/categories/:categoryName/materials/:materialId', authMiddleware, removeMaterialFromCategory);
+
+// Update a template
+router.patch('/:id', authMiddleware, updateTemplate);
+
+module.exports = router;

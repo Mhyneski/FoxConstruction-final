@@ -297,6 +297,178 @@
   display: inline-block;
 }
 
+.modalForm {
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+}
+
+.detailsSection {
+  margin-top: 10px;
+}
+
+.detailsSection h4 {
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.detailsSection p {
+  margin: 5px 0;
+  line-height: 1.5;
+}
+
+.floorDetails, .taskDetails {
+  margin-left: 20px;
+  padding: 10px 0;
+}
+
+.downloadButton {
+  margin-top: 15px;
+  padding: 8px 12px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.downloadButton:hover {
+  background-color: #0056b3;
+}
+
+/* Start Button */
+.startButton {
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.startButton:hover {
+  background-color: #388e3c;
+}
+
+/* Postpone Button */
+.postponeButton {
+  background-color: #ffa726;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.postponeButton:hover {
+  background-color: #fb8c00;
+}
+
+/* Resume Button */
+.resumeButton {
+  background-color: #29b6f6;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.resumeButton:hover {
+  background-color: #039be5;
+}
+
+/* End Button */
+.endButton {
+  background-color: #e53935;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.endButton:hover {
+  background-color: #d32f2f;
+}
+
+.manualCheckboxLabel {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.manualCheckbox {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.actionsContainer {
+  display: flex;
+  gap: 8px; /* Adjust gap as needed for spacing */
+}
+
+.startButton, .editButton, .deleteButton, .postponeButton, .resumeButton, .endButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px; /* Adjust for icon spacing */
+}
+
+/* Progress Label */
+.progressLabel {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 5px;
+  display: block;
+  font-weight: bold;
+}
+
+/* Input Field Placeholder and Border */
+.inputField::placeholder {
+  color: #aaa;
+}
+
+.inputField {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 15px;
+  transition: border-color 0.3s ease;
+}
+
+.inputField:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Manual Progress Checkbox */
+.manualCheckboxLabel {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.manualCheckbox {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+
+
 
 
   

@@ -9,12 +9,18 @@ const {
   updateFloorProgress,
   getProjectForUser,
   updateProjectStatus,
-  saveBOMToProject // Ensure to import the controller function
+  saveBOMToProject,
+  postponeProject,
+  resumeProject,
+  endProject,
+  startProject,
+  resetFloorProgressToAutomatic
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
-
 const router = express.Router();
+
+router.use(authMiddleware);
 
 router.use(authMiddleware);
 
@@ -24,10 +30,10 @@ router.patch('/:id/status', updateProjectStatus);
 router.get('/contractor', getProjectsByContractor);
 
 // Get all projects for a logged-in user
-router.get('/projectuser', getProjectForUser); // This should be above the `:id` route
+router.get('/projectuser', getProjectForUser); 
 
 // Get specific project by ID
-router.get('/:id', getProjectById); // This should be after other specific routes
+router.get('/:id', getProjectById); 
 
 // Get all projects
 router.get('/', getProject);
@@ -45,5 +51,14 @@ router.patch('/:id', updateProject);
 router.patch('/:projectId/floors/:floorId', updateFloorProgress);
 
 router.post('/:id/bom', saveBOMToProject);
+
+router.post('/projects/:projectId/floors/:floorId/reset', resetFloorProgressToAutomatic);
+
+// New routes for project management actions
+router.patch('/:id/start', startProject);
+router.patch('/:id/postpone', postponeProject);
+router.patch('/:id/resume', resumeProject);
+router.patch('/:id/end', endProject);
+
 
 module.exports = router;

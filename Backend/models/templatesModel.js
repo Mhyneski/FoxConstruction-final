@@ -7,29 +7,37 @@ const materialSchema = new schema({
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
   cost: { type: Number, required: true },
-  totalAmount: { type: Number, required: true }
+  totalAmount: { type: Number, required: true },
+  scaling: { 
+    areaFactor: { type: Number, default: 1 },
+    heightFactor: { type: Number, default: 1 },
+    roomCountFactor: { type: Number, default: 0 }, 
+    foundationDepthFactor: { type: Number, default: 0 } 
+  }
 });
 
 const categorySchema = new schema({
-  category: { type: String, required: true }, // e.g., "Earthwork", "Concrete"
-  materials: [materialSchema] // Array of materials within the category
+  category: { type: String, required: true },
+  materials: [materialSchema]
 });
 
 const bomSchema = new schema({
   totalArea: { type: Number, required: true },
   numFloors: { type: Number, required: true },
   avgFloorHeight: { type: Number, required: true },
-  categories: [categorySchema], // Group materials by category
+  roomCount: { type: Number, required: true }, 
+  foundationDepth: { type: Number, required: true }, 
+  categories: [categorySchema],
   laborCost: { type: Number, required: true },
-  totalProjectCost: { type: Number, required: true }
+  totalProjectCost: { type: Number, required: true },
 });
 
 const templatesSchema = new schema({
   title: { type: String, required: true },
   type: { type: String, enum: ["residential"], required: true },
   tier: { type: String, enum: ["economy", "standard", "premium"], required: true },
-  bom: bomSchema
+  bom: bomSchema,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Template', templatesSchema);
-

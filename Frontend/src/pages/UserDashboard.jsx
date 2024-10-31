@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+// src/components/UserDashboard.jsx
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import image from "../assets/IMAGE1.jpg";
 import styles from "../css/UserDashboard.module.css";
@@ -6,28 +7,27 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
 import ChangePasswordModal from "../components/ChangePasswordModal"; 
 import axios from 'axios';
-
-
-const calculateProgress = (createdAt, timeline) => {
-  const currentDate = new Date();
-  const start = new Date(createdAt); 
-  const timelineInDays = timeline.unit === 'weeks'
-    ? timeline.duration * 7
-    : timeline.duration * 30; 
-
-  const daysElapsed = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24)); 
-  const progress = Math.min((daysElapsed / timelineInDays) * 100, 100); 
-
-  return progress.toFixed(2); 
-};
+import AlertModal from '../components/AlertModal'; // Import AlertModal
 
 const UserDashboard = () => {
   const { user } = useAuthContext();
   const [projects, setProjects] = useState([]);
-  const [showPasswordModal, setShowPasswordModal] = useState(false); 
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false); // Alert Modal State
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("info"); // Default alert type
+  const containerRef = useRef(null);
+
+  // Function to show alerts
+  const showAlert = (title, message, type = "info") => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setIsAlertOpen(true);
+  };
 
   useEffect(() => {
-    
     const fetchProjects = async () => {
       try {
         const response = await axios.get(`http://localhost:4000/api/project/projectuser`, {
@@ -35,19 +35,19 @@ const UserDashboard = () => {
             Authorization: `Bearer ${user.token}`
           }
         });
-        const projectsWithProgress = response.data.map(project => ({
+
+        
+        const fetchedProjects = response.data.map(project => ({
           ...project,
-          progress: calculateProgress(project.createdAt, project.timeline)
+          
         }));
-        setProjects(projectsWithProgress);
+        setProjects(fetchedProjects);
       } catch (error) {
         console.error('Error fetching projects:', error);
+        showAlert("Error", "Failed to fetch projects. Please try again later.", "error");
       }
     };
 
-    fetchProjects();
-
-    // Check if the password is still the default one
     const checkDefaultPassword = async () => {
       try {
         const response = await axios.get(`http://localhost:4000/api/user/is-default-password`, {
@@ -56,16 +56,21 @@ const UserDashboard = () => {
           },
         });
 
-        
         if (response.data.isDefault) {
           setShowPasswordModal(true);
         }
       } catch (error) {
         console.error('Error checking default password:', error);
+        showAlert("Error", "Failed to verify password status.", "error");
       }
     };
 
-    checkDefaultPassword();
+    if (user && user.token) {
+      fetchProjects();
+      checkDefaultPassword();
+    } else {
+      showAlert("Authentication Error", "User is not authenticated. Please log in again.", "error");
+    }
   }, [user]);
 
   const handlePasswordChange = async (newPassword) => {
@@ -75,11 +80,15 @@ const UserDashboard = () => {
           Authorization: `Bearer ${user.token}`
         }
       });
-      alert("Password changed successfully.");
+      showAlert("Success", "Password changed successfully.", "success");
       setShowPasswordModal(false); 
     } catch (error) {
       console.error("Error changing password:", error);
-      alert("Failed to change password.");
+      if (error.response && error.response.data && error.response.data.error) {
+        showAlert("Error", error.response.data.error, "error");
+      } else {
+        showAlert("Error", "Failed to change password.", "error");
+      }
     }
   };
 
@@ -94,7 +103,8 @@ const UserDashboard = () => {
       <div className={styles.NameBanner}>
         {user && <p>WELCOME BACK, {user.Username}!</p>}
       </div>
-      <div className={styles.cardContainer}>
+      
+      <div className={styles.cardContainer} ref={containerRef}>
         {projects.length > 0 ? (
           projects.map(project => (
             <Link to={`/project/${project._id}`} key={project._id} className={styles.card}>
@@ -102,11 +112,7 @@ const UserDashboard = () => {
               <div className={styles.cardContent}>
                 <h1>{project.name}</h1>
                 <div className={styles.projectInfo}>
-                  <p>{project.status === 'finished' ? 'Finished' : 'Ongoing'}</p>
-                </div>
-                
-                <div className={styles.projectProgress}>
-                  <p>Overall Progress: {project.progress}%</p>
+                  <p>{project.status}</p>
                 </div>
               </div>
             </Link>
@@ -115,8 +121,17 @@ const UserDashboard = () => {
           <p>No projects available for this user.</p>
         )}
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+      />
     </>
   );
-};
+}; 
 
 export default UserDashboard;

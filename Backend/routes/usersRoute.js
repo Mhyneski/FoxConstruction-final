@@ -2,7 +2,7 @@ const express = require('express');
 const {
   loginUser, signupUser, deleteUser, getUsers, getsUsers, resetPassword, changePassword, isDefaultPassword, forgotPassword
 } = require('../controllers/userController');
-const { authMiddleware, authorizeRoles } = require('../middlewares/authMiddleware'); // Make sure both middlewares are imported
+const { authMiddleware, authorizeRoles } = require('../middlewares/authMiddleware'); 
 const router = express.Router();
 
 // get all users (for admin or roles allowed)

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import styles from "../css/Homepage.module.css"; // Adjust this if you use a separate CSS file for Header
+import styles from "../css/Homepage.module.css"; 
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,7 +12,7 @@ const Header = () => {
   return (
     <header className={styles.header}>
       <div className={styles.leftSide}>
-        <Link to="/" className={styles.logoLink}> {/* Link to the homepage */}
+        <Link to="/" className={styles.logoLink}> 
           <p className={styles.name1}>FOX</p>
           <p className={styles.name2}>CONSTRUCTION CO.</p>
         </Link>

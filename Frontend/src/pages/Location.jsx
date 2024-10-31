@@ -163,12 +163,22 @@ const Location = () => {
                   className={styles.inputField}
                 />
                 <input
-                  type="number"
-                  placeholder="Markup %"
-                  value={newLocation.markup}
-                  onChange={(e) => setNewLocation({ ...newLocation, markup: e.target.value })}
-                  className={styles.inputField}
-                />
+  type="number"
+  placeholder="Markup %"
+  value={newLocation.markup}
+  onChange={(e) => {
+    // Allow clearing the field, but prevent negative values
+    const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+    setNewLocation({ ...newLocation, markup: value });
+  }}
+  onBlur={() => {
+    // If field is empty on blur, reset to 0
+    const value = newLocation.markup === '' ? 0 : parseFloat(newLocation.markup);
+    setNewLocation({ ...newLocation, markup: value });
+  }}
+  className={styles.inputField}
+/>
+
                 <button onClick={handleCreate} className={styles.createButton}>Create Location</button>
               </div>
             </div>
@@ -203,11 +213,22 @@ const Location = () => {
                   <td>
                     {isEditing === location._id ? (
                       <input
-                        type="number"
-                        value={editedLocation.markup}
-                        onChange={(e) => setEditedLocation({ ...editedLocation, markup: e.target.value })}
-                        className={styles.inputField}
-                      />
+                      type="number"
+                      value={editedLocation.markup}
+                      onChange={(e) => {
+                        // Allow clearing the field, but prevent negative values
+                        const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                        setEditedLocation({ ...editedLocation, markup: value });
+                      }}
+                      onBlur={() => {
+                        // If field is empty on blur, reset to 0
+                        const value = editedLocation.markup === '' ? 0 : parseFloat(editedLocation.markup);
+                        setEditedLocation({ ...editedLocation, markup: value });
+                      }}
+                      className={styles.inputField}
+                    />
+                    
+                    
                     ) : (
                       location.markup
                     )}

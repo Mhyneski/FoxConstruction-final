@@ -16,6 +16,7 @@ import Contacts from './pages/Contacts';
 import Unauthorized from './pages/Unauthorized'; 
 import ProtectedRoute from './components/ProtectedRoute';
 import AboutUs from './pages/AboutUs';
+import Templates from './pages/Templates';
 
 function App() {
 
@@ -25,7 +26,7 @@ function App() {
         <Route path="/Login" element={<Login />} />
         <Route path="/" element={<Homepage />} />
 
-        {/* Routes accessible only by Admin */}
+       
         <Route
           path="/AdminDashboard"
           element={
@@ -85,6 +86,14 @@ function App() {
               <ContractorDashboard />
             </ProtectedRoute>
           }
+        />
+        <Route
+        path="/Templates"
+        element={
+          <ProtectedRoute allowedRoles={['contractor']}>
+            <Templates />
+          </ProtectedRoute>
+        }
         />
         <Route
           path="/ProjectList"

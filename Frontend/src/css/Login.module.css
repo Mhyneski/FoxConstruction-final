@@ -84,7 +84,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 400px; /* Ensures both elements align within this width */
+  width: 400px;
   margin-top: 10px;
 }
 

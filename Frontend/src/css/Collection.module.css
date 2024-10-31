@@ -17,8 +17,8 @@
   position: relative;
   overflow: hidden;
   width: 100vw;
-  height: 60vh; /* Adjusts height to 60% of the viewport */
-  max-height: 600px; /* Caps the height for large screens */
+  height: 60vh; 
+  max-height: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,7 +40,7 @@
 .collectionImage {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Covers the container without stretching */
+  object-fit: cover; 
 }
 
 .overlay {
@@ -88,9 +88,9 @@
   background-color: #6b775c;
 }
 
-/* Media Query for Larger Screens */
+
 @media (min-width: 1200px) {
   .carousel {
-    height: 100vh; /* Make the carousel height smaller on large screens */
+    height: 100vh; 
   }
 }

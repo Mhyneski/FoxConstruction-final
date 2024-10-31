@@ -8,7 +8,6 @@
   position: relative;
 }
 
-/* Center Content for Home Icon and "Go to Dashboard" text */
 .centerContent {
   display: flex;
   align-items: center;
@@ -29,7 +28,7 @@
   color: #3f5930;
 }
 
-/* Company Info Styling */
+
 .companyInfo {
   display: flex;
   align-items: center;
@@ -39,7 +38,7 @@
 .name1 {
   color: #a7b194;
   font-weight: bold;
-  font-size: 32px; /* Reduced size for a cleaner look */
+  font-size: 32px; 
   margin: 0;
 }
 
@@ -49,7 +48,7 @@
   font-size: 14px;
 }
 
-/* User Info Styling */
+
 .userInfo {
   display: flex;
   align-items: center;
@@ -63,7 +62,7 @@
 }
 
 .profileIcon {
-  font-size: 24px; /* Smaller icon for better fit */
+  font-size: 24px; 
   color: #a7b194;
   cursor: pointer;
 }
@@ -72,7 +71,7 @@
   color: #6b7c61;
 }
 
-/* Dropdown Menu Styling */
+
 .dropdownMenu {
   position: absolute;
   top: 50px;
@@ -100,10 +99,10 @@
   background-color: #6b7c61;
 }
 
-/* Responsive Adjustments */
+
 @media (max-width: 768px) {
   .name1 {
-    font-size: 28px; /* Reduced size */
+    font-size: 28px; 
   }
 
   .name2 {
@@ -111,7 +110,7 @@
   }
 
   .centerContent .goToHomeText {
-    font-size: 16px; /* Slightly smaller text for "Dashboard" */
+    font-size: 16px; 
   }
 
   .username {
@@ -119,10 +118,10 @@
   }
 
   .centerContent .homeIcon {
-    font-size: 20px; /* Smaller icon */
+    font-size: 20px; 
   }
   
   .topSIDE {
-    padding: 0.5rem; /* Less padding on smaller screens */
+    padding: 0.5rem; 
   }
 }

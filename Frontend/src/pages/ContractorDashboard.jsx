@@ -65,6 +65,14 @@ const ContractorDashboard = () => {
           />
           <div className={styles.cardText}>PROJECT LISTS</div>
         </Link>
+        <Link to="/Templates" className={styles.dashboardCard}>
+          <img
+            src={Picture}
+            alt="tEMPLATES"
+            className={styles.dashboardImage}
+          />
+          <div className={styles.cardText}>TEMPLATES</div>
+        </Link>
         <Link to="/Generator" className={styles.dashboardCard}>
           <img
             src={Picture}
