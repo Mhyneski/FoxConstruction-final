@@ -220,14 +220,14 @@ const Accounts = () => {
             <h2 className={styles.centeredTitle}>{filteredUsers.length} {filterRole === 'All' && !filterResetPassword ? 'Accounts' : filterRole !== 'All' && !filterResetPassword ? `${filterRole}s` : filterResetPassword && filterRole === 'All' ? 'Password Reset Accounts' : filterResetPassword && filterRole !== 'All' ? `${filterRole} Password Resets` : ''}</h2>
             <div className={styles.scrollableTableContainer}>
               <table className={styles.userTable}>
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>Forgot Password</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Forgot Password</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
                 <tbody>
   {filteredUsers.map(user => (
     <tr key={user._id}>
