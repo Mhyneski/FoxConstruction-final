@@ -29,7 +29,7 @@ const Materials = () => {
     const fetchMaterials = async () => {
       setLoading(true); 
       try {
-        const response = await axios.get(`http://localhost:4000/api/materials`, {
+        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/materials`, {
           headers: {
             Authorization: `Bearer ${user.token}`, 
           },
@@ -54,7 +54,7 @@ const Materials = () => {
     try {
       const updatedMaterial = { ...editedMaterial };
       
-      await axios.patch(`http://localhost:4000/api/materials/${id}`, updatedMaterial, {
+      await axios.patch(`https://foxconstruction-final.onrender.com/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -73,7 +73,7 @@ const Materials = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:4000/api/materials/${id}`, {
+      await axios.delete(`https://foxconstruction-final.onrender.com/api/materials/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -106,7 +106,7 @@ const Materials = () => {
         return;
       }
   
-      const response = await axios.post(`http://localhost:4000/api/materials`, newMaterial, {
+      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/materials`, newMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

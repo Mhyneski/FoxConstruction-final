@@ -17,7 +17,7 @@ const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToRepl
 
   useEffect(() => {
     if (isOpen && user && user.token) {
-      Axios.get('http://localhost:4000/api/materials', {
+      Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -314,7 +314,7 @@ const Generator = () => {
       setIsLoadingProjects(true);
 
       // Fetch projects for the contractor
-      Axios.get(`http://localhost:4000/api/project/contractor`, {
+      Axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -331,7 +331,7 @@ const Generator = () => {
         });
 
       // Fetch locations
-      Axios.get('http://localhost:4000/api/locations', {
+      Axios.get('https://foxconstruction-final.onrender.com/api/locations', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -345,7 +345,7 @@ const Generator = () => {
         });
 
       // Fetch templates
-      Axios.get('http://localhost:4000/api/templates', {
+      Axios.get('https://foxconstruction-final.onrender.com/api/templates', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -575,7 +575,7 @@ const Generator = () => {
         foundationDepth: parseFloat(formData.foundationDepth)
       };
 
-      Axios.post(`http://localhost:4000/api/bom/generate`, payload, {
+      Axios.post(`https://foxconstruction-final.onrender.com/api/bom/generate`, payload, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
@@ -701,7 +701,7 @@ const Generator = () => {
       },
     };
     
-    Axios.post(`http://localhost:4000/api/project/${selectedProject._id}/bom`, payload, {
+    Axios.post(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}/bom`, payload, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((response) => {

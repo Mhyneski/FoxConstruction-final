@@ -48,7 +48,7 @@ const Login = () => {
     }
     
     try {
-      await axios.patch(`http://localhost:4000/api/user/forgot-password/${Username}`);
+      await axios.patch(`https://foxconstruction-final.onrender.com/api/user/forgot-password/${Username}`);
       // Show success message in modal
       showAlert("Success", "Password reset request has been sent.", "success");
     } catch (error) {

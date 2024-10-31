@@ -93,7 +93,7 @@ const Templates = () => {
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`http://localhost:4000/api/templates`, {
+        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setTemplates(response.data.templates);
@@ -112,7 +112,7 @@ const Templates = () => {
   // Fetch details of a specific template
 const fetchTemplateDetails = async (templateId) => {
   try {
-    const response = await axios.get(`http://localhost:4000/api/templates/${templateId}`, {
+    const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates/${templateId}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     });
     setSelectedTemplate(response.data.template);
@@ -128,7 +128,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     const templateId = selectedTemplate._id;
 
     await axios.delete(
-      `http://localhost:4000/api/templates/${templateId}/categories/${categoryName}/materials/${materialId}`,
+      `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials/${materialId}`,
       {
         headers: { Authorization: `Bearer ${user.token}` },
       }
@@ -148,7 +148,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   // Fetch materials
   const fetchMaterials = async () => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/materials`, {
+      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/materials`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setMaterials(response.data);
@@ -200,7 +200,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     }
     try {
       const response = await axios.post(
-        `http://localhost:4000/api/templates`,
+        `https://foxconstruction-final.onrender.com/api/templates`,
         newTemplate,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -225,7 +225,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     }
     try {
       const response = await axios.patch(
-        `http://localhost:4000/api/templates/${editTemplateId}`,
+        `https://foxconstruction-final.onrender.com/api/templates/${editTemplateId}`,
         newTemplate,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -250,7 +250,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   // Handle deleting a template
   const handleDeleteTemplate = async () => {
     try {
-      await axios.delete(`http://localhost:4000/api/templates/${selectedTemplate._id}`, {
+      await axios.delete(`https://foxconstruction-final.onrender.com/api/templates/${selectedTemplate._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -410,7 +410,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
       );
 
       const response = await axios.post(
-        `http://localhost:4000/api/templates/${templateId}/categories/${categoryName}/materials`,
+        `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials`,
         data,
         {
           headers: { Authorization: `Bearer ${user.token}` },

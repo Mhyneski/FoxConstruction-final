@@ -42,7 +42,7 @@ const Accounts = () => {
       if (!user || !user.token) return;
       setLoading(true); 
       try {
-        const response = await axios.get(`http://localhost:4000/api/user`, {
+        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user`, {
           headers: { Authorization: `Bearer ${user.token}` },  
         });
 
@@ -63,7 +63,7 @@ const Accounts = () => {
     if (!user || !user.token) return;
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:4000/api/user`, {
+      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setUsers(response.data);
@@ -150,7 +150,7 @@ const Accounts = () => {
   
     try {
       await axios.patch(
-        `http://localhost:4000/api/user/reset-password/${selectedUserId}`,
+        `https://foxconstruction-final.onrender.com/api/user/reset-password/${selectedUserId}`,
         {},
         {
           headers: { Authorization: `Bearer ${user.token}` }, 
