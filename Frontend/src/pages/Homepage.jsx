@@ -50,7 +50,7 @@ const Homepage = () => {
           src={HeroVideo}
           autoPlay
           loop
-          muted={isMuted}
+          muted
           playsInline
           style={{
             position: 'absolute',
