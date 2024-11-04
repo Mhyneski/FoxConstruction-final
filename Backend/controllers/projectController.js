@@ -2,90 +2,124 @@ const { default: mongoose } = require('mongoose');
 const Project = require('../models/projectModel');
 const User = require('../models/usersModel');
 const Template = require('../models/templatesModel');
+const { DateTime } = require('luxon');
 
-const distributeTaskProgress = (floorProgress, numTasks) => {
-  if (numTasks === 0) return []; 
-  const progressPerTask = floorProgress / numTasks;  
-  let taskProgress = new Array(numTasks).fill(0).map(() => Math.round(progressPerTask));  
-  return taskProgress;
-};
+const calculateCumulativeDelay = (project) => {
+  let totalDelay = 0;
 
-const distributeFloorProgress = (totalProgress, numFloors, timelineInDays, daysElapsed, floors) => {
-  let floorsProgress = new Array(numFloors).fill(0);
+  for (let i = 0; i < project.postponedDates.length; i++) {
+    const postponedDate = new Date(project.postponedDates[i]);
+    const resumedDate = project.resumedDates[i]
+      ? new Date(project.resumedDates[i])
+      : new Date(); // If no resumedDate, assume it's still postponed
 
-  if (daysElapsed >= timelineInDays || totalProgress >= 100) {
-    floorsProgress = floorsProgress.map((_, index) => {
-      return floors[index].isManual ? floors[index].progress : 100;
-    });
-    return floorsProgress;
+    // Calculate the difference in days
+    const delayInDays = Math.floor((resumedDate - postponedDate) / (1000 * 60 * 60 * 24));
+    totalDelay += delayInDays;
   }
 
-  for (let i = 0; i < numFloors; i++) {
-    if (floors[i].isManual) {
-      floorsProgress[i] = floors[i].progress;
-      continue;
-    }
-
-    const daysForFloor = (timelineInDays / numFloors) * (i + 1);  
-    const floorProgressReduction = 15 * i;
-
-    if (daysElapsed >= daysForFloor) {
-      floorsProgress[i] = Math.max(100 - floorProgressReduction, 0);
-    } else if (daysElapsed >= (timelineInDays / numFloors) * i) {
-      const floorProgress = ((daysElapsed - (timelineInDays / numFloors) * i) / (timelineInDays / numFloors)) * (100 - floorProgressReduction);
-      floorsProgress[i] = Math.min(floorProgress, 100 - floorProgressReduction);
-    }
-
-    floorsProgress[i] = Math.round(floorsProgress[i]);
-  }
-
-  return floorsProgress;
+  return totalDelay;
 };
 
 
-const calculateProgress = async (project) => {
+const distributeTaskProgress = (floorProgress, tasks) => {
+  if (tasks.length === 0) return [];
   
-  if (project.isManualProgress) {
-    return project.progress;
-  }
+  // Define weights for tasks based on complexity, duration, etc.
+  const weights = tasks.map(task => task.complexityWeight || 1);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 
-  // Do not calculate progress if the project is postponed
-  if (project.status === 'postponed') {
-    return project.progress;
+  return tasks.map((task, index) => {
+    if (task.isManual) return task.progress; // Keep manual progress as is
+    const allocatedProgress = Math.round((weights[index] / totalWeight) * floorProgress);
+    return Math.min(allocatedProgress, 100);
+  });
+};
+
+
+const distributeFloorProgress = (totalProgress, numFloors, floors) => {
+  // Define a weight for each floor; adjust these values as needed
+  const weights = floors.map((floor, index) => floor.complexityWeight || 1);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  
+  return floors.map((floor, index) => {
+    if (floor.isManual) return floor.progress; // Keep manual progress as is
+    const allocatedProgress = Math.round((weights[index] / totalWeight) * totalProgress);
+    return Math.min(allocatedProgress, 100);
+  });
+};
+
+
+
+
+
+const applyHybridProgress = (project) => {
+  const totalProgress = calculateProgress(project) || 0;
+  project.progress = totalProgress;
+
+  // Distribute progress across floors
+  const floorsProgress = distributeFloorProgress(totalProgress, project.floors.length, project.floors);
+
+  project.floors.forEach((floor, index) => {
+    if (!floor.isManual) {
+      floor.progress = floorsProgress[index];
+    }
+
+    // Distribute progress for tasks within each floor
+    const tasksProgress = distributeTaskProgress(floor.progress, floor.tasks);
+    floor.tasks = floor.tasks.map((task, taskIndex) => {
+      if (!task.isManual) {
+        // Apply distributed progress directly to each task
+        task.progress = tasksProgress[taskIndex];
+      }
+      return task;
+    });
+  });
+
+  project.markModified('floors'); // Indicate floors array has been modified for Mongoose
+  return project;
+};
+
+
+
+
+
+
+const calculateProgress = (project) => {
+  if (!project.isAutomaticProgress) {
+    console.log(`Project ID: ${project._id} is in manual mode. Returning default progress of 0.`);
+    return 0;
   }
 
   const currentDate = new Date();
-  const referenceDate = new Date(project.referenceDate);
-  const timelineInDays = project.timeline.unit === 'weeks' ? project.timeline.duration * 7 : project.timeline.duration * 30;
+  const timelineInDays = project.timeline.unit === 'weeks' 
+    ? project.timeline.duration * 7 
+    : project.timeline.duration * 30;
+  const cumulativeDelay = calculateCumulativeDelay(project);
+  const adjustedTimelineInDays = timelineInDays + cumulativeDelay;
+  const daysElapsed = Math.floor((currentDate - project.referenceDate) / (1000 * 60 * 60 * 24));
 
-  const daysElapsed = Math.floor((currentDate - referenceDate) / (1000 * 60 * 60 * 24));
-  let progress = Math.min((daysElapsed / timelineInDays) * 100, 100);
+  // Debug logs to track calculation values
+  console.log(`Project: ${project.name}`);
+  console.log(`Reference Date: ${project.referenceDate}`);
+  console.log(`Current Date: ${currentDate}`);
+  console.log(`Days Elapsed: ${daysElapsed}`);
+  console.log(`Timeline in Days: ${timelineInDays}`);
+  console.log(`Cumulative Delay: ${cumulativeDelay}`);
+  console.log(`Adjusted Timeline: ${adjustedTimelineInDays}`);
 
-  // Apply progress offset if necessary
-  progress += project.progressOffset || 0;
-  progress = Math.min(progress, 100); // Ensure it doesn't exceed 100%
-
-  // Automatically mark project as 'finished' when the timeline is completed
-  if (daysElapsed >= timelineInDays && project.status === 'ongoing') {
-    project.status = 'finished';
-    await project.save();
-  }
-
-  // Update project-level progress only if not manually set
-  if (!project.isManualProgress) {
-    project.progress = Math.round(progress);
-    // Update referenceDate to current date for next calculation
-    project.referenceDate = currentDate;
-    await project.save();
-  }
-
-  return Math.round(project.progress);
+  const calculatedProgress = Math.min((daysElapsed / adjustedTimelineInDays) * 100, 100);
+  console.log(`Calculated progress for project ${project.name}: ${Math.round(calculatedProgress)}`);
+  
+  return Math.round(calculatedProgress);
 };
 
 
 
 
-// Get projects for a specific contractor
+
+
+
 const getProjectsByContractor = async (req, res) => {
   const contractorUsername = req.user.Username;
 
@@ -95,48 +129,19 @@ const getProjectsByContractor = async (req, res) => {
 
   try {
     const projects = await Project.find({ contractor: contractorUsername })
-      .populate('location') 
+      .populate('location')
       .sort({ createdAt: -1 });
-
-    // Process each project sequentially to handle async operations correctly
-    for (const project of projects) {
-      // Calculate total progress respecting manual flags
-      const totalProgress = await calculateProgress(project);
-
-      // Calculate days elapsed based on referenceDate
-      const daysElapsed = Math.floor((new Date() - new Date(project.referenceDate)) / (1000 * 60 * 60 * 24));
-
-      const updatedFloorsProgress = distributeFloorProgress(
-        totalProgress,
-        project.floors.length,
-        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-        daysElapsed,
-        project.floors
-      );
-
-      // Update each floor and its tasks
-      project.floors.forEach((floor, index) => {
-        if (!floor.isManual) {
-          floor.progress = updatedFloorsProgress[index];
-
-          // Distribute progress to tasks, respecting task-level manual flags
-          const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-          floor.tasks.forEach((task, taskIndex) => {
-            if (!task.isManual) {
-              task.progress = updatedTaskProgress[taskIndex];
-            }
-          });
-        }
-      });
-
-      await project.save();
-    }
 
     res.status(200).json(projects);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching projects:", error);
+    res.status(500).json({ error: "Failed to fetch projects" });
   }
 };
+
+
+
+
 
 // Create a new project
 const createProject = async (req, res) => {
@@ -144,7 +149,7 @@ const createProject = async (req, res) => {
     name, 
     contractor: contractorUsername, 
     user: userUsername, 
-    floors, 
+    numFloors, // Input number of floors instead of detailed floor data
     template, 
     timeline, 
     status, 
@@ -160,7 +165,6 @@ const createProject = async (req, res) => {
     const contractorObject = await User.findOne({ Username: contractorUsername });
     const userObject = await User.findOne({ Username: userUsername });
 
-    // Check contractor role
     if (!contractorObject || contractorObject.role !== 'contractor') {
       return res.status(403).json({ error: "The provided contractor is invalid or not a contractor." });
     }
@@ -168,58 +172,43 @@ const createProject = async (req, res) => {
       return res.status(404).json({ error: "The provided user does not exist." });
     }
 
-    // Find the template by ID
     const templateObject = await Template.findById(template);
     if (!templateObject) {
       return res.status(404).json({ error: "Template not found." });
     }
 
     // Validate required fields
-    if (!location) {
-      return res.status(400).json({ error: "Location is required." });
-    }
-    if (!totalArea || totalArea <= 0) {
-      return res.status(400).json({ error: "Total area is required and must be greater than 0." });
-    }
-    if (!avgFloorHeight || avgFloorHeight <= 0) {
-      return res.status(400).json({ error: "Average floor height is required and must be greater than 0." });
-    }
-    if (!foundationDepth || foundationDepth <= 0) {
-      return res.status(400).json({ error: "Foundation depth is required and must be greater than 0." });
-    }
-    if (!roomCount || roomCount <= 0) {
-      return res.status(400).json({ error: "Room count is required and must be greater than 0." });
+    if (!location || !totalArea || totalArea <= 0 || !avgFloorHeight || avgFloorHeight <= 0 || !foundationDepth || foundationDepth <= 0 || !roomCount || roomCount <= 0) {
+      return res.status(400).json({ error: "Required fields are missing or invalid." });
     }
 
-    // Format floors with manual flags
-    const formattedFloors = floors ? floors.map(floor => ({
-      name: floor.name,
-      progress: Math.round(floor.progress) || 0,
-      isManual: floor.isManual || false, 
-      tasks: floor.tasks ? floor.tasks.map(task => ({
-        name: task.name,
-        progress: Math.round(task.progress) || 0,
-        isManual: task.isManual || false
-      })) : []
-    })) : [];
+    // Generate floors with decreasing weights based on floor order
+    const formattedFloors = Array.from({ length: numFloors }, (_, index) => ({
+      name: `FLOOR ${index + 1}`,
+      progress: 0,
+      isManual: false,
+      complexityWeight: numFloors - index, // Highest weight for the first floor
+      tasks: [] // Empty tasks initially
+    }));
 
-    // Initialize referenceDate to now
-    const referenceDate = new Date();
+    // Set startDate and referenceDate
+    const now = new Date();
 
     const project = await Project.create({
       name,
       contractor: contractorObject.Username,
       user: userObject.Username,
       floors: formattedFloors,
-      template: templateObject._id, 
+      template: templateObject._id,
       timeline,
       location,
       totalArea,
       avgFloorHeight,
       roomCount,
       foundationDepth,
-      status:'not started',
-      referenceDate
+      status: 'not started',
+      startDate: now,
+      referenceDate: now
     });
 
     res.status(201).json({ success: true, data: project });
@@ -228,6 +217,8 @@ const createProject = async (req, res) => {
     res.status(500).json({ error: "Failed to create project.", details: error.message });
   }
 };
+
+
 
 
 // Get all projects
@@ -243,64 +234,29 @@ const getProject = async (req, res) => {
 // Get all projects for the logged-in user
 const getProjectForUser = async (req, res) => {
   try {
-    if (!req.user || !req.user.Username) {
+    const username = req.user.Username;
+    if (!username) {
       return res.status(401).json({ error: "User information is missing" });
     }
 
-    const username = req.user.Username;
     const projects = await Project.find({ user: username }).sort({ createdAt: -1 });
 
     if (!projects.length) {
       return res.status(404).json({ message: 'No projects found for this user.' });
     }
 
-    // Process each project sequentially to handle async operations correctly
-    for (const project of projects) {
-      // Calculate total progress respecting manual flags
-      const totalProgress = await calculateProgress(project);
-
-      // Calculate days elapsed based on referenceDate
-      const daysElapsed = Math.floor((new Date() - new Date(project.referenceDate)) / (1000 * 60 * 60 * 24));
-
-      const updatedFloorsProgress = distributeFloorProgress(
-        totalProgress,
-        project.floors.length,
-        project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-        daysElapsed,
-        project.floors
-      );
-
-      // Update each floor and its tasks
-      project.floors.forEach((floor, index) => {
-        if (!floor.isManual) {
-          floor.progress = updatedFloorsProgress[index];
-
-          // Distribute progress to tasks, respecting task-level manual flags
-          const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-          floor.tasks.forEach((task, taskIndex) => {
-            if (!task.isManual) {
-              task.progress = updatedTaskProgress[taskIndex];
-            }
-          });
-        }
-      });
-
-      await project.save();
-    }
-
     res.status(200).json(projects);
   } catch (error) {
-    res.status(500).json({ message: 'Server error. Please try again later.' });
+    console.error('Error fetching projects for user:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.', details: error.message });
   }
 };
 
 
+
 // Update floor progress in a project
 const updateFloorProgress = async (req, res) => {
-  const { progress, isManual } = req.body; // Accept isManual flag from the request
-  if (progress < 0 || progress > 100) {
-    return res.status(400).json({ message: 'Progress must be between 0 and 100' });
-  }
+  const { progress, isManual } = req.body;
 
   try {
     const project = await Project.findById(req.params.projectId);
@@ -313,34 +269,17 @@ const updateFloorProgress = async (req, res) => {
       return res.status(404).json({ message: 'Floor not found' });
     }
 
-    // Update progress and manual flag
     floor.progress = Math.round(progress);
     floor.isManual = isManual || false;
 
-    if (isManual) {
-      // If manually set, set project-level manual flag
-      project.isManualProgress = true;
-    } else {
-      // If switching back to automatic, adjust referenceDate for continuity
+    // Check if all floors are now in automatic mode
+    if (!project.floors.some(floor => floor.isManual)) {
+      // Reset referenceDate if switching to automatic
+      project.isManualProgress = false;
       project.referenceDate = new Date();
     }
 
-    // Distribute floor progress to tasks, respecting task-level manual flags
-    if (!floor.isManual) {
-      const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-      floor.tasks.forEach((task, taskIndex) => { 
-        if (!task.isManual) {
-          task.progress = updatedTaskProgress[taskIndex];
-        }
-      });
-    }
-
-    // Mark the floors array as modified
-    project.markModified('floors');
-
-    // Save the updated project
     await project.save();
-
     res.status(200).json(project);
   } catch (error) {
     console.error("Error updating floor progress:", error);
@@ -349,45 +288,22 @@ const updateFloorProgress = async (req, res) => {
 };
 
 
+
+
 // Get project by ID and update progress
 const getProjectById = async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid project ID format' });
+  }
+
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(id).lean({ virtuals: true });
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-
-    // Calculate the overall project progress based on the timeline and referenceDate
-    const totalProgress = await calculateProgress(project);
-
-    // Calculate days elapsed based on referenceDate
-    const daysElapsed = Math.floor((new Date() - new Date(project.referenceDate)) / (1000 * 60 * 60 * 24));
-
-    const updatedFloorsProgress = distributeFloorProgress(
-      totalProgress,
-      project.floors.length,
-      project.timeline.duration * (project.timeline.unit === 'weeks' ? 7 : 30),
-      daysElapsed,
-      project.floors
-    );
-
-    // Update each floor and its tasks
-    project.floors.forEach((floor, index) => {
-      if (!floor.isManual) {
-        floor.progress = updatedFloorsProgress[index];
-
-        // Distribute progress to tasks, respecting task-level manual flags
-        const updatedTaskProgress = distributeTaskProgress(floor.progress, floor.tasks.length);
-        floor.tasks.forEach((task, taskIndex) => {
-          if (!task.isManual) {
-            task.progress = updatedTaskProgress[taskIndex];
-          }
-        });
-      }
-    });
-
-    await project.save();
 
     res.status(200).json(project);
   } catch (error) {
@@ -396,6 +312,10 @@ const getProjectById = async (req, res) => {
   }
 };
 
+
+
+
+// Update project status to "ongoing" when started
 // Update project status to "ongoing" when started
 const startProject = async (req, res) => {
   const { id } = req.params;
@@ -403,10 +323,14 @@ const startProject = async (req, res) => {
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // Update the start date and status
+    // Only set startDate and referenceDate if the project is starting for the first time
+    if (project.status === 'not started') {
+      const now = new Date();
+      project.startDate = now;              // Set startDate to now
+      project.referenceDate = now;          // Set referenceDate to start from today
+    }
+
     project.status = "ongoing";
-    project.startDate = new Date(); // Store the start date
-    project.referenceDate = new Date(); // Reset referenceDate for progress calculations
     await project.save();
 
     res.status(200).json({ success: true, project });
@@ -414,6 +338,8 @@ const startProject = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 // Update project status to "finished" when ended
 const endProject = async (req, res) => {
@@ -439,36 +365,12 @@ const resumeProject = async (req, res) => {
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // Add current date to resumedDates
     project.status = "ongoing";
     const resumedDate = new Date();
     project.resumedDates.push(resumedDate);
 
-    // Ensure there's a corresponding postponed date for each resume
-    if (project.postponedDates.length > project.resumedDates.length) {
-      return res.status(400).json({ error: "Cannot resume: no corresponding postponed date." });
-    }
-
-    // Calculate postponed duration in days
-    let totalPostponedDays = 0;
-    for (let i = 0; i < project.postponedDates.length; i++) {
-      const postponedDate = new Date(project.postponedDates[i]);
-      const resumeDate = new Date(project.resumedDates[i]);
-      const differenceInTime = resumeDate - postponedDate;
-      const differenceInDays = Math.ceil(differenceInTime / (1000 * 60 * 60 * 24));
-      totalPostponedDays += differenceInDays;
-    }
-
-    // Adjust timeline duration (in days) to include postponed time
-    const unitMultiplier = project.timeline.unit === 'weeks' ? 7 : 30;
-    const durationInDays = project.timeline.duration * unitMultiplier;
-    const adjustedDurationInDays = durationInDays + totalPostponedDays;
-
-    // Update timeline duration based on the unit
-    project.timeline.duration = Math.ceil(adjustedDurationInDays / unitMultiplier);
-
-    // Adjust referenceDate to account for postponed days
-    project.referenceDate = new Date();
+    // Update referenceDate only when resuming from a postponed state
+    project.referenceDate = resumedDate;
 
     await project.save();
 
@@ -478,6 +380,8 @@ const resumeProject = async (req, res) => {
   }
 };
 
+
+// Postpone project and log the date
 // Postpone project and log the date
 const postponeProject = async (req, res) => {
   const { id } = req.params;
@@ -487,6 +391,9 @@ const postponeProject = async (req, res) => {
 
     project.status = "postponed";
     project.postponedDates.push(new Date());
+
+    // Do not modify referenceDate
+
     await project.save();
 
     res.status(200).json({ success: true, project });
@@ -494,6 +401,7 @@ const postponeProject = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Reset floor progress to automatic mode (additional endpoint)
 const resetFloorProgressToAutomatic = async (req, res) => {
@@ -533,54 +441,14 @@ const resetFloorProgressToAutomatic = async (req, res) => {
 };
 
 const updateProjectStatus = async (req, res) => {
+  const { id } = req.params;
   const { status } = req.body;
-  const validStatuses = ["ongoing", "finished", "postponed"];
-  
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: `Invalid status value. Must be one of ${validStatuses.join(", ")}.` });
-  }
 
   try {
-    const project = await Project.findById(req.params.id);
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found.' });
-    }
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
 
-    const previousStatus = project.status;
-
-    // Update the project status
-    project.status = status;
-
-    // Handle status-specific logic
-    if (status === 'ongoing') {
-      project.startDate = project.startDate || new Date(); // Set startDate if not already set
-      project.referenceDate = new Date(); // Reset referenceDate for progress calculations
-      // Optionally reset manual progress flags if desired
-      // project.isManualProgress = false;
-    } else if (status === 'finished') {
-      project.endDate = new Date();
-      // Optionally mark all floors and tasks as complete
-      project.floors.forEach(floor => {
-        floor.progress = 100;
-        floor.isManual = false; // Reset manual flag
-        floor.tasks.forEach(task => {
-          task.progress = 100;
-          task.isManual = false; // Reset manual flag
-        });
-      });
-      project.isManualProgress = false; // Reset project-level manual flag
-    } else if (status === 'postponed') {
-      project.postponedDates.push(new Date());
-      // Optionally pause progress calculations by setting manual flags
-      project.isManualProgress = true;
-      project.floors.forEach(floor => {
-        floor.isManual = true;
-        floor.tasks.forEach(task => {
-          task.isManual = true;
-        });
-      });
-    }
-
+    project.updateStatus(status);
     await project.save();
 
     res.status(200).json({ success: true, project });
@@ -636,97 +504,47 @@ const saveBOMToProject = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateData = req.body;
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    // Find the project by ID
-    const project = await Project.findById(id);
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found.' });
-    }
+    // Apply the changes from req.body
+    Object.assign(project, req.body);
 
-    // Update floors and tasks if provided
-    if (updateData.floors) {
-      updateData.floors.forEach(newFloor => {
-        const existingFloor = project.floors.id(newFloor._id);
-        if (existingFloor) {
-          // Update floor progress and manual flag
-          if (newFloor.progress !== undefined) {
-            existingFloor.progress = Math.round(newFloor.progress);
-          }
+    // Optionally update hybrid progress calculation if needed
+    const updatedProject = applyHybridProgress(project);
 
-          if (newFloor.isManual !== undefined) {
-            existingFloor.isManual = newFloor.isManual;
-          }
-
-          // Update tasks within the floor
-          if (newFloor.tasks) {
-            const updatedTasks = newFloor.tasks.map(newTask => {
-              const existingTask = existingFloor.tasks.id(newTask._id);
-              if (existingTask) {
-                // Update the existing task
-                existingTask.progress = newTask.progress !== undefined ? Math.round(newTask.progress) : existingTask.progress;
-                existingTask.isManual = newTask.isManual !== undefined ? newTask.isManual : existingTask.isManual;
-                existingTask.name = newTask.name !== undefined ? newTask.name : existingTask.name;
-              } else {
-                // If task doesn't exist, push it to the tasks array
-                existingFloor.tasks.push(newTask);
-              }
-              return existingTask || newTask;
-            });
-
-            // Explicitly set the tasks array to ensure Mongoose detects the modification
-            existingFloor.tasks = updatedTasks;
-            existingFloor.markModified('tasks');
-          }
-
-          // Update other floor fields if necessary
-          Object.keys(newFloor).forEach(key => {
-            if (!['progress', 'tasks', 'isManual'].includes(key)) {
-              existingFloor[key] = newFloor[key];
-            }
-          });
-        }
-      });
-
-      // Automatically set isManualProgress based on any floor being manual
-      project.isManualProgress = project.floors.some(floor => floor.isManual);
-
-      project.markModified('floors'); // Ensure floors are marked as modified
-    }
-
-    // Handle project-level manual progress if included
-    if (updateData.isManualProgress !== undefined) {
-      project.isManualProgress = updateData.isManualProgress;
-      if (updateData.isManualProgress) {
-        // Optionally, set all floors and tasks to manual
-        project.floors.forEach(floor => {
-          floor.isManual = true;
-          floor.tasks.forEach(task => {
-            task.isManual = true;
-          });
-        });
-      } else {
-        // Reset referenceDate for automatic calculations
-        project.referenceDate = new Date();
-      }
-    }
-
-    // Update other project fields excluding floors and manual flags
-    Object.keys(updateData).forEach(key => {
-      if (!['floors', 'isManualProgress'].includes(key)) {
-        project[key] = updateData[key];
-      }
-    });
-
-    await project.save();
-
-    res.status(200).json(project);
+    await updatedProject.save();
+    res.status(200).json({ project: updatedProject });  // Ensure the response has a consistent structure
   } catch (error) {
     console.error("Error updating project:", error);
     res.status(500).json({ error: "Failed to update project.", details: error.message });
   }
 };
+
+const toggleProgressMode = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isAutomatic } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+
+    project.isAutomaticProgress = isAutomatic;
+    if (isAutomatic) {
+      project.referenceDate = new Date(); // Reset referenceDate when switching to automatic
+    }
+
+    await project.save();
+
+    // Return the updated project instead of just a message
+    res.status(200).json({ success: true, project });
+  } catch (error) {
+    console.error("Error toggling progress mode:", error);
+    res.status(500).json({ error: 'Failed to toggle progress mode', details: error.message });
+  }
+};
+
+
 
 
 
@@ -767,5 +585,6 @@ module.exports = {
   resumeProject,
   endProject,
   startProject,
-  resetFloorProgressToAutomatic // Export the new reset function
+  resetFloorProgressToAutomatic, // Export the new reset function
+  toggleProgressMode
 };

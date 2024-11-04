@@ -1,15 +1,23 @@
-// src/components/Login.jsx
 import { useState, useEffect } from "react";
-import styles from "../css/Login.module.css";
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  CircularProgress,
+  Link
+} from "@mui/material";
 import { useLogin } from "../hooks/useLogin";
 import axios from "axios";
-import Header from '../components/Header';
-import AlertModal from '../components/AlertModal'; // Import AlertModal
+import Header from "../components/Header";
+import AlertModal from "../components/AlertModal"; // Import AlertModal
 
 const Login = () => {
   const [Username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); 
+  const [showPassword, setShowPassword] = useState(false);
   const { login, error, isLoading } = useLogin();
 
   // Alert Modal States
@@ -36,7 +44,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(Username, password);
-    // Assuming 'login' function handles setting 'error' state
   };
 
   const handleForgotPassword = async (e) => {
@@ -46,7 +53,7 @@ const Login = () => {
       showAlert("Validation Error", "Please enter your Username to reset the password.", "error");
       return;
     }
-    
+
     try {
       await axios.patch(`https://foxconstruction-final.onrender.com/api/user/forgot-password/${Username}`);
       // Show success message in modal
@@ -60,58 +67,99 @@ const Login = () => {
 
   return (
     <>
-      <Header/>
-      <div className={styles.Container}>
-        <div className={styles.TopSide}>
-          <h5>Get Ready.</h5>
-          <h5>We&#39;re Finishing!</h5>
-          <p>Please enter your details.</p>
-        </div>
+      <Header />
+      <Box
+        sx={{
+          backgroundColor: "#f5f5f5",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 2,
+        }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: "400px",
+            p: 4,
+            borderRadius: 2,
+            boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{ color: "#3f5930", fontWeight: "bold", textAlign: "center" }}
+          >
+            Get Ready. We&#39;re Finishing!
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ textAlign: "center", color: "#6b7c61", mt: 1 }}
+          >
+            Please enter your details.
+          </Typography>
 
-        <div className={styles.form1}>
           {isLoading ? (
-            <div className={styles.loadingSpinnerContainer}>
-              <div className={styles.spinner}></div>
-              <p>Logging in, please wait...</p>
-            </div>
+            <Box sx={{ textAlign: "center", mt: 4 }}>
+              <CircularProgress color="primary" />
+              <Typography variant="body1" sx={{ mt: 2 }}>
+                Logging in, please wait...
+              </Typography>
+            </Box>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <label className={styles.baller}>Username</label>
-              <input
-                type="text"
-                onChange={(e) => setUsername(e.target.value)}
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
+              <TextField
+                label="Username"
+                variant="outlined"
+                fullWidth
+                margin="normal"
                 value={Username}
-                placeholder="Enter your username"
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
-              <label className={styles.baller}>Password</label>
-              <input
-                type={showPassword ? "text" : "password"} 
-                onChange={(e) => setPassword(e.target.value)}
+              <TextField
+                label="Password"
+                variant="outlined"
+                type={showPassword ? "text" : "password"}
+                fullWidth
+                margin="normal"
                 value={password}
-                placeholder="Enter your password"
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
-
-              <div className={styles.passwordOptions}>
-                <label className={styles.baller}>
-                  <input
-                    type="checkbox"
+              <FormControlLabel
+                control={
+                  <Checkbox
                     checked={showPassword}
                     onChange={() => setShowPassword(!showPassword)}
-                  />{" "}
-                  Show Password
-                </label>
-                {/* Update the onClick handler to pass the event */}
-                <a href="#" onClick={handleForgotPassword}>Forgot password</a>
-              </div>
+                    sx={{ color: "#3f5930" }}
+                  />
+                }
+                label="Show Password"
+              />
 
-              <button type="submit" disabled={isLoading}>LOG IN</button>
-            </form>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+                <Link href="#" onClick={handleForgotPassword} underline="hover" sx={{ color: "#3f5930" }}>
+                  Forgot password?
+                </Link>
+              </Box>
+
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={isLoading}
+                sx={{ mt: 4, backgroundColor: "#3f5930", "&:hover": { backgroundColor: "#6b7c61" } }}
+              >
+                LOG IN
+              </Button>
+            </Box>
           )}
-          {/* Removed the error <p> as errors are now handled by AlertModal */}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Alert Modal */}
       <AlertModal

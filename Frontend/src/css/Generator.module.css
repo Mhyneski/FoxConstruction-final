@@ -75,7 +75,7 @@
 }
 
 .openModalButton {
-  background-color: #007bff;
+  background-color: #28a745;
   color: white;
   padding: 10px 20px;
   border: none;
@@ -86,7 +86,7 @@
 }
 
 .openModalButton:hover {
-  background-color: #0056b3;
+  background-color: #1e6a30;
 }
 
 
@@ -185,7 +185,7 @@
   position: sticky;
   top: 0;
   right: 0;
-  background-color: #f44336;
+  background-color: #DC143C;
   color: white;
   border: none;
   padding: 8px 12px;

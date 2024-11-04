@@ -308,6 +308,8 @@ const Generator = () => {
     setIsAlertOpen(true);
   };
 
+    
+  
   useEffect(() => {
     // Check if the user and user.token exist
     if (user && user.token) {

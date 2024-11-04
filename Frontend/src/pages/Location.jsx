@@ -1,9 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import styles from '../css/Location.module.css';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Modal,
+  InputLabel,
+  CircularProgress,
+  FormControl,
+} from '@mui/material';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
-import LocationDeleteModal from "../components/LocationDeleteModal"; 
+import LocationDeleteModal from "../components/LocationDeleteModal";
 
 const Location = () => {
   const [locations, setLocations] = useState([]);
@@ -13,16 +29,15 @@ const Location = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newLocation, setNewLocation] = useState({ name: '', markup: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  
+  const [loading, setLoading] = useState(true);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState(null);
 
-  
   useEffect(() => {
     if (!user || !user.token) return;
 
     const fetchLocations = async () => {
+      setLoading(true);
       try {
         const response = await axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
           headers: {
@@ -32,6 +47,8 @@ const Location = () => {
         setLocations(response.data);
       } catch (error) {
         console.error('Error fetching locations:', error.response?.data || error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -46,15 +63,11 @@ const Location = () => {
   const handleSave = async (id) => {
     try {
       const updatedLocation = { ...editedLocation };
-      
-      
       await axios.patch(`https://foxconstruction-final.onrender.com/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
-
-      
       setLocations((prevLocations) =>
         prevLocations.map((location) =>
           location._id === id ? { ...location, ...updatedLocation } : location
@@ -74,7 +87,7 @@ const Location = () => {
         },
       });
       setLocations((prevLocations) => prevLocations.filter((location) => location._id !== id));
-      setIsConfirmDeleteOpen(false); 
+      setIsConfirmDeleteOpen(false);
     } catch (error) {
       console.error('Error deleting location:', error);
     }
@@ -86,7 +99,6 @@ const Location = () => {
 
   const filterLocations = () => {
     if (!searchTerm) return locations;
-
     return locations.filter(
       (location) =>
         location.name &&
@@ -106,8 +118,6 @@ const Location = () => {
           Authorization: `Bearer ${user.token}`,
         },
       });
-
-      
       setLocations((prevLocations) => [...prevLocations, response.data]);
       setNewLocation({ name: '', markup: '' });
       setIsModalOpen(false);
@@ -118,13 +128,11 @@ const Location = () => {
 
   const filteredLocations = filterLocations();
 
-  
   const openConfirmDeleteModal = (location) => {
     setLocationToDelete(location);
     setIsConfirmDeleteOpen(true);
   };
 
-  
   const confirmDelete = () => {
     if (locationToDelete) {
       handleDelete(locationToDelete._id);
@@ -134,134 +142,166 @@ const Location = () => {
   return (
     <>
       <Navbar />
-      <div className={styles.locationsContainer}>
-        <h2 className={styles.heading}>Locations</h2>
-        <input
-          type="text"
-          placeholder="Search locations..."
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
+          Locations
+        </Typography>
+        <TextField
+          label="Search locations..."
+          variant="outlined"
           value={searchTerm}
           onChange={handleSearchChange}
-          className={styles.searchInput}
+          fullWidth
+          sx={{ mb: 2 }}
         />
-        <p className={styles.locationCount}>Total Locations: {filteredLocations.length}</p>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Total Locations: {filteredLocations.length}
+        </Typography>
 
-        <button onClick={() => setIsModalOpen(true)} className={styles.createLocationButton}>
+        <Button
+          variant="contained"
+          onClick={() => setIsModalOpen(true)}
+          sx={{ backgroundColor: "#3f5930", "&:hover": { backgroundColor: "#6b7c61" }, mb: 2 }}
+        >
           + Create New Location
-        </button>
+        </Button>
 
-        {isModalOpen && (
-          <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <span className={styles.closeButton} onClick={() => setIsModalOpen(false)}>&times;</span>
-              <h3>Create New Location</h3>
-              <div className={styles.modalForm}>
-                <input
-                  type="text"
-                  placeholder="Location Name"
-                  value={newLocation.name}
-                  onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
-                  className={styles.inputField}
-                />
-                <input
-  type="number"
-  placeholder="Markup %"
-  value={newLocation.markup}
-  onChange={(e) => {
-    // Allow clearing the field, but prevent negative values
-    const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
-    setNewLocation({ ...newLocation, markup: value });
-  }}
-  onBlur={() => {
-    // If field is empty on blur, reset to 0
-    const value = newLocation.markup === '' ? 0 : parseFloat(newLocation.markup);
-    setNewLocation({ ...newLocation, markup: value });
-  }}
-  className={styles.inputField}
-/>
-
-                <button onClick={handleCreate} className={styles.createButton}>Create Location</button>
-              </div>
-            </div>
-          </div>
+        {loading ? (
+          <Box sx={{ textAlign: "center", mt: 4 }}>
+            <CircularProgress />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              Loading locations...
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Location</TableCell>
+                  <TableCell>Markup %</TableCell>
+                  <TableCell>Date Created</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredLocations.map((location) => (
+                  <TableRow key={location._id}>
+                    <TableCell>
+                      {isEditing === location._id ? (
+                        <TextField
+                          variant="outlined"
+                          value={editedLocation.name}
+                          onChange={(e) => setEditedLocation({ ...editedLocation, name: e.target.value })}
+                          fullWidth
+                        />
+                      ) : (
+                        location.name
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing === location._id ? (
+                        <TextField
+                          type="number"
+                          variant="outlined"
+                          value={editedLocation.markup}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                            setEditedLocation({ ...editedLocation, markup: value });
+                          }}
+                          onBlur={() => {
+                            const value = editedLocation.markup === '' ? 0 : parseFloat(editedLocation.markup);
+                            setEditedLocation({ ...editedLocation, markup: value });
+                          }}
+                          fullWidth
+                        />
+                      ) : (
+                        location.markup
+                      )}
+                    </TableCell>
+                    <TableCell>{new Date(location.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {isEditing === location._id ? (
+                        <Button onClick={() => handleSave(location._id)} variant="contained" color="primary">
+                          Save
+                        </Button>
+                      ) : (
+                        <>
+                          <Button onClick={() => handleEdit(location)} variant="outlined" sx={{ mr: 1 }}>
+                            Edit
+                          </Button>
+                          <Button onClick={() => openConfirmDeleteModal(location)} variant="contained" color="error">
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
 
-        <div className={styles.scrollableTableContainer}>
-          <table className={styles.locationsTable}>
-            <thead>
-              <tr>
-                <th>Location</th>
-                <th>Markup %</th>
-                <th>Date Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLocations.map((location) => (
-                <tr key={location._id}>
-                  <td>
-                    {isEditing === location._id ? (
-                      <input
-                        type="text"
-                        value={editedLocation.name}
-                        onChange={(e) => setEditedLocation({ ...editedLocation, name: e.target.value })}
-                        className={styles.inputField}
-                      />
-                    ) : (
-                      location.name
-                    )}
-                  </td>
-                  <td>
-                    {isEditing === location._id ? (
-                      <input
-                      type="number"
-                      value={editedLocation.markup}
-                      onChange={(e) => {
-                        // Allow clearing the field, but prevent negative values
-                        const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
-                        setEditedLocation({ ...editedLocation, markup: value });
-                      }}
-                      onBlur={() => {
-                        // If field is empty on blur, reset to 0
-                        const value = editedLocation.markup === '' ? 0 : parseFloat(editedLocation.markup);
-                        setEditedLocation({ ...editedLocation, markup: value });
-                      }}
-                      className={styles.inputField}
-                    />
-                    
-                    
-                    ) : (
-                      location.markup
-                    )}
-                  </td>
-                  <td>{new Date(location.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    {isEditing === location._id ? (
-                      <button onClick={() => handleSave(location._id)} className={styles.saveButton}>
-                        Save
-                      </button>
-                    ) : (
-                      <button onClick={() => handleEdit(location)} className={styles.editButton}>
-                        Edit
-                      </button>
-                    )}
-                    <button onClick={() => openConfirmDeleteModal(location)} className={styles.deleteButton}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Create Location Modal */}
+        <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 400,
+              bgcolor: 'background.paper',
+              p: 4,
+              boxShadow: 24,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Create New Location
+            </Typography>
+            <TextField
+              label="Location Name"
+              value={newLocation.name}
+              onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Markup %"
+              type="number"
+              value={newLocation.markup}
+              onChange={(e) => {
+                const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                setNewLocation({ ...newLocation, markup: value });
+              }}
+              onBlur={() => {
+                const value = newLocation.markup === '' ? 0 : parseFloat(newLocation.markup);
+                setNewLocation({ ...newLocation, markup: value });
+              }}
+              fullWidth
+              margin="normal"
+            />
+            <Button
+              variant="contained"
+              onClick={handleCreate}
+              sx={{ mt: 2, backgroundColor: "#3f5930", "&:hover": { backgroundColor: "#6b7c61" } }}
+              fullWidth
+            >
+              Create Location
+            </Button>
+          </Box>
+        </Modal>
 
-        {/* Confirm Delete Modal */}
+        {/* Confirm Delete Location Modal */}
         <LocationDeleteModal
           isOpen={isConfirmDeleteOpen}
           onClose={() => setIsConfirmDeleteOpen(false)}
           onConfirm={confirmDelete}
           locationName={locationToDelete?.name}
         />
-      </div>
+      </Box>
     </>
   );
 };

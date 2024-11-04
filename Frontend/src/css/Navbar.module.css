@@ -125,3 +125,23 @@
     padding: 0.5rem; 
   }
 }
+
+/* Centering .centerContent on larger screens */
+@media (min-width: 992px) {
+  .topSIDE {
+    justify-content: center;
+  }
+  
+  .companyInfo, .userInfo {
+    position: absolute;
+  }
+  
+  .companyInfo {
+    left: 1rem;
+  }
+  
+  .userInfo {
+    right: 1rem;
+  }
+}
+

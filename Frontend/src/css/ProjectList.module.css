@@ -94,7 +94,8 @@
   
   .editButton,
   .deleteButton,
-  .createButton {
+  .createButton,
+  .addFloorButton {
     padding: 8px 12px;
     border: none;
     border-radius: 4px;
@@ -109,13 +110,17 @@
   }
   
   .deleteButton {
-    background-color: #f44336;
+    background-color: #DC143C;
     color: #fff;
   }
   
   .createButton {
-    background-color: #007bff;
+    background-color: #28a745;;
     color: #fff;
+  }
+
+  .addFloorButton {
+    margin-bottom: 10px;
   }
   
   /* Modal Styles */
@@ -174,7 +179,7 @@
   
   .modalForm button {
     padding: 10px;
-    background-color: #007bff;
+    background-color: #28a745;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -207,7 +212,7 @@
   }
   
   .deleteButton {
-    background-color: #f44336;
+    background-color: #DC143C;
     color: #fff;
   }
 
@@ -466,6 +471,186 @@
   margin-right: 8px;
   transform: scale(1.2);
 }
+
+.expandableHeader {
+  cursor: pointer;
+}
+
+.scrollableTaskList {
+  max-height: 200px; /* Adjust this value as needed */
+  overflow-y: auto;
+}
+
+/* Container for each floor with border and padding */
+.floorContainer {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header style for floor names */
+.floorHeader {
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  font-size: 1.1rem;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.floorHeader:hover {
+  background-color: #d1d1d1;
+}
+
+/* Expand/Collapse arrow */
+.floorHeader::after {
+  content: attr(data-expanded);
+  font-size: 1.2em;
+  color: #666;
+  margin-left: auto;
+}
+
+/* Scrollable task list container */
+.scrollableTaskList {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #ffffff;
+  border-radius: 8px;
+}
+
+/* Style for individual tasks */
+.taskContainer {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+.taskContainer input[type="text"],
+.taskContainer input[type="number"] {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-bottom: 5px;
+}
+
+/* Button styles */
+.addTaskButton,
+.deleteTaskButton,
+.deleteFloorButton {
+  padding: 6px 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #fff;
+  transition: background-color 0.3s;
+}
+
+.addTaskButton {
+  background-color: #4caf50;
+}
+
+.addTaskButton:hover {
+  background-color: #45a049;
+}
+
+.deleteTaskButton {
+  background-color: #DC143C;
+}
+
+.deleteTaskButton:hover {
+  background-color: #e53935;
+}
+
+.deleteFloorButton {
+  background-color: #DC143C;
+}
+
+.deleteFloorButton:hover {
+  background-color: #e53935;
+}
+
+/* Manual Progress checkbox and label style */
+.manualCheckboxLabel {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.manualCheckboxLabel input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Placeholder styling for inputs */
+input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}
+
+.expandableHeader {
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.expandableHeader:hover {
+  color: #007bff;
+}
+
+.detailsSection {
+  padding: 10px 0;
+}
+
+.scrollableTaskListContent {
+  max-height: 150px;
+  overflow-y: auto;
+  padding-left: 20px;
+}
+
+.floorHeader {
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  padding: 5px 0;
+}
+
+.floorHeader:hover {
+  color: #007bff;
+}
+
+.scrollableTaskList {
+  padding: 10px 15px;
+  background-color: #f9f9f9;
+  border-left: 3px solid #007bff;
+  border-radius: 4px;
+}
+
+.floorDetails {
+  margin: 10px 0;
+}
+
 
 
 

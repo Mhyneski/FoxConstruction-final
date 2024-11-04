@@ -66,17 +66,17 @@
   }
   
   .deleteButton {
-    background-color: #f44336;
+    background-color: #DC143C;
     color: #fff;
   }
   
   .saveButton {
-    background-color: #2196f3;
+    background-color: #28a745;;
     color: #fff;
   }
   
   .createButton {
-    background-color: #007bff;
+    background-color: #28a745;;
     color: #fff;
   }
   
@@ -165,7 +165,7 @@
   
   .modalForm button {
     padding: 10px;
-    background-color: #007bff;
+    background-color: #28a745;;
     color: #fff;
     border: none;
     border-radius: 4px;

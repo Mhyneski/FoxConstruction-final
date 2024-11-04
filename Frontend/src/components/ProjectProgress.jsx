@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import styles from "../css/ProjectProgress.module.css";
-import { useAuthContext } from "../hooks/useAuthContext"; 
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  LinearProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  CircularProgress
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useAuthContext } from '../hooks/useAuthContext';
 import Navbar from './Navbar';
+import styles from '../css/ProjectProgress.module.css';
 
 const ProjectProgress = () => {
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -21,12 +33,12 @@ const ProjectProgress = () => {
           },
         });
 
-        const fetchedProject = response.data.project || response.data; 
+        const fetchedProject = response.data.project || response.data;
         setProject(fetchedProject);
       } catch (error) {
         console.error('Error fetching project:', error);
       } finally {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     };
 
@@ -52,71 +64,63 @@ const ProjectProgress = () => {
     return <div className={styles.loading}>Project not found.</div>;
   }
 
-    const startDate = new Date(project.startDate).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const startDate = new Date(project.startDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
     <div className={styles.container}>
       <Navbar />
-      <div className={styles.header}>
-        <h1 className={styles.title}>{project.name ? project.name.toUpperCase() : 'Untitled Project'}</h1>
-      </div>
-      <p className={styles.dateTitle}>Started on: {startDate}</p>
-      <p className={styles.progressTitle}>STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}</p>
-      
-      <div className={styles.floorsContainer}>
-        {project.floors && project.floors.map((floor, index) => {
-          const floorProgress = floor.progress || 0;
-          const taskProgress = floor.tasks.map(task => task.progress || 0);
+      <Box p={3}>
+        <Typography variant="h4" gutterBottom className={styles.title}>{project.name ? project.name.toUpperCase() : 'Untitled Project'}</Typography>
+        <Typography variant="body1" gutterBottom className={styles.dateTitle}>Started on: {startDate}</Typography>
+        <Typography variant="body1" gutterBottom className={styles.progressTitle}>STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}</Typography>
 
-          return (
-            <div key={floor._id} className={`${styles.floor} ${selectedFloor === floor._id ? styles.selected : ''}`}>
-              <div className={styles.floorHeader} onClick={() => handleFloorClick(floor._id)}>
-                <h3 className={styles.floorTitle}>{floor.name}</h3>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progress}
-                    style={{ width: `${Math.round(floorProgress)}%` }}
-                  >
-                    {Math.round(floorProgress)}% 
-                  </div>
-                </div>
-              </div>
-              {selectedFloor === floor._id && (
-                <div className={styles.tasks}>
-                  <h3 className={styles.tasksTitle}>TASKS</h3>
-                  <ul className={styles.taskList}>
-                    {floor.tasks && floor.tasks.map((task, taskIndex) => (
-                      <li key={task._id} className={styles.taskItem}>
-                        <span className={styles.taskName}>{task.name}</span>
-                        <div className={styles.taskProgressBar}>
-                          <div
-                            className={styles.taskProgress}
-                            style={{ width: `${taskProgress[taskIndex]}%` }}
-                          >
-                            {taskProgress[taskIndex].toFixed(2)}%
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <p className={styles.lastUpdate}>
-  LAST UPDATE: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }) : 'No updates available'}
-</p>
+        <Box mt={4} className={styles.floorsContainer}>
+          {project.floors && project.floors.map((floor) => (
+            <Accordion
+              key={floor._id}
+              expanded={selectedFloor === floor._id}
+              onChange={() => handleFloorClick(floor._id)}
+              className={styles.floor}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />} className={styles.floorHeader}>
+                <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
+                  <Typography variant="h6" className={styles.floorTitle}>{floor.name}</Typography>
+                  <Box width="40%">
+                    <LinearProgress variant="determinate" value={floor.progress || 0} className={styles.progressBar} />
+                    <Typography variant="body2" color="textSecondary" align="center">
+                      {Math.round(floor.progress || 0)}%
+                    </Typography>
+                  </Box>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails className={styles.tasks}>
+                <Typography variant="h6" className={styles.tasksTitle}>Tasks</Typography>
+                {floor.tasks && floor.tasks.map((task) => (
+                  <Box key={task._id} mb={2} className={styles.taskItem}>
+                    <Typography variant="body1" className={styles.taskName}>{task.name}</Typography>
+                    <LinearProgress variant="determinate" value={task.progress || 0} className={styles.taskProgressBar} />
+                    <Typography variant="body2" color="textSecondary" align="center">
+                      {task.progress?.toFixed(2)}%
+                    </Typography>
+                  </Box>
+                ))}
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
 
+        <Typography variant="body2" color="textSecondary" mt={4} className={styles.lastUpdate}>
+          LAST UPDATE: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }) : 'No updates available'}
+        </Typography>
+      </Box>
     </div>
   );
 };

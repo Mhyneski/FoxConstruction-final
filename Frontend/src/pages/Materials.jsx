@@ -1,14 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import styles from '../css/Materials.module.css';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Box,
+  Button,
+  TextField,
+  CircularProgress,
+  Modal,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { useAuthContext } from "../hooks/useAuthContext";
 import Navbar from "../components/Navbar";
-import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal"; 
+import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal";
 
 const validUnits = [
   'lot', 'cu.m', 'bags', 'pcs', 'shts', 'kgs', 'gal', 'liters',
   'set', 'm', 'L-m', 'sheets', 'pieces', 'meters',
-  // Add other units as needed
 ];
 
 const Materials = () => {
@@ -53,7 +74,6 @@ const Materials = () => {
   const handleSave = async (id) => {
     try {
       const updatedMaterial = { ...editedMaterial };
-      
       await axios.patch(`https://foxconstruction-final.onrender.com/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -136,150 +156,189 @@ const Materials = () => {
   return (
     <>
       <Navbar />
-      <div className={styles.materialsContainer}>
-        <h2 className={styles.heading}>Materials</h2>
-        <input
-          type="text"
-          placeholder="Search materials..."
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
+          Materials
+        </Typography>
+        <TextField
+          label="Search materials..."
+          variant="outlined"
           value={searchTerm}
           onChange={handleSearchChange}
-          className={styles.searchInput}
+          fullWidth
+          sx={{ mb: 2 }}
         />
-        <p className={styles.materialCount}>Total Materials: {filteredMaterials.length}</p>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Total Materials: {filteredMaterials.length}
+        </Typography>
 
-        <button onClick={() => setIsModalOpen(true)} className={styles.createMaterialButton}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setIsModalOpen(true)}
+          sx={{ backgroundColor: "#3f5930", "&:hover": { backgroundColor: "#6b7c61" }, mb: 2 }}
+        >
           Create New Material
-        </button>
-
-        {isModalOpen && (
-          <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <span className={styles.closeButton} onClick={() => setIsModalOpen(false)}>&times;</span>
-              <h3>Create New Material</h3>
-              <div className={styles.modalForm}>
-                <input
-                  type="text"
-                  placeholder="Material Name"
-                  value={newMaterial.description}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
-                  className={styles.inputField}
-                />
-                <select
-                  value={newMaterial.unit}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
-                  className={styles.inputField}
-                >
-                  {validUnits.map((unit, index) => (
-                    <option key={index} value={unit}>{unit}</option>
-                  ))}
-                </select>
-                <input
-  type="number"
-  placeholder="Cost"
-  value={newMaterial.cost === 0 ? "" : newMaterial.cost} // Show empty string if cost is 0
-  min="0"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Allow empty string to temporarily clear the field
-    setNewMaterial({ ...newMaterial, cost: value === "" ? "" : Math.max(0, parseFloat(value)) });
-  }}
-  className={styles.inputField}
-/>
-                <button onClick={handleCreate} className={styles.createButton}>Create Material</button>
-              </div>
-            </div>
-          </div>
-        )}
+        </Button>
 
         {loading ? (
-          <div className={styles.loadingSpinnerContainer}>
-            <div className={styles.spinner}></div>
-            <p>Loading materials...</p>
-          </div>
+          <Box sx={{ textAlign: "center", mt: 4 }}>
+            <CircularProgress />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              Loading materials...
+            </Typography>
+          </Box>
         ) : (
-          <div className={styles.scrollableTableContainer}>
-            <table className={styles.materialsTable}>
-              <thead>
-                <tr>
-                  <th>Material</th>
-                  <th>Unit</th>
-                  <th>Unit Cost</th>
-                  <th>Date Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Material</strong></TableCell>
+                  <TableCell><strong>Unit</strong></TableCell>
+                  <TableCell><strong>Unit Cost</strong></TableCell>
+                  <TableCell><strong>Date Created</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredMaterials.map((material) => (
-                  <tr key={material._id}>
-                    <td>
+                  <TableRow key={material._id}>
+                    <TableCell>
                       {isEditing === material._id ? (
-                        <input
-                          type="text"
+                        <TextField
+                          variant="outlined"
                           value={editedMaterial.description}
                           onChange={(e) => setEditedMaterial({ ...editedMaterial, description: e.target.value })}
-                          className={styles.inputField}
+                          fullWidth
                         />
                       ) : (
                         material.description
                       )}
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       {isEditing === material._id ? (
-                        <select
-                          value={editedMaterial.unit}
-                          onChange={(e) => setEditedMaterial({ ...editedMaterial, unit: e.target.value })}
-                          className={styles.inputField}
-                        >
-                          {validUnits.map((unit, index) => (
-                            <option key={index} value={unit}>{unit}</option>
-                          ))}
-                        </select>
+                        <FormControl fullWidth>
+                          <InputLabel>Unit</InputLabel>
+                          <Select
+                            value={editedMaterial.unit}
+                            onChange={(e) => setEditedMaterial({ ...editedMaterial, unit: e.target.value })}
+                          >
+                            {validUnits.map((unit) => (
+                              <MenuItem key={unit} value={unit}>
+                                {unit}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       ) : (
                         material.unit
                       )}
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       {isEditing === material._id ? (
-                        <input
+                        <TextField
                           type="number"
-                          min="0"
+                          variant="outlined"
                           value={editedMaterial.cost}
                           onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: Math.max(0, e.target.value) || 0 })}
-                          className={styles.inputField}
+                          fullWidth
                         />
                       ) : (
                         `₱${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`
                       )}
-                    </td>
-                    <td>{new Date(material.createdAt).toLocaleDateString()}</td>
-                    <td>
+                    </TableCell>
+                    <TableCell>{new Date(material.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
                       {isEditing === material._id ? (
-                        <button onClick={() => handleSave(material._id)} className={styles.saveButton}>
+                        <Button onClick={() => handleSave(material._id)} variant="contained" color="primary">
                           Save
-                        </button>
+                        </Button>
                       ) : (
-                        <button onClick={() => handleEdit(material)} className={styles.editButton}>
-                          Edit
-                        </button>
+                        <>
+                          <Button onClick={() => handleEdit(material)} variant="outlined" sx={{ mr: 1 }}>
+                            Edit
+                          </Button>
+                          <Button onClick={() => openConfirmDeleteModal(material)} variant="contained" color="error">
+                            Delete
+                          </Button>
+                        </>
                       )}
-                      <button onClick={() => openConfirmDeleteModal(material)} className={styles.deleteButton}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
 
+        {/* Create Material Modal */}
+        <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 400,
+              bgcolor: 'background.paper',
+              p: 4,
+              boxShadow: 24,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Create New Material
+            </Typography>
+            <TextField
+              label="Material Name"
+              value={newMaterial.description}
+              onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Unit</InputLabel>
+              <Select
+                value={newMaterial.unit}
+                onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
+              >
+                {validUnits.map((unit) => (
+                  <MenuItem key={unit} value={unit}>
+                    {unit}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Cost"
+              type="number"
+              value={newMaterial.cost === 0 ? "" : newMaterial.cost}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewMaterial({ ...newMaterial, cost: value === "" ? "" : Math.max(0, parseFloat(value)) });
+              }}
+              fullWidth
+              margin="normal"
+            />
+            <Button
+              variant="contained"
+              onClick={handleCreate}
+              sx={{ mt: 2, backgroundColor: "#3f5930", "&:hover": { backgroundColor: "#6b7c61" } }}
+              fullWidth
+            >
+              Create Material
+            </Button>
+          </Box>
+        </Modal>
+
+        {/* Confirm Delete Material Modal */}
         <ConfirmDeleteMaterialModal
           isOpen={isConfirmDeleteOpen}
           onClose={() => setIsConfirmDeleteOpen(false)}
           onConfirm={confirmDelete}
           materialDescription={materialToDelete?.description}
         />
-      </div>
+      </Box>
     </>
   );
 };

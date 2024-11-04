@@ -1,4 +1,3 @@
-// src/components/UserDashboard.jsx
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import image from "../assets/IMAGE1.jpg";
@@ -17,6 +16,8 @@ const UserDashboard = () => {
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [alertType, setAlertType] = useState("info"); // Default alert type
+  const [isPasswordChanged, setIsPasswordChanged] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const containerRef = useRef(null);
 
   // Function to show alerts
@@ -36,10 +37,8 @@ const UserDashboard = () => {
           }
         });
 
-        
         const fetchedProjects = response.data.map(project => ({
           ...project,
-          
         }));
         setProjects(fetchedProjects);
       } catch (error) {
@@ -58,6 +57,8 @@ const UserDashboard = () => {
 
         if (response.data.isDefault) {
           setShowPasswordModal(true);
+        } else {
+          setIsPasswordChanged(true);
         }
       } catch (error) {
         console.error('Error checking default password:', error);
@@ -74,6 +75,7 @@ const UserDashboard = () => {
   }, [user]);
 
   const handlePasswordChange = async (newPassword) => {
+    setIsSubmitting(true);
     try {
       await axios.patch(`https://foxconstruction-final.onrender.com/api/user/change-password`, { newPassword }, {
         headers: {
@@ -81,7 +83,8 @@ const UserDashboard = () => {
         }
       });
       showAlert("Success", "Password changed successfully.", "success");
-      setShowPasswordModal(false); 
+      setIsPasswordChanged(true);
+      setShowPasswordModal(false);
     } catch (error) {
       console.error("Error changing password:", error);
       if (error.response && error.response.data && error.response.data.error) {
@@ -89,6 +92,8 @@ const UserDashboard = () => {
       } else {
         showAlert("Error", "Failed to change password.", "error");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,8 +102,15 @@ const UserDashboard = () => {
       <Navbar />
       <ChangePasswordModal 
         show={showPasswordModal} 
-        onClose={() => setShowPasswordModal(false)} 
-        onSubmit={handlePasswordChange} 
+        onClose={() => {
+          if (!isPasswordChanged) {
+            // Do nothing to prevent closing until password is changed
+          } else {
+            setShowPasswordModal(false);
+          }
+        }}
+        onSubmit={handlePasswordChange}
+        isSubmitting={isSubmitting} 
       />
       <div className={styles.NameBanner}>
         {user && <p>WELCOME BACK, {user.Username}!</p>}

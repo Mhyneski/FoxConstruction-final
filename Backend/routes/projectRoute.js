@@ -14,51 +14,40 @@ const {
   resumeProject,
   endProject,
   startProject,
-  resetFloorProgressToAutomatic
+  resetFloorProgressToAutomatic,
+  toggleProgressMode 
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
+// Apply authentication to all routes
 router.use(authMiddleware);
 
-router.use(authMiddleware);
+// Project-specific routes
+router.get('/contractor', getProjectsByContractor); // Get all projects for contractor
+router.get('/projectuser', getProjectForUser); // Get all projects for logged-in user
+router.get('/:id', getProjectById); // Get specific project by ID
+router.get('/', getProject); // Get all projects
+router.post('/', createProject); // Create a new project
+router.patch('/:id', updateProject); // Update a project
+router.delete('/:id', deleteProject); // Delete a project
+router.patch('/:id/status', updateProjectStatus); // Update project status
 
-router.patch('/:id/status', updateProjectStatus);
+// Floor and task-related routes
+router.patch('/:projectId/floors/:floorId', updateFloorProgress); // Update floor progress
+router.post('/:projectId/floors/:floorId/reset', resetFloorProgressToAutomatic); // Reset floor progress to automatic
 
-// Get all projects for the contractor
-router.get('/contractor', getProjectsByContractor);
+// BOM-related route
+router.post('/:id/bom', saveBOMToProject); // Save BOM to project
 
-// Get all projects for a logged-in user
-router.get('/projectuser', getProjectForUser); 
+// Project management action routes
+router.patch('/:id/start', startProject); // Start project
+router.patch('/:id/postpone', postponeProject); // Postpone project
+router.patch('/:id/resume', resumeProject); // Resume project
+router.patch('/:id/end', endProject); // End project
 
-// Get specific project by ID
-router.get('/:id', getProjectById); 
-
-// Get all projects
-router.get('/', getProject);
-
-// Create a new project
-router.post('/', createProject);
-
-// Delete a project
-router.delete('/:id', deleteProject);
-
-// Update a project   
-router.patch('/:id', updateProject);
-
-// Update floor progress
-router.patch('/:projectId/floors/:floorId', updateFloorProgress);
-
-router.post('/:id/bom', saveBOMToProject);
-
-router.post('/projects/:projectId/floors/:floorId/reset', resetFloorProgressToAutomatic);
-
-// New routes for project management actions
-router.patch('/:id/start', startProject);
-router.patch('/:id/postpone', postponeProject);
-router.patch('/:id/resume', resumeProject);
-router.patch('/:id/end', endProject);
-
+// Toggle progress mode (automatic/manual)
+router.patch('/:id/progress-mode', toggleProgressMode);
 
 module.exports = router;
