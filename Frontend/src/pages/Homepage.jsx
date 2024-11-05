@@ -13,7 +13,6 @@ const Homepage = () => {
   useEffect(() => {
     const handleUserInteraction = () => {
       setIsMuted(false);
-      // Explicitly play the video on user interaction if it's not playing already
       const video = document.querySelector("video");
       if (video && video.paused) {
         video.play().catch((error) => {
@@ -25,10 +24,17 @@ const Homepage = () => {
   
     document.addEventListener("click", handleUserInteraction);
   
+    // Set isTextLoaded to true after a slight delay to trigger the fade-in effect
+    const textLoadTimeout = setTimeout(() => {
+      setIsTextLoaded(true);
+    }, 300); // Adjust delay as needed
+  
     return () => {
       document.removeEventListener("click", handleUserInteraction);
+      clearTimeout(textLoadTimeout); // Clean up the timeout
     };
   }, []);
+  
   
 
   return (
@@ -55,7 +61,6 @@ const Homepage = () => {
   loop
   muted
   playsInline
-  controls
   style={{
     position: 'absolute',
     width: '100%',
@@ -64,8 +69,6 @@ const Homepage = () => {
     zIndex: -1,
   }}
 />
-
-
         <Box
           sx={{
             textAlign: 'center',
