@@ -11,22 +11,25 @@ const Homepage = () => {
   const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsTextLoaded(true);
-    }, 100);
-
     const handleUserInteraction = () => {
       setIsMuted(false);
+      // Explicitly play the video on user interaction if it's not playing already
+      const video = document.querySelector("video");
+      if (video && video.paused) {
+        video.play().catch((error) => {
+          console.error("Failed to play video on interaction:", error);
+        });
+      }
       document.removeEventListener("click", handleUserInteraction);
     };
-
+  
     document.addEventListener("click", handleUserInteraction);
-
+  
     return () => {
-      clearTimeout(timer);
       document.removeEventListener("click", handleUserInteraction);
     };
   }, []);
+  
 
   return (
     <Box sx={{ width: '100%', height: '100vh', overflow: 'hidden' }}>
@@ -47,19 +50,21 @@ const Homepage = () => {
         }}
       >
         <video
-          src={HeroVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            zIndex: -1,
-          }}
-        />
+  src={HeroVideo}
+  autoPlay
+  loop
+  muted
+  playsInline
+  controls
+  style={{
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    zIndex: -1,
+  }}
+/>
+
 
         <Box
           sx={{

@@ -72,6 +72,7 @@ const projectSchema = new mongoose.Schema({
   postponedDates: { type: [Date], default: [] },
   resumedDates: { type: [Date], default: [] },
   referenceDate: { type: Date, required: true, default: () => new Date() },
+  bom: { type: Schema.Types.Mixed }
 }, { timestamps: true });
 
 // Helper method to calculate and update project progress based on floor/task progress

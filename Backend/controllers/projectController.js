@@ -493,6 +493,8 @@ const saveBOMToProject = async (req, res) => {
       markedUpCosts: bom.markedUpCosts || {},
     };
 
+    project.bom = bom; // This will now work with Schema.Types.Mixed
+
     await project.save();
 
     res.status(200).json({ success: true, project });

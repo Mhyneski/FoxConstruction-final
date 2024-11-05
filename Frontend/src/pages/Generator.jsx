@@ -1,14 +1,36 @@
 // src/components/Generator.jsx
-import React from 'react';
-import { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Axios from 'axios';
 import Navbar from "../components/Navbar";
-import styles from '../css/Generator.module.css';
 import { AuthContext } from "../context/AuthContext";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import foxconrights from '../assets/foxconrights.jpg';
-import AlertModal from '../components/AlertModal'; // Import AlertModal
+import AlertModal from '../components/AlertModal';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  InputLabel,
+  FormControl,
+} from "@mui/material";
+import { Close, SwapHoriz  } from '@mui/icons-material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToReplace, user }) => {
   const [materials, setMaterials] = useState([]);
@@ -17,7 +39,7 @@ const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToRepl
 
   useEffect(() => {
     if (isOpen && user && user.token) {
-      Axios.get('https://foxconstruction-final.onrender.com/api/materials', {
+      Axios.get('http://localhost:4000/api/materials', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -28,7 +50,6 @@ const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToRepl
         })
         .catch((error) => {
           console.error('Error fetching materials:', error);
-          // Optionally, you can show an alert here if needed
         });
     }
   }, [isOpen, user]);
@@ -44,228 +65,269 @@ const MaterialSearchModal = ({ isOpen, onClose, onMaterialSelect, materialToRepl
     }
   }, [searchTerm, materials]);
 
-  return isOpen ? (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent} style={{ maxHeight: '400px', overflowY: 'auto' }}>
-        <button onClick={onClose} className={styles.closeButton}>Close</button>
-        <h2>Replace Material: {materialToReplace?.description || ''}</h2>
-        <input
-          type="text"
-          placeholder="Search materials"
+  return (
+    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>
+        Replace Material: {materialToReplace?.description || ''}
+        <IconButton onClick={onClose} style={{ position: 'absolute', right: 8, top: 8 }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Search materials"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
+          margin="dense"
         />
-        <div className={styles.materialList}>
-          {filteredMaterials.length > 0 ? (
-            filteredMaterials.map((material) => (
-              <div
-                key={material._id}
-                className={styles.materialItem}
-                style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #ccc' }}
-                onClick={() => onMaterialSelect(material)}
-              >
-                <p><strong>{material.description || 'No Description Available'}</strong></p>
-                <p>Cost: ₱{material.cost.toFixed(2)}</p>
-              </div>
-            ))
-          ) : (
-            <p>No materials found</p>
-          )}
-        </div>
-      </div>
-    </div>
-  ) : null;
+        {filteredMaterials.length > 0 ? (
+          <TableContainer style={{ maxHeight: 400 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Cost (₱)</TableCell>
+                  <TableCell align="center">Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredMaterials.map((material) => (
+                  <TableRow key={material._id} hover>
+                    <TableCell>{material.description || 'No Description Available'}</TableCell>
+                    <TableCell>{material.cost.toFixed(2)}</TableCell>
+                    <TableCell align="center">
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        size="small"
+                        onClick={() => onMaterialSelect(material)}
+                      >
+                        Select
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Typography>No materials found</Typography>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="secondary">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 };
 
-const Modal = ({
-  isOpen, onClose, onSubmit, formData, handleChange, errors, projects,
-  handleProjectSelect, selectedProject, isProjectBased, locations,
-  handleLocationSelect, selectedLocation, isLoadingProjects, isLoadingBOM,
-  templates, 
+const GeneratorModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  formData,
+  handleChange,
+  errors,
+  projects,
+  handleProjectSelect,
+  selectedProject,
+  isProjectBased,
+  locations,
+  handleLocationSelect,
+  selectedLocation,
+  isLoadingProjects,
+  isLoadingBOM,
+  templates,
 }) => {
-
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <h2>{isProjectBased ? "Enter Base Template Details for Project" : "Enter Base Template Details"}</h2>
-        <form onSubmit={onSubmit}>
-          {isProjectBased && (
-            <div className={styles.formGroup}>
-              <label>Select Project:</label>
-              {isLoadingProjects ? (
-                <div className={styles.loadingSpinnerContainer}>
-                  <div className={styles.spinner}></div>
-                  <p>Please wait, fetching projects...</p>
-                </div>
-              ) : (
-                <select onChange={(e) => handleProjectSelect(e.target.value)} value={selectedProject?._id || ''}>
-                  <option value="" disabled>Select a project</option>
-                  {projects.map(project => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {projects.length === 0 && <p>No projects available</p>}
-            </div>
-          )}
+    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>
+        {isProjectBased ? "Enter Base Template Details for Project" : "Enter Base Template Details"}
+        <IconButton onClick={onClose} style={{ position: 'absolute', right: 8, top: 8 }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {isProjectBased && (
+          <Box mb={2}>
+            <FormControl fullWidth margin="dense">
+              <InputLabel id="project-select-label">Select Project</InputLabel>
+              <Select
+                labelId="project-select-label"
+                value={selectedProject?._id || ''}
+                onChange={(e) => handleProjectSelect(e.target.value)}
+                label="Select Project"
+              >
+                <MenuItem value="" disabled>
+                  Select a project
+                </MenuItem>
+                {projects.map((project) => (
+                  <MenuItem key={project._id} value={project._id}>
+                    {project.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {isLoadingProjects && (
+              <Box display="flex" alignItems="center" mt={1}>
+                <CircularProgress size={24} />
+                <Typography ml={2}>Fetching projects...</Typography>
+              </Box>
+            )}
+            {projects.length === 0 && !isLoadingProjects && (
+              <Typography>No projects available</Typography>
+            )}
+          </Box>
+        )}
 
-          <div className={styles.formGroup}>
-            <label>Total Area (sqm)</label>
-            <input
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Total Area (sqm)"
+          name="totalArea"
+          type="number"
+          value={formData.totalArea}
+          onChange={handleChange}
+          error={!!errors.totalArea}
+          helperText={errors.totalArea}
+          inputProps={{ min: 0 }}
+        />
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Floor Height (meters)"
+          name="avgFloorHeight"
+          type="number"
+          value={formData.avgFloorHeight}
+          onChange={handleChange}
+          error={!!errors.avgFloorHeight}
+          helperText={errors.avgFloorHeight}
+          inputProps={{ min: 0, max: 15 }}
+        />
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Room Count"
+          name="roomCount"
+          type="number"
+          value={formData.roomCount}
+          onChange={handleChange}
+          error={!!errors.roomCount}
+          helperText={errors.roomCount}
+          inputProps={{ min: 1 }}
+        />
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Foundation Depth (meters)"
+          name="foundationDepth"
+          type="number"
+          value={formData.foundationDepth}
+          onChange={handleChange}
+          error={!!errors.foundationDepth}
+          helperText={errors.foundationDepth}
+          inputProps={{ min: 0, step: 0.1 }}
+        />
+
+        {/* Select Location */}
+        <FormControl fullWidth margin="dense">
+          <InputLabel id="location-select-label">Select Location</InputLabel>
+          <Select
+            labelId="location-select-label"
+            value={selectedLocation}
+            onChange={(e) => handleLocationSelect(e.target.value)}
+            label="Select Location"
+          >
+            <MenuItem value="" disabled>
+              Select a location
+            </MenuItem>
+            {locations.map((location) => (
+              <MenuItem key={location._id} value={location.name}>
+                {location.name} - {location.markup}% markup
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {errors.location && <Typography color="error">{errors.location}</Typography>}
+
+        {isProjectBased ? (
+          <>
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Number of Floors (from project)"
+              name="numFloors"
               type="number"
-              name="totalArea"
-              value={formData.totalArea}
-              onChange={handleChange}
-              required
-              min="0" 
+              value={formData.numFloors || ''}
+              InputProps={{ readOnly: true }}
             />
-            {errors.totalArea && (
-              <span className={styles.error}>{errors.totalArea}</span>
-            )}
-          </div>
-          <div className={styles.formGroup}>
-            <label>Floor Height (meters)</label>
-            <input
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Template (from project)"
+              name="selectedTemplateId"
+              value={
+                templates.find((t) => t._id === formData.selectedTemplateId)?.title || ''
+              }
+              InputProps={{ readOnly: true }}
+            />
+          </>
+        ) : (
+          <>
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Number of Floors"
+              name="numFloors"
               type="number"
-              name="avgFloorHeight"
-              value={formData.avgFloorHeight}
+              value={formData.numFloors}
               onChange={handleChange}
-              required
-              min="0" 
-              max="15" 
+              error={!!errors.numFloors}
+              helperText={errors.numFloors}
+              inputProps={{ min: 1, max: 5 }}
             />
-            {errors.avgFloorHeight && (
-              <span className={styles.error}>{errors.avgFloorHeight}</span>
+            <FormControl fullWidth margin="dense">
+              <InputLabel id="template-select-label">Select Template</InputLabel>
+              <Select
+                labelId="template-select-label"
+                name="selectedTemplateId"
+                value={formData.selectedTemplateId}
+                onChange={handleChange}
+                label="Select Template"
+              >
+                <MenuItem value="" disabled>
+                  Select a template
+                </MenuItem>
+                {templates.map((template) => (
+                  <MenuItem key={template._id} value={template._id}>
+                    {template.title} (
+                    {template.tier.charAt(0).toUpperCase() + template.tier.slice(1)})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {errors.selectedTemplateId && (
+              <Typography color="error">{errors.selectedTemplateId}</Typography>
             )}
-          </div>
-
-          {/* New Room Count and Foundation Depth fields */}
-          <div className={styles.formGroup}>
-            <label>Room Count</label>
-            <input
-              type="number"
-              name="roomCount"
-              value={formData.roomCount}
-              onChange={handleChange}
-              required
-              min="1"
-            />
-            {errors.roomCount && (
-              <span className={styles.error}>{errors.roomCount}</span>
-            )}
-          </div>
-          <div className={styles.formGroup}>
-            <label>Foundation Depth (meters)</label>
-            <input
-              type="number"
-              name="foundationDepth"
-              value={formData.foundationDepth}
-              onChange={handleChange}
-              required
-              min="0"
-              step="0.1"
-            />
-            {errors.foundationDepth && (
-              <span className={styles.error}>{errors.foundationDepth}</span>
-            )}
-          </div>
-
-          {/* Select Location */}
-          <div className={styles.formGroup}>
-            <label>Select Location:</label>
-            <select
-              onChange={(e) => handleLocationSelect(e.target.value)}
-              value={selectedLocation}
-            >
-              <option value="" disabled>Select a location</option>
-              {locations.map(location => (
-                <option key={location._id} value={location.name}>
-                  {location.name} - {location.markup}% markup
-                </option>
-              ))}
-            </select>
-            {errors.location && (
-              <span className={styles.error}>{errors.location}</span>
-            )}
-          </div>
-
-         
-{isProjectBased ? (
-  <>
-    <div className={styles.formGroup}>
-      <label>Number of Floors (from project):</label>
-      <input
-        type="number"
-        name="numFloors"
-        value={formData.numFloors || ''}
-        readOnly
-      />
-    </div>
-    <div className={styles.formGroup}>
-      <label>Template (from project):</label>
-      <input
-        type="text"
-        name="selectedTemplateId"
-        value={templates.find((t) => t._id === formData.selectedTemplateId)?.title || ''}
-        readOnly
-      />
-    </div>
-  </>
-) : (
-  <>
-    <div className={styles.formGroup}>
-      <label>Number of Floors</label>
-      <input
-        type="number"
-        name="numFloors"
-        value={formData.numFloors}
-        onChange={handleChange}
-        required
-        min="1"
-        max="5"
-      />
-      {errors.numFloors && (
-        <span className={styles.error}>{errors.numFloors}</span>
-      )}
-    </div>
-    <div className={styles.formGroup}>
-      <label>Select Template</label>
-      <select
-        name="selectedTemplateId"
-        value={formData.selectedTemplateId}
-        onChange={handleChange}
-        required
-      >
-        <option value="" disabled>Select a template</option>
-        {templates.map((template) => (
-          <option key={template._id} value={template._id}>
-            {template.title} ({template.tier.charAt(0).toUpperCase() + template.tier.slice(1)})
-          </option>
-        ))}
-      </select>
-      {errors.selectedTemplateId && (
-        <span className={styles.error}>{errors.selectedTemplateId}</span>
-      )}
-    </div>
-  </>
-)}
-
-
-          {/* Submit and Close Buttons */}
-          <button type="submit" className={styles.submitButton} disabled={isLoadingBOM}>
-            {isLoadingBOM ? 'Generating BOM...' : 'Generate BOM'}
-          </button>
-          <button type="button" onClick={onClose} className={styles.closeButton}>
-            Close
-          </button>
-        </form>
-      </div>
-    </div>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+        <Button
+          onClick={onSubmit}
+          variant="contained"
+          color="secondary"
+          disabled={isLoadingBOM}
+        >
+          {isLoadingBOM ? 'Generating BOM...' : 'Generate BOM'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
@@ -273,7 +335,7 @@ const Generator = () => {
   const [formData, setFormData] = useState({
     totalArea: '',
     avgFloorHeight: '',
-    selectedTemplateId: '', // Replaced templateTier with selectedTemplateId
+    selectedTemplateId: '',
     numFloors: '',
     roomCount: '',
     foundationDepth: '',
@@ -289,10 +351,10 @@ const Generator = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [isProjectBased, setIsProjectBased] = useState(false);
   const [materialToReplace, setMaterialToReplace] = useState(null);
-  const [locations, setLocations] = useState([]); 
-  const [selectedLocation, setSelectedLocation] = useState(""); 
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false); 
-  const [isLoadingBOM, setIsLoadingBOM] = useState(false); 
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingBOM, setIsLoadingBOM] = useState(false);
 
   // Alert Modal States
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -308,23 +370,20 @@ const Generator = () => {
     setIsAlertOpen(true);
   };
 
-    
-  
   useEffect(() => {
-    // Check if the user and user.token exist
     if (user && user.token) {
       setIsLoadingProjects(true);
 
       // Fetch projects for the contractor
-      Axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
+      Axios.get(`http://localhost:4000/api/project/contractor`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       })
-        .then(response => {
+        .then((response) => {
           setProjects(response.data);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error fetching projects:", error);
           showAlert("Error", "Failed to fetch projects. Please try again later.", "error");
         })
@@ -333,33 +392,41 @@ const Generator = () => {
         });
 
       // Fetch locations
-      Axios.get('https://foxconstruction-final.onrender.com/api/locations', {
+      Axios.get('http://localhost:4000/api/locations', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       })
-        .then(response => {
+        .then((response) => {
           setLocations(response.data);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error fetching locations:", error);
           showAlert("Error", "Failed to fetch locations. Please try again later.", "error");
         });
 
       // Fetch templates
-      Axios.get('https://foxconstruction-final.onrender.com/api/templates', {
+      Axios.get('http://localhost:4000/api/templates', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       })
-        .then(response => {
-          setTemplates(response.data.templates);
+        .then((response) => {
+          // Define the desired order
+      const desiredOrder = ['economy', 'standard', 'premium'];
+
+      // Sort the templates based on 'tier' property
+      const sortedTemplates = [...response.data.templates].sort((a, b) => {
+        const tierA = (a.tier || '').toLowerCase();
+        const tierB = (b.tier || '').toLowerCase();
+        return desiredOrder.indexOf(tierA) - desiredOrder.indexOf(tierB);
+      });
+          setTemplates(sortedTemplates);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error fetching templates:", error);
           showAlert("Error", "Failed to fetch templates. Please try again later.", "error");
         });
-
     } else {
       console.error("User is not authenticated or token is missing");
       showAlert("Authentication Error", "User is not authenticated. Please log in again.", "error");
@@ -373,10 +440,10 @@ const Generator = () => {
       setFormData({
         totalArea: project.totalArea || '',
         avgFloorHeight: project.avgFloorHeight || '',
-        selectedTemplateId: project.template || '', // Set selectedTemplateId to project template ID
+        selectedTemplateId: project.template || '',
         numFloors: project.floors.length.toString(),
-        roomCount: project.roomCount || '',        // Auto-populate roomCount
-        foundationDepth: project.foundationDepth || '' // Auto-populate foundationDepth
+        roomCount: project.roomCount || '',
+        foundationDepth: project.foundationDepth || ''
       });
       setSelectedLocation(project.location);
     }
@@ -387,13 +454,13 @@ const Generator = () => {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    let yPosition = 20; // Starting y position for details
+    let yPosition = 20;
 
     // Add the logo at the top
-    const imgWidth = pageWidth - 40; // Adjust width to make it centered and smaller than page width
-    const imgHeight = imgWidth * 0.2; // Maintain aspect ratio
+    const imgWidth = pageWidth - 40;
+    const imgHeight = imgWidth * 0.2;
     doc.addImage(foxconrights, 'JPEG', 20, 10, imgWidth, imgHeight);
-    yPosition += imgHeight + 10; // Adjust y position below the logo
+    yPosition += imgHeight + 10;
 
     doc.setFontSize(18);
     doc.text("Generated BOM: Custom Generation", pageWidth / 2, yPosition, { align: 'center' });
@@ -409,79 +476,79 @@ const Generator = () => {
     yPosition += 10;
 
     if (version === 'client') {
-        const formattedGrandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
-        doc.setFontSize(14);
-        doc.text(`Grand Total: ${formattedGrandTotal}`, 10, yPosition);
-        yPosition += 15;
+      const formattedGrandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
+      doc.setFontSize(14);
+      doc.text(`Grand Total: ${formattedGrandTotal}`, 10, yPosition);
+      yPosition += 15;
 
-        // Add the summary table for high-level categories
-        doc.autoTable({
-            head: [['#', 'Category', 'Total Amount (PHP)']],
-            body: bom.categories.map((category, index) => [
-                index + 1,
-                category.category.toUpperCase(),
-                `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
-                    category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
-                )}`
-            ]),
-            startY: yPosition,
-            headStyles: { fillColor: [41, 128, 185] },
-            bodyStyles: { textColor: [44, 62, 80] },
-        });
+      // Add the summary table for high-level categories
+      doc.autoTable({
+        head: [['#', 'Category', 'Total Amount (PHP)']],
+        body: bom.categories.map((category, index) => [
+          index + 1,
+          category.category.toUpperCase(),
+          `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+            category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
+          )}`
+        ]),
+        startY: yPosition,
+        headStyles: { fillColor: [41, 128, 185] },
+        bodyStyles: { textColor: [44, 62, 80] },
+      });
     } else if (version === 'contractor') {
-        // Contractor-specific details
-        const originalProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.totalProjectCost || 0)}`;
-        const originalLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.laborCost || 0)}`;
-        const markup = bom.projectDetails.location.markup;
-        const markedUpProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
-        const markedUpLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.laborCost || 0)}`;
+      // Contractor-specific details
+      const originalProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.totalProjectCost || 0)}`;
+      const originalLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.laborCost || 0)}`;
+      const markup = bom.projectDetails.location.markup;
+      const markedUpProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
+      const markedUpLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.laborCost || 0)}`;
 
-        doc.setFontSize(14);
-        doc.text("Contractor Cost Breakdown", 10, yPosition);
-        yPosition += 10;
+      doc.setFontSize(14);
+      doc.text("Contractor Cost Breakdown", 10, yPosition);
+      yPosition += 10;
 
+      doc.setFontSize(12);
+      doc.text(`Original Project Cost (without markup): ${originalProjectCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Original Labor Cost (without markup): ${originalLaborCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Location: ${bom.projectDetails.location.name} (Markup: ${markup}%)`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Marked-Up Project Cost: ${markedUpProjectCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Marked-Up Labor Cost: ${markedUpLaborCost}`, 10, yPosition);
+      yPosition += 20;
+
+      // Detailed table with totals for each category
+      bom.categories.forEach((category, categoryIndex) => {
         doc.setFontSize(12);
-        doc.text(`Original Project Cost (without markup): ${originalProjectCost}`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Original Labor Cost (without markup): ${originalLaborCost}`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Location: ${bom.projectDetails.location.name} (Markup: ${markup}%)`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Marked-Up Project Cost: ${markedUpProjectCost}`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Marked-Up Labor Cost: ${markedUpLaborCost}`, 10, yPosition);
-        yPosition += 20;
+        doc.text(category.category.toUpperCase(), 10, yPosition);
+        yPosition += 5;
 
-        // Detailed table with totals for each category
-        bom.categories.forEach((category, categoryIndex) => {
-            doc.setFontSize(12);
-            doc.text(category.category.toUpperCase(), 10, yPosition);
-            yPosition += 5;
-            
-            doc.autoTable({
-                head: [['Item', 'Description', 'Quantity', 'Unit', 'Unit Cost (PHP)','Total Amount (PHP)']],
-                body: category.materials.map((material, index) => [
-                    `${categoryIndex + 1}.${index + 1}`,
-                    material.description || 'N/A',
-                    material.quantity ? material.quantity.toFixed(2) : 'N/A',
-                    material.unit || 'N/A',
-                    `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`,
-                    `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.totalAmount)}`
-                ]),
-                startY: yPosition,
-                headStyles: { fillColor: [41, 128, 185] },
-                bodyStyles: { textColor: [44, 62, 80] },
-            });
-
-            yPosition = doc.lastAutoTable.finalY + 5;
-
-            // Add total for each category
-            const categoryTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
-                category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
-            )}`;
-            doc.text(`Total for ${category.category.toUpperCase()}: ${categoryTotal}`, 10, yPosition);
-            yPosition += 15;
+        doc.autoTable({
+          head: [['Item', 'Description', 'Quantity', 'Unit', 'Unit Cost (PHP)','Total Amount (PHP)']],
+          body: category.materials.map((material, index) => [
+            `${categoryIndex + 1}.${index + 1}`,
+            material.description || 'N/A',
+            material.quantity ? material.quantity.toFixed(2) : 'N/A',
+            material.unit || 'N/A',
+            `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`,
+            `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.totalAmount)}`
+          ]),
+          startY: yPosition,
+          headStyles: { fillColor: [41, 128, 185] },
+          bodyStyles: { textColor: [44, 62, 80] },
         });
+
+        yPosition = doc.lastAutoTable.finalY + 5;
+
+        // Add total for each category
+        const categoryTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+          category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
+        )}`;
+        doc.text(`Total for ${category.category.toUpperCase()}: ${categoryTotal}`, 10, yPosition);
+        yPosition += 15;
+      });
     }
 
     // Save the PDF with the selected version
@@ -571,13 +638,13 @@ const Generator = () => {
         totalArea: parseFloat(formData.totalArea),
         numFloors: parseInt(formData.numFloors, 10),
         avgFloorHeight: parseFloat(formData.avgFloorHeight),
-        templateId: formData.selectedTemplateId, // Updated field
+        templateId: formData.selectedTemplateId,
         locationName: selectedLocation,
         roomCount: parseInt(formData.roomCount, 10),
         foundationDepth: parseFloat(formData.foundationDepth)
       };
 
-      Axios.post(`https://foxconstruction-final.onrender.com/api/bom/generate`, payload, {
+      Axios.post(`http://localhost:4000/api/bom/generate`, payload, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
@@ -586,8 +653,6 @@ const Generator = () => {
         .then((response) => {
           setBom(response.data.bom);
           setModalOpen(false);
-
-          // Show success alert
           showAlert("Success", "BOM generated successfully.", "success");
         })
         .catch((error) => {
@@ -612,7 +677,7 @@ const Generator = () => {
     setFormData({
       totalArea: '',
       avgFloorHeight: '',
-      selectedTemplateId: '', // Reset this field
+      selectedTemplateId: '',
       numFloors: '',
       roomCount: '',
       foundationDepth: '',
@@ -636,7 +701,7 @@ const Generator = () => {
               ...material,
               description: newMaterial.description,
               cost: newMaterial.cost,
-              totalAmount: material.quantity * newMaterial.cost, // Update totalAmount
+              totalAmount: material.quantity * newMaterial.cost,
             };
           }
           return material;
@@ -665,25 +730,18 @@ const Generator = () => {
 
       setMaterialModalOpen(false);
 
-      // Show success alert
       showAlert("Success", "Material replaced successfully.", "success");
     }
   };
 
-  
   const calculateUpdatedCosts = (bom) => {
-    
     const totalMaterialsCost = bom.categories.reduce((sum, category) => {
       return sum + category.materials.reduce((subSum, material) => subSum + material.totalAmount, 0);
     }, 0);
 
-    
     const originalLaborCost = bom.originalCosts.laborCost;
-
-    
     const originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
 
-    
     const markupPercentage = bom.projectDetails.location.markup / 100;
     const markedUpTotalProjectCost = originalTotalProjectCost + (originalTotalProjectCost * markupPercentage);
 
@@ -694,186 +752,292 @@ const Generator = () => {
   };
 
   const handleSaveBOM = () => {
+    if (!selectedProject || !selectedProject._id) {
+      showAlert("Error", "No project selected. Please select a project before saving.", "error");
+      return;
+    }
+  
     const payload = {
       bom: {
         projectDetails: bom.projectDetails,
-        categories: bom.categories, 
+        categories: bom.categories,
         originalCosts: bom.originalCosts,
         markedUpCosts: bom.markedUpCosts,
       },
     };
-    
-    Axios.post(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}/bom`, payload, {
+    console.log('Selected Project ID:', selectedProject._id);
+
+    Axios.post(`http://localhost:4000/api/project/${selectedProject._id}/boms`, payload, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then((response) => {
-        // Replace alert with showAlert
+      .then(() => {
         showAlert("Success", "BOM saved to the project!", "success");
       })
       .catch((error) => {
-        console.error('Failed to save BOM to project:', error);
-        // Replace alert with showAlert
-        showAlert("Error", "Failed to save BOM to the project.", "error");
+        console.error('Failed to save BOM to project:', error.response || error.message || error);
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to save BOM to the project.';
+        showAlert("Error", errorMessage, "error");
       });
   };
+  
+
+  const theme = createTheme({
+    palette: {
+      primary: {
+        main: '#a7b194', // Set your desired color here
+      },
+      secondary: {
+        main: '#6f7d5e', // Optional: Set a complementary secondary color
+      },
+    },
+  });
 
   return (
     <>
+     <ThemeProvider theme={theme}>
       <Navbar />
-      <div className={styles.headerContainer}>
-        <h2>Generate BOM</h2>
-        <div className={styles.buttonContainer}>
-          <button onClick={() => { setIsProjectBased(true); setModalOpen(true); }} className={styles.openModalButton}>
-            Generate BOM with Project
-          </button>
-          <button onClick={() => { setIsProjectBased(false); setModalOpen(true); }} className={styles.openModalButton}>
-            Custom Generate BOM
-          </button>
-        </div>
-      </div>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h4">Generate BOM</Typography>
+          <Box>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => { setIsProjectBased(true); setModalOpen(true); }}
+              sx={{ mr: 2 }}
+            >
+              Generate BOM with Project
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => { setIsProjectBased(false); setModalOpen(true); }}
+            >
+              Custom Generate BOM 
+            </Button>
+          </Box>
+        </Box>
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        onSubmit={handleSubmit}
-        formData={formData}
-        handleChange={handleChange}
-        errors={errors}
-        projects={projects}
-        handleProjectSelect={handleProjectSelect}
-        selectedProject={selectedProject}
-        isProjectBased={isProjectBased}
-        locations={locations}
-        handleLocationSelect={handleLocationSelect}
-        selectedLocation={selectedLocation}
-        isLoadingProjects={isLoadingProjects}
-        isLoadingBOM={isLoadingBOM}
-        templates={templates} // Pass templates to Modal
-      />
+        <GeneratorModal
+          isOpen={modalOpen}
+          onClose={closeModal}
+          onSubmit={handleSubmit}
+          formData={formData}
+          handleChange={handleChange}
+          errors={errors}
+          projects={projects}
+          handleProjectSelect={handleProjectSelect}
+          selectedProject={selectedProject}
+          isProjectBased={isProjectBased}
+          locations={locations}
+          handleLocationSelect={handleLocationSelect}
+          selectedLocation={selectedLocation}
+          isLoadingProjects={isLoadingProjects}
+          isLoadingBOM={isLoadingBOM}
+          templates={templates}
+        />
 
-      {serverError && (
-        // Remove this div as alerts are handled via AlertModal
-        null
-      )}
+        {bom && (
+          <>
+            <Box mt={4}>
+              <Box display="flex" justifyContent="space-between" mb={2}>
+                <Typography variant="h5">Project Details</Typography>
+                {isProjectBased && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleSaveBOM}
+                  >
+                    Save BOM to Project
+                  </Button>
+                )}
+              </Box>
+              <TableContainer>
+                <Table>
+                  <TableBody>
+                    {isProjectBased && selectedProject && (
+                      <>
+                        <TableRow>
+                          <TableCell><strong>Project Name</strong></TableCell>
+                          <TableCell>{selectedProject.name}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell><strong>Project Owner</strong></TableCell>
+                          <TableCell>{selectedProject.user}</TableCell>
+                        </TableRow>
+                      </>
+                    )}
+                    <TableRow>
+                      <TableCell><strong>Total Area</strong></TableCell>
+                      <TableCell>{bom.projectDetails.totalArea} sqm</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Number of Floors</strong></TableCell>
+                      <TableCell>{bom.projectDetails.numFloors}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Room Count</strong></TableCell>
+                      <TableCell>{bom.projectDetails.roomCount}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Floor Height</strong></TableCell>
+                      <TableCell>{bom.projectDetails.avgFloorHeight} meters</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Foundation Depth</strong></TableCell>
+                      <TableCell>{bom.projectDetails.foundationDepth} meters</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Location</strong></TableCell>
+                      <TableCell>{bom.projectDetails.location.name}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>Markup</strong></TableCell>
+                      <TableCell>{bom.projectDetails.location.markup}%</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-      {bom && (
-        <div className={styles.bomContainer}>
-          <div className={styles.detailsContainer}>
-            <div className={styles.projectDetails}>
-              <h3>Project Details</h3>
-              {isProjectBased && selectedProject && (
-                <>
-                  <p><strong>Project Name:</strong> {selectedProject.name}</p>
-                  <p><strong>Project Owner:</strong> {selectedProject.user}</p>
-                </>
-              )}
-              <p><strong>Total Area:</strong> {bom.projectDetails.totalArea} sqm</p>
-              <p><strong>Number of Floors:</strong> {bom.projectDetails.numFloors}</p>
-              <p><strong>Room count:</strong> {bom.projectDetails.roomCount} meters</p> 
-              <p><strong>Floor Height:</strong> {bom.projectDetails.avgFloorHeight} meters</p>
-              <p><strong>Foundation depth:</strong> {bom.projectDetails.foundationDepth} meters</p>
-              <p><strong>Location:</strong> {bom.projectDetails.location.name}</p>
-              <p><strong>Markup:</strong> {bom.projectDetails.location.markup}%</p>
-            </div>
+              <Box mt={4}>
+                <Typography variant="h5">Cost Details</Typography>
+                <TableContainer>
+                  <Table>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell><strong>Original Labor Cost</strong></TableCell>
+                        <TableCell>
+                          {bom.originalCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.laborCost) : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Original Total Project Cost</strong></TableCell>
+                        <TableCell>
+                          {bom.originalCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.totalProjectCost) : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Marked-Up Labor Cost</strong></TableCell>
+                        <TableCell>
+                          {bom.markedUpCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.laborCost) : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell><strong>Marked-Up Total Project Cost</strong></TableCell>
+                        <TableCell>
+                          {bom.markedUpCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.totalProjectCost) : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
 
-            <div className={styles.costDetails}>
-              <h3>Original Costs</h3>
-              <p><strong>Original Labor Cost:</strong>
-                {bom.originalCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.laborCost) : 'N/A'}
-              </p>
-              <p><strong>Original Total Project Cost:</strong>
-                {bom.originalCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.originalCosts.totalProjectCost) : 'N/A'}
-              </p>
+              <Box mt={4}>
+                <Typography variant="h5">Materials</Typography>
+                {bom && bom.categories && bom.categories.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Category</TableCell>
+                          <TableCell>Item</TableCell>
+                          <TableCell>Description</TableCell>
+                          <TableCell>Quantity</TableCell>
+                          <TableCell>Unit</TableCell>
+                          <TableCell>Unit Cost (₱)</TableCell>
+                          <TableCell>Total Amount (₱)</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {bom.categories.map((categoryData, categoryIndex) => (
+                          <React.Fragment key={categoryIndex}>
+                            {categoryData.materials.map((material, index) => (
+                              <TableRow key={`${categoryData.category}-${material._id || index}`}>
+                                <TableCell>{categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}</TableCell>
+                                <TableCell>{material.item || 'N/A'}</TableCell>
+                                <TableCell>{material.description || 'N/A'}</TableCell>
+                                <TableCell>{material.quantity ? Math.round(material.quantity) : 'N/A'}</TableCell>
+                                <TableCell>{material.unit || 'N/A'}</TableCell>
+                                <TableCell>
+                                  {material.cost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.cost) : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                  {typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    size="small"
+                                    onClick={() => handleReplaceClick(material)}
+                                    startIcon={<SwapHoriz />}
+                                  >
+                                    Replace
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            <TableRow>
+                              <TableCell colSpan={6} align="right">
+                                <strong>Total for {categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}:</strong>
+                              </TableCell>
+                              <TableCell colSpan={2}>
+                                <strong>
+                                  {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(categoryData.categoryTotal)}
+                                </strong>
+                              </TableCell>
+                            </TableRow>
+                          </React.Fragment>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography>No materials found</Typography>
+                )}
+              </Box>
 
-              <h3>Marked-Up Costs</h3>
-              <p><strong>Marked-Up Labor Cost:</strong>
-                {bom.markedUpCosts.laborCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.laborCost) : 'N/A'}
-              </p>
-              <p><strong>Marked-Up Total Project Cost:</strong>
-                {bom.markedUpCosts.totalProjectCost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(bom.markedUpCosts.totalProjectCost) : 'N/A'}
-              </p>
-            </div>
-          </div>
+              <Box mt={4} display="flex" justifyContent="center">
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => handleGenerateBOMPDF('client')}
+                  sx={{ mr: 2 }}
+                >
+                  Download BOM for Client
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => handleGenerateBOMPDF('contractor')}
+                >
+                  Download BOM for Contractor
+                </Button>
+              </Box>
+            </Box>
+          </>
+        )}
 
-          <h3>Materials</h3>
-          {bom && bom.categories && bom.categories.length > 0 ? (
-            <div className={styles.scrollableTableContainer}>
-              <table className={styles.materialsTable}>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Item</th>
-                    <th>Description</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Unit Cost (₱)</th>
-                    <th>Total Amount (₱)</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bom.categories.map((categoryData, categoryIndex) => (
-                    <React.Fragment key={categoryIndex}> {/* Ensure unique key for each category */}
-                      {categoryData.materials.map((material, index) => (
-                        <tr key={`${categoryData.category}-${material._id || index}`}> {/* Ensure unique key for each material */}
-                          <td>{categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}</td>
-                          <td>{material.item || 'N/A'}</td>
-                          <td>{material.description || 'N/A'}</td>
-                          <td>{material.quantity ? Math.round(material.quantity) : 'N/A'}</td>
-                          <td>{material.unit || 'N/A'}</td>
-                          <td>{material.cost ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.cost) : 'N/A'}</td>
-                          <td>{typeof material.totalAmount === 'number' ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(material.totalAmount) : 'N/A'}</td>
-                          <td><button className={styles.replaceButton} onClick={() => handleReplaceClick(material)}>Replace</button></td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: 'right' }}><strong>Total for {categoryData.category ? categoryData.category.toUpperCase() : 'UNCATEGORIZED'}:</strong></td>
-                        <td><strong>{new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(categoryData.categoryTotal)}</strong></td>
-                        <td></td>
-                      </tr>
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p>No materials found</p>
-          )}
-          {isProjectBased && ( 
-            <button onClick={handleSaveBOM} className={styles.saveBOMButton}>
-              Save BOM to Project
-            </button>
-          )}
+        <MaterialSearchModal
+          isOpen={materialModalOpen}
+          onClose={() => setMaterialModalOpen(false)}
+          onMaterialSelect={handleMaterialSelect}
+          materialToReplace={materialToReplace}
+          user={user}
+        />
 
-{bom && (
-  <div className={styles.downloadButtonContainer}>
-    <button onClick={() => handleGenerateBOMPDF('client')} className={styles.downloadButton}>
-      Download BOM for Client
-    </button>
-    <button onClick={() => handleGenerateBOMPDF('contractor')} className={styles.downloadButton}>
-      Download BOM for Contractor
-    </button>
-  </div>
-)}
-        </div>
-      )}
-
-      <MaterialSearchModal
-        isOpen={materialModalOpen}
-        onClose={() => setMaterialModalOpen(false)}
-        onMaterialSelect={handleMaterialSelect}
-        materialToReplace={materialToReplace}
-        user={user} 
-      />
-
-      {/* Alert Modal */}
-      <AlertModal
-        isOpen={isAlertOpen}
-        onClose={() => setIsAlertOpen(false)}
-        title={alertTitle}
-        message={alertMessage}
-        type={alertType}
-      />
+        {/* Alert Modal */}
+        <AlertModal
+          isOpen={isAlertOpen}
+          onClose={() => setIsAlertOpen(false)}
+          title={alertTitle}
+          message={alertMessage}
+          type={alertType}
+        />
+      </Box>
+      </ThemeProvider>
     </>
   );
 };

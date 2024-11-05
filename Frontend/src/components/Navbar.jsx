@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import { useState } from "react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useLogout } from "../hooks/useLogout";
@@ -10,6 +11,7 @@ import {
   Menu,
   MenuItem,
   Button,
+  Box, // Import Box
 } from "@mui/material";
 import { FaUserCircle, FaHome } from "react-icons/fa";
 
@@ -52,55 +54,67 @@ const Navbar = () => {
         padding: "0.5rem 1rem",
       }}
     >
-      <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Toolbar sx={{ display: "flex", alignItems: "center" }}>
         {/* Company Info */}
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            fontWeight: "bold",
-            color: "#a7b194",
-            fontSize: { xs: "28px", md: "32px" },
-          }}
-        >
-          FOX
+        <Box sx={{ flex: 1 }}>
           <Typography
-            variant="body1"
-            component="span"
+            variant="h6"
+            component="div"
             sx={{
-              ml: 1,
+              display: "flex",
+              alignItems: "center",
+              fontWeight: "bold",
               color: "#a7b194",
-              fontSize: { xs: "12px", md: "14px" },
+              fontSize: { xs: "28px", md: "32px" },
             }}
           >
-            CONSTRUCTION CO.
+            FOX
+            <Typography
+              variant="body1"
+              component="span"
+              sx={{
+                ml: 1,
+                color: "#a7b194",
+                fontSize: { xs: "12px", md: "14px" },
+              }}
+            >
+              CONSTRUCTION CO.
+            </Typography>
           </Typography>
-        </Typography>
+        </Box>
 
         {/* Dashboard Button */}
-        <Button
-          startIcon={<FaHome style={{ color: "#3f5930" }} />}
-          onClick={handleDashboardNavigation}
-          sx={{
-            color: "#3f5930",
-            textTransform: "none",
-            fontSize: { xs: "16px", md: "18px" },
-            fontWeight: "bold",
-            gap: "8px",
-            "&:hover": {
-              backgroundColor: "transparent",
-              color: "#6b7c61",
-            },
-          }}
-        >
-          Dashboard
-        </Button>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <Button
+            startIcon={<FaHome style={{ color: "#3f5930" }} />}
+            onClick={handleDashboardNavigation}
+            sx={{
+              color: "#3f5930",
+              textTransform: "none",
+              fontSize: { xs: "16px", md: "18px" },
+              fontWeight: "bold",
+              gap: "8px",
+              "&:hover": {
+                backgroundColor: "transparent",
+                color: "#6b7c61",
+              },
+            }}
+          >
+            Dashboard
+          </Button>
+        </Box>
 
         {/* User Info and Profile Icon */}
         {user && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
             <Typography
               variant="body1"
               sx={{
@@ -138,7 +152,7 @@ const Navbar = () => {
             >
               <MenuItem onClick={handleLogoutClick}>Logout</MenuItem>
             </Menu>
-          </div>
+          </Box>
         )}
       </Toolbar>
     </AppBar>

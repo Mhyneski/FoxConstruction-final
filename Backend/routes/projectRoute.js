@@ -39,7 +39,7 @@ router.patch('/:projectId/floors/:floorId', updateFloorProgress); // Update floo
 router.post('/:projectId/floors/:floorId/reset', resetFloorProgressToAutomatic); // Reset floor progress to automatic
 
 // BOM-related route
-router.post('/:id/bom', saveBOMToProject); // Save BOM to project
+router.post('/:id/boms', saveBOMToProject); // Save BOM to project
 
 // Project management action routes
 router.patch('/:id/start', startProject); // Start project

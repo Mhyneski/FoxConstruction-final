@@ -18,7 +18,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const checkDefaultPassword = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/is-default-password`, {
+        const response = await axios.get(`http://localhost:4000/api/user/is-default-password`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
   const handlePasswordChange = async (newPassword) => {
     setIsSubmitting(true);
     try {
-      await axios.patch(`https://foxconstruction-final.onrender.com/api/user/change-password`, { newPassword }, {
+      await axios.patch(`http://localhost:4000/api/user/change-password`, { newPassword }, {
         headers: {
           Authorization: `Bearer ${user.token}`
         }
@@ -88,34 +88,34 @@ const AdminDashboard = () => {
       <div className={styles.dashboardContainer}>
         {isPasswordChanged ? (
           <>
-            <Link to="/Accounts" className={styles.dashboardLink}>
+            <Link to="/Accounts" className={styles.dashboardCard}>
               <img
                 src={Picture}
                 alt="Account Management"
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.dashboardText}>Account List</div>
+                <div className={styles.cardText}>Account List</div>
               </div>
             </Link>
-            <Link to="/Materials" className={styles.dashboardLink}>
+            <Link to="/Materials" className={styles.dashboardCard}>
               <img
                 src={Picture}
                 alt="Materials"
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.dashboardText}>Edit Material Prices</div>
+                <div className={styles.cardText}>Edit Material Prices</div>
               </div>
             </Link>
-            <Link to="/Location" className={styles.dashboardLink}>
+            <Link to="/Location" className={styles.dashboardCard}>
               <img
                 src={Picture}
                 alt="Locations"
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.dashboardText}>Edit Location Markups</div>
+                <div className={styles.cardText}>Edit Location Markups</div>
               </div>
             </Link>
           </>

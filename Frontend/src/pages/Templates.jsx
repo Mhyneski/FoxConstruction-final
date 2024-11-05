@@ -1,13 +1,48 @@
-// src/components/Templates.jsx
 import { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import Navbar from "../components/Navbar";
-import styles from "../css/Templates.module.css";
 import { AuthContext } from "../context/AuthContext";
 import ConfirmDeleteTemplate from "../components/ConfirmDeleteTemplate";
-import Select from 'react-select'; 
 import AlertModal from '../components/AlertModal'; // Import AlertModal
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  FormControl,
+  InputLabel,
+  Autocomplete 
+} from '@mui/material';
+import { Close, Search } from '@mui/icons-material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Navbar from "../components/Navbar";
 
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#a7b194',
+    },
+    secondary: {
+      main: '#6f7d5e',
+    },
+  },
+});
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
@@ -89,14 +124,25 @@ const Templates = () => {
   // Fetch all templates
   useEffect(() => {
     if (!user || !user.token) return;
-
+  
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
+        const response = await axios.get(`http://localhost:4000/api/templates`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        setTemplates(response.data.templates);
+  
+        // Define the desired order
+        const desiredOrder = ['economy', 'standard', 'premium'];
+  
+        // Sort the templates based on 'tier' property
+        const sortedTemplates = [...response.data.templates].sort((a, b) => {
+          const tierA = (a.tier || '').toLowerCase();
+          const tierB = (b.tier || '').toLowerCase();
+          return desiredOrder.indexOf(tierA) - desiredOrder.indexOf(tierB);
+        });
+  
+        setTemplates(sortedTemplates);
       } catch (error) {
         console.error("Error fetching templates:", error);
         showAlert("Error", "Failed to fetch templates. Please try again later.", "error");
@@ -104,15 +150,16 @@ const Templates = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchTemplates();
     fetchMaterials(); 
   }, [user]);
+  
 
   // Fetch details of a specific template
 const fetchTemplateDetails = async (templateId) => {
   try {
-    const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates/${templateId}`, {
+    const response = await axios.get(`http://localhost:4000/api/templates/${templateId}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     });
     setSelectedTemplate(response.data.template);
@@ -128,7 +175,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     const templateId = selectedTemplate._id;
 
     await axios.delete(
-      `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials/${materialId}`,
+      `http://localhost:4000/api/templates/${templateId}/categories/${categoryName}/materials/${materialId}`,
       {
         headers: { Authorization: `Bearer ${user.token}` },
       }
@@ -148,7 +195,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   // Fetch materials
   const fetchMaterials = async () => {
     try {
-      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/materials`, {
+      const response = await axios.get(`http://localhost:4000/api/materials`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setMaterials(response.data);
@@ -200,7 +247,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     }
     try {
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/templates`,
+        `http://localhost:4000/api/templates`,
         newTemplate,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -225,7 +272,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
     }
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/templates/${editTemplateId}`,
+        `http://localhost:4000/api/templates/${editTemplateId}`,
         newTemplate,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -250,7 +297,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   // Handle deleting a template
   const handleDeleteTemplate = async () => {
     try {
-      await axios.delete(`https://foxconstruction-final.onrender.com/api/templates/${selectedTemplate._id}`, {
+      await axios.delete(`http://localhost:4000/api/templates/${selectedTemplate._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -410,7 +457,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
       );
 
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials`,
+        `http://localhost:4000/api/templates/${templateId}/categories/${categoryName}/materials`,
         data,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -472,196 +519,266 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   }));
 
   return (
-    <>
+    <ThemeProvider theme={theme}>
       <Navbar />
-      <div className={styles.templatesContainer}>
-        <h2 className={styles.heading}>Templates</h2>
+      <Box p={3}>
+        <Typography variant="h4" gutterBottom>
+          Templates
+        </Typography>
 
         {isLoading ? (
-          <LoadingSpinner />
+          <Box display="flex" flexDirection="column" alignItems="center" mt={5}>
+            <CircularProgress />
+            <Typography variant="body1" mt={2}>
+              Please wait, fetching templates...
+            </Typography>
+          </Box>
         ) : (
           <>
-            <div className={styles.searchBarContainer}>
-              <input
-                type="text"
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <TextField
+                variant="outlined"
                 placeholder="Search templates"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
               />
-              <button
+              <Button
+                variant="contained"
+                color="secondary"
                 onClick={() => {
                   setIsEditing(false);
                   resetTemplateForm();
                   setIsModalOpen(true);
                 }}
-                className={styles.createButton}
               >
                 + Create Template
-              </button>
-            </div>
-            <p className={styles.templateCount}>
+              </Button>
+            </Box>
+            <Typography variant="subtitle1" gutterBottom>
               Total Templates: {filteredTemplates.length}
-            </p>
+            </Typography>
 
-            <div className={styles.scrollableTableContainer}>
-              <table className={styles.templatesTable}>
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Type</th>
-                    <th>Tier</th>
-                    <th>Date Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Tier</TableCell>
+                    <TableCell>Date Created</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {filteredTemplates.map((template) => (
-                    <tr key={template._id}>
-                      <td onClick={() => handleViewTemplateDetails(template)}>
+                    <TableRow key={template._id} hover>
+                      <TableCell
+                        onClick={() => handleViewTemplateDetails(template)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         {template.title}
-                      </td>
-                      <td onClick={() => handleViewTemplateDetails(template)}>
+                      </TableCell>
+                      <TableCell
+                        onClick={() => handleViewTemplateDetails(template)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         {template.type.charAt(0).toUpperCase() + template.type.slice(1)}
-                      </td>
-                      <td onClick={() => handleViewTemplateDetails(template)}>
+                      </TableCell>
+                      <TableCell
+                        onClick={() => handleViewTemplateDetails(template)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         {template.tier.charAt(0).toUpperCase() + template.tier.slice(1)}
-                      </td>
-                      <td onClick={() => handleViewTemplateDetails(template)}>
+                      </TableCell>
+                      <TableCell
+                        onClick={() => handleViewTemplateDetails(template)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         {new Date(template.createdAt).toLocaleDateString()}
-                      </td>
-                      <td>
-  {template.createdBy && (
-    <>
-      <button
-        onClick={() => handleEditTemplate(template)}
-        className={styles.editButton}
-      >
-        Edit
-      </button>
-      <button
-        onClick={() => handleDeleteClick(template)}
-        className={styles.deleteButton}
-      >
-        Delete
-      </button>
-    </>
-  )}
-</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>
+                        {template.createdBy && (
+                          <>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              size="small"
+                              onClick={() => handleEditTemplate(template)}
+                              style={{ marginRight: '8px' }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="secondary"
+                              size="small"
+                              onClick={() => handleDeleteClick(template)}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         )}
 
+        {/* Template Details Modal */}
         {showDetailsModal && selectedTemplate && (
-          <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)}>
-            <h3>Template Details - {selectedTemplate.title}</h3>
-            <span
-              className={styles.modalCloseButton}
-              onClick={() => setShowDetailsModal(false)}
-            >
-              &times;
-            </span>
-            <p>
-              <strong>Type:</strong>{" "}
-              {selectedTemplate.type.charAt(0).toUpperCase() +
-                selectedTemplate.type.slice(1)}
-            </p>
-            <p>
-              <strong>Tier:</strong>{" "}
-              {selectedTemplate.tier.charAt(0).toUpperCase() +
-                selectedTemplate.tier.slice(1)}
-            </p>
-            <p>
-              <strong>Date Created:</strong>{" "}
-              {new Date(selectedTemplate.createdAt).toLocaleDateString()}
-            </p>
-
-            {/* New Fields */}
-            <p>
-              <strong>Total Area:</strong> {selectedTemplate.bom.totalArea} sqm
-            </p>
-            <p>
-              <strong>Number of Floors:</strong> {selectedTemplate.bom.numFloors}
-            </p>
-            <p>
-              <strong>Average Floor Height:</strong> {selectedTemplate.bom.avgFloorHeight} m
-            </p>
-            <p>
-              <strong>Number of Rooms:</strong> {selectedTemplate.bom.roomCount}
-            </p>
-            <p>
-              <strong>Foundation Depth:</strong> {selectedTemplate.bom.foundationDepth} m
-            </p>
-
-            {/* Categories and Materials */}
-<h4>Categories and Materials</h4>
-{selectedTemplate.bom.categories.map((category) => (
-  <div key={category.category} className={styles.categorySection}>
-    <h5>{category.category}</h5>
-
-    {/* Conditionally show Add Material button only if template is not default */}
-    {selectedTemplate.createdBy && (
-      <button
-        className={styles.addMaterialButton}
-        onClick={() => handleAddMaterialClick(category.category)}
-      >
-        Add Material
-      </button>
-    )}
-
-    {category.materials.length > 0 ? (
-      <ul>
-        {category.materials.map((material, index) => (
-          <li key={index}>
-            <p>
-              <strong>{material.description}</strong> - {material.quantity}{" "}
-              {material.unit} @ ₱{material.cost} each
-            </p>
-
-            {/* Remove Material Button */}
-            {selectedTemplate.createdBy && (
-              <button
-                className={styles.removeMaterialButton}
-                onClick={() => handleRemoveMaterial(category.category, material._id)}
+          <Dialog
+            open={showDetailsModal}
+            onClose={() => setShowDetailsModal(false)}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle>
+              Template Details - {selectedTemplate.title}
+              <IconButton
+                aria-label="close"
+                onClick={() => setShowDetailsModal(false)}
+                style={{ position: 'absolute', right: 8, top: 8 }}
               >
-                Remove
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    ) : (
-      <p>No materials in this category.</p>
-    )}
-  </div>
-))}
+                <Close />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+              {/* Template Details */}
+              <Typography variant="body1" gutterBottom>
+                <strong>Type:</strong>{" "}
+                {selectedTemplate.type.charAt(0).toUpperCase() +
+                  selectedTemplate.type.slice(1)}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Tier:</strong>{" "}
+                {selectedTemplate.tier.charAt(0).toUpperCase() +
+                  selectedTemplate.tier.slice(1)}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Date Created:</strong>{" "}
+                {new Date(selectedTemplate.createdAt).toLocaleDateString()}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Total Area:</strong> {selectedTemplate.bom.totalArea} sqm
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Number of Floors:</strong> {selectedTemplate.bom.numFloors}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Average Floor Height:</strong> {selectedTemplate.bom.avgFloorHeight} m
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Number of Rooms:</strong> {selectedTemplate.bom.roomCount}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Foundation Depth:</strong> {selectedTemplate.bom.foundationDepth} m
+              </Typography>
 
-
-          </Modal>
+              {/* Categories and Materials */}
+              <Typography variant="h6" gutterBottom>
+                Categories and Materials
+              </Typography>
+              {selectedTemplate.bom.categories.map((category) => (
+                <Box key={category.category} mb={2}>
+                  <Box display="flex" alignItems="center">
+                    <Typography variant="subtitle1" style={{ flexGrow: 1 }}>
+                      {category.category}
+                    </Typography>
+                    {selectedTemplate.createdBy && (
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        size="small"
+                        onClick={() => handleAddMaterialClick(category.category)}
+                      >
+                        Add Material
+                      </Button>
+                    )}
+                  </Box>
+                  {category.materials.length > 0 ? (
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Description</TableCell>
+                            <TableCell>Quantity</TableCell>
+                            <TableCell>Unit</TableCell>
+                            <TableCell>Cost</TableCell>
+                            {selectedTemplate.createdBy && <TableCell>Actions</TableCell>}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {category.materials.map((material, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{material.description}</TableCell>
+                              <TableCell>{material.quantity}</TableCell>
+                              <TableCell>{material.unit}</TableCell>
+                              <TableCell>₱{material.cost}</TableCell>
+                              {selectedTemplate.createdBy && (
+                                <TableCell>
+                                  <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    size="small"
+                                    onClick={() =>
+                                      handleRemoveMaterial(category.category, material._id)
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography>No materials in this category.</Typography>
+                  )}
+                </Box>
+              ))}
+            </DialogContent>
+          </Dialog>
         )}
 
+        {/* Add Material Modal */}
         {showAddMaterialModal && (
-          <Modal isOpen={showAddMaterialModal} onClose={closeAddMaterialModal}>
-            <div className={styles.modalForm}>
-              <h3>Add Material to {selectedCategory}</h3>
-              <span
-                className={styles.modalCloseButton}
+          <Dialog
+            open={showAddMaterialModal}
+            onClose={closeAddMaterialModal}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle>
+              Add Material to {selectedCategory}
+              <IconButton
+                aria-label="close"
                 onClick={closeAddMaterialModal}
+                style={{ position: 'absolute', right: 8, top: 8 }}
               >
-                &times;
-              </span>
-
+                <Close />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
               {/* React Select for Existing Materials */}
-              <h4>Select Existing Material</h4>
-              <Select
-                options={materialOptions}
-                onChange={(selectedOption) => {
+              <Typography variant="subtitle1">Select Existing Material</Typography>
+              <Autocomplete
+                options={materials}
+                getOptionLabel={(option) => option.description}
+                onChange={(event, selectedOption) => {
                   if (selectedOption) {
-                    const { material } = selectedOption;
+                    const material = selectedOption;
                     setNewMaterial({
                       ...newMaterial,
                       materialId: material._id,
@@ -680,18 +797,24 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                     });
                   }
                 }}
-                placeholder="Search and select material"
-                isClearable
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Search and select material"
+                    margin="dense"
+                    fullWidth
+                  />
+                )}
               />
 
-              {/* Option to input new material */}
-              <h4>Or Input New Material</h4>
-              {/* Only show these fields if no materialId is selected */}
+              {/* Option to input new material
+              <Typography variant="subtitle1" mt={2}>
+                Or Input New Material
+              </Typography>
               {!newMaterial.materialId && (
                 <>
-                  <input
-                    type="text"
-                    placeholder="Description"
+                  <TextField
+                    label="Description"
                     value={newMaterial.description}
                     onChange={(e) =>
                       setNewMaterial({
@@ -700,236 +823,222 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                         materialId: "", // Clear materialId
                       })
                     }
-                    className={styles.inputField}
+                    fullWidth
+                    margin="dense"
                   />
-                  <select
-                    value={newMaterial.unit}
-                    onChange={(e) =>
-                      setNewMaterial({ ...newMaterial, unit: e.target.value })
-                    }
-                    className={styles.inputField}
-                  >
-                    <option value="">Select Unit</option>
-                    {units.map((unit, index) => (
-                      <option key={index} value={unit}>
-                        {unit}
-                      </option>
-                    ))}
-                  </select>
-                  <input
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Unit</InputLabel>
+                    <Select
+                      value={newMaterial.unit}
+                      onChange={(e) =>
+                        setNewMaterial({ ...newMaterial, unit: e.target.value })
+                      }
+                      label="Unit"
+                    >
+                      {units.map((unit, index) => (
+                        <MenuItem key={index} value={unit}>
+                          {unit}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Cost"
                     type="number"
-                    placeholder="Cost"
                     value={newMaterial.cost}
                     onChange={(e) =>
                       setNewMaterial({ ...newMaterial, cost: e.target.value })
                     }
-                    className={styles.inputField}
-                    min="0"
+                    fullWidth
+                    margin="dense"
+                    inputProps={{ min: 0 }}
                   />
                 </>
-              )}
+              )} */}
 
               {/* Common Fields */}
-              <h4>Quantity</h4>
-              <input
+              <Typography variant="subtitle1" mt={2}>
+                Quantity
+              </Typography>
+              <TextField
+                label="Quantity"
                 type="number"
-                placeholder="Quantity"
                 value={newMaterial.quantity}
                 onChange={(e) =>
                   setNewMaterial({ ...newMaterial, quantity: e.target.value })
                 }
-                className={styles.inputField}
-                min="0"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 0 }}
               />
 
               {/* Scaling Factors */}
-              <h4>Scaling Factors</h4>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={newMaterial.scaling.areaFactor === 1}
-                  onChange={(e) =>
-                    setNewMaterial({
-                      ...newMaterial,
-                      scaling: {
-                        ...newMaterial.scaling,
-                        areaFactor: e.target.checked ? 1 : 0,
-                      },
-                    })
+              <Typography variant="subtitle1" mt={2}>
+                Scaling Factors
+              </Typography>
+              {[
+                { label: 'Area Factor', key: 'areaFactor' },
+                { label: 'Height Factor', key: 'heightFactor' },
+                { label: 'Room Count Factor', key: 'roomCountFactor' },
+                { label: 'Foundation Depth Factor', key: 'foundationDepthFactor' },
+              ].map((factor) => (
+                <FormControlLabel
+                  key={factor.key}
+                  control={
+                    <Checkbox
+                      checked={newMaterial.scaling[factor.key] === 1}
+                      onChange={(e) =>
+                        setNewMaterial({
+                          ...newMaterial,
+                          scaling: {
+                            ...newMaterial.scaling,
+                            [factor.key]: e.target.checked ? 1 : 0,
+                          },
+                        })
+                      }
+                    />
                   }
+                  label={factor.label}
                 />
-                Area Factor
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={newMaterial.scaling.heightFactor === 1}
-                  onChange={(e) =>
-                    setNewMaterial({
-                      ...newMaterial,
-                      scaling: {
-                        ...newMaterial.scaling,
-                        heightFactor: e.target.checked ? 1 : 0,
-                      },
-                    })
-                  }
-                />
-                Height Factor
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={newMaterial.scaling.roomCountFactor === 1}
-                  onChange={(e) =>
-                    setNewMaterial({
-                      ...newMaterial,
-                      scaling: {
-                        ...newMaterial.scaling,
-                        roomCountFactor: e.target.checked ? 1 : 0,
-                      },
-                    })
-                  }
-                />
-                Room Count Factor
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={newMaterial.scaling.foundationDepthFactor === 1}
-                  onChange={(e) =>
-                    setNewMaterial({
-                      ...newMaterial,
-                      scaling: {
-                        ...newMaterial.scaling,
-                        foundationDepthFactor: e.target.checked ? 1 : 0,
-                      },
-                    })
-                  }
-                />
-                Foundation Depth Factor
-              </label>
-
-              <button className={styles.createButton} onClick={handleAddMaterial}>
+              ))}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeAddMaterialModal}>Cancel</Button>
+              <Button onClick={handleAddMaterial} variant="contained" color="secondary">
                 Add Material
-              </button>
-            </div>
-          </Modal>
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
+        {/* Create/Edit Template Modal */}
         {isModalOpen && (
-          <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-            <div className={styles.modalForm}>
-              <h3>{isEditing ? "Edit Template" : "Create New Template"}</h3>
-              <span
-                className={styles.modalCloseButton}
+          <Dialog
+            open={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle>
+              {isEditing ? "Edit Template" : "Create New Template"}
+              <IconButton
+                aria-label="close"
                 onClick={() => setIsModalOpen(false)}
+                style={{ position: 'absolute', right: 8, top: 8 }}
               >
-                &times;
-              </span>
-              <input
-                type="text"
-                placeholder="Template Title"
+                <Close />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+              <TextField
+                label="Template Title"
                 value={newTemplate.title}
                 onChange={(e) =>
                   setNewTemplate({ ...newTemplate, title: e.target.value })
                 }
-                className={styles.inputField}
+                fullWidth
+                margin="dense"
               />
-              <select
-                value={newTemplate.type}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, type: e.target.value })
-                }
-                className={styles.inputField}
-              >
-                <option value="" disabled>
-                  Select Type
-                </option>
-                <option value="residential">Residential</option>
-              </select>
-              <select
-                value={newTemplate.tier}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, tier: e.target.value })
-                }
-                className={styles.inputField}
-              >
-                <option value="" disabled>
-                  Select Tier
-                </option>
-                <option value="economy">Economy</option>
-                <option value="standard">Standard</option>
-                <option value="premium">Premium</option>
-              </select>
-
+              <FormControl fullWidth margin="dense">
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={newTemplate.type}
+                  onChange={(e) =>
+                    setNewTemplate({ ...newTemplate, type: e.target.value })
+                  }
+                  label="Type"
+                >
+                  <MenuItem value="" disabled>
+                    Select Type
+                  </MenuItem>
+                  <MenuItem value="residential">Residential</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth margin="dense">
+                <InputLabel>Tier</InputLabel>
+                <Select
+                  value={newTemplate.tier}
+                  onChange={(e) =>
+                    setNewTemplate({ ...newTemplate, tier: e.target.value })
+                  }
+                  label="Tier"
+                >
+                  <MenuItem value="" disabled>
+                    Select Tier
+                  </MenuItem>
+                  <MenuItem value="economy">Economy</MenuItem>
+                  <MenuItem value="standard">Standard</MenuItem>
+                  <MenuItem value="premium">Premium</MenuItem>
+                </Select>
+              </FormControl>
               {/* New Fields */}
-              <input
+              <TextField
+                label="Total Area (sqm)"
                 type="number"
-                placeholder="Total Area (sqm)"
                 value={newTemplate.totalArea}
                 onChange={(e) =>
                   setNewTemplate({ ...newTemplate, totalArea: e.target.value })
                 }
-                className={styles.inputField}
-                min="0"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 0 }}
               />
-              <input
+              <TextField
+                label="Number of Floors"
                 type="number"
-                placeholder="Number of Floors"
                 value={newTemplate.numFloors}
                 onChange={(e) =>
                   setNewTemplate({ ...newTemplate, numFloors: e.target.value })
                 }
-                className={styles.inputField}
-                min="1"
-                max="6"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 1, max: 6 }}
               />
-              <input
+              <TextField
+                label="Average Floor Height (m)"
                 type="number"
-                placeholder="Average Floor Height (m)"
                 value={newTemplate.avgFloorHeight}
                 onChange={(e) =>
-                  setNewTemplate({
-                    ...newTemplate,
-                    avgFloorHeight: e.target.value,
-                  })
+                  setNewTemplate({ ...newTemplate, avgFloorHeight: e.target.value })
                 }
-                className={styles.inputField}
-                min="0"
-                max="15"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 0, max: 15 }}
               />
-              <input
+              <TextField
+                label="Number of Rooms"
                 type="number"
-                placeholder="Number of Rooms"
                 value={newTemplate.roomCount}
                 onChange={(e) =>
                   setNewTemplate({ ...newTemplate, roomCount: e.target.value })
                 }
-                className={styles.inputField}
-                min="1"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 1 }}
               />
-              <input
+              <TextField
+                label="Foundation Depth (m)"
                 type="number"
-                placeholder="Foundation Depth (m)"
                 value={newTemplate.foundationDepth}
                 onChange={(e) =>
-                  setNewTemplate({
-                    ...newTemplate,
-                    foundationDepth: e.target.value,
-                  })
+                  setNewTemplate({ ...newTemplate, foundationDepth: e.target.value })
                 }
-                className={styles.inputField}
-                min="0"
+                fullWidth
+                margin="dense"
+                inputProps={{ min: 0 }}
               />
-
-              <button
-                className={styles.createButton}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button
                 onClick={isEditing ? handleUpdateTemplate : handleCreateTemplate}
+                variant="contained"
+                color="secondary"
               >
                 {isEditing ? "Update Template" : "Create Template"}
-              </button>
-            </div>
-          </Modal>
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
         <ConfirmDeleteTemplate
@@ -947,8 +1056,8 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
           message={alertMessage}
           type={alertType}
         />
-      </div>
-    </>
+      </Box>
+    </ThemeProvider>
   );
 };
 

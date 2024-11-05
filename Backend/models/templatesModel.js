@@ -37,7 +37,7 @@ const templatesSchema = new schema({
   type: { type: String, enum: ["residential"], required: true },
   tier: { type: String, enum: ["economy", "standard", "premium"], required: true },
   bom: bomSchema,
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User',},
 }, { timestamps: true });
 
 module.exports = mongoose.model('Template', templatesSchema);

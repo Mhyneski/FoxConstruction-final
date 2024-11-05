@@ -17,12 +17,15 @@ import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './components/ProtectedRoute';
 import AboutUs from './pages/AboutUs';
 import Templates from './pages/Templates';
+import { CssBaseline } from '@mui/material';
 
 function App() {
 
   return (
+    <>
+    <CssBaseline />
     <Router>
-      <Routes>
+      <Routes>  
         <Route path="/Login" element={<Login />} />
         <Route path="/" element={<Homepage />} />
 
@@ -122,6 +125,7 @@ function App() {
         <Route path="/Unauthorized" element={<Unauthorized />} />
       </Routes>
     </Router>
+    </>
   );
 }
 

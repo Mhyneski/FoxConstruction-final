@@ -13,8 +13,7 @@
 }
 
 
-.progressTitle {
-  text-align: center; 
+.progressTitle {  
   font-size: 28px;
   margin-bottom: 20px;
   color: #495b4a; 
@@ -75,7 +74,7 @@
 
 
 .tasks {
-  background-color: #495b4a;
+  background-color: #a7b194;
   padding: 10px;
   margin-top: 5px;
   border-radius: 5px;
@@ -99,13 +98,14 @@
   justify-content: space-between;
   align-items: center;
   color: white;
-  background-color: #495b4a; 
+  background-color: #a3ac93;
   padding: 5px 10px;
   border-radius: 5px;
 }
 
 .taskName {
   font-size: 14px;
+  color: white;
 }
 
 .taskProgressBar {
@@ -137,7 +137,6 @@
 }
 
 .dateTitle {
-  text-align: center;
   font-size: 16px;
   margin-bottom: 10px;
   color: #666; 

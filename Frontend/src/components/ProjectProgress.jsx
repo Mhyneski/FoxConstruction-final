@@ -1,9 +1,8 @@
+// src/components/ProjectProgress.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import {
-  AppBar,
-  Toolbar,
   Typography,
   Box,
   LinearProgress,
@@ -27,7 +26,7 @@ const ProjectProgress = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
+        const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`,
           },
@@ -53,15 +52,21 @@ const ProjectProgress = () => {
 
   if (isLoading) {
     return (
-      <div className={styles.loadingSpinnerContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading project details...</p>
-      </div>
+      <Box display="flex" flexDirection="column" alignItems="center" mt={5}>
+        <CircularProgress />
+        <Typography variant="body1" mt={2}>
+          Loading project details...
+        </Typography>
+      </Box>
     );
   }
 
   if (!project) {
-    return <div className={styles.loading}>Project not found.</div>;
+    return (
+      <Box display="flex" justifyContent="center" mt={5}>
+        <Typography variant="h6">Project not found.</Typography>
+      </Box>
+    );
   }
 
   const startDate = new Date(project.startDate).toLocaleDateString('en-US', {
@@ -74,51 +79,83 @@ const ProjectProgress = () => {
     <div className={styles.container}>
       <Navbar />
       <Box p={3}>
-        <Typography variant="h4" gutterBottom className={styles.title}>{project.name ? project.name.toUpperCase() : 'Untitled Project'}</Typography>
-        <Typography variant="body1" gutterBottom className={styles.dateTitle}>Started on: {startDate}</Typography>
-        <Typography variant="body1" gutterBottom className={styles.progressTitle}>STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}</Typography>
+        <Typography variant="h4" gutterBottom className={styles.title}>
+          {project.name ? project.name.toUpperCase() : 'Untitled Project'}
+        </Typography>
+        <Typography className={styles.dateTitle} variant="body1" gutterBottom>
+          Started on: {startDate}
+        </Typography>
+        <Typography variant="body1" gutterBottom className={styles.progressTitle}>
+          STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}
+        </Typography>
 
-        <Box mt={4} className={styles.floorsContainer}>
-          {project.floors && project.floors.map((floor) => (
-            <Accordion
-              key={floor._id}
-              expanded={selectedFloor === floor._id}
-              onChange={() => handleFloorClick(floor._id)}
-              className={styles.floor}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} className={styles.floorHeader}>
-                <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
-                  <Typography variant="h6" className={styles.floorTitle}>{floor.name}</Typography>
-                  <Box width="40%">
-                    <LinearProgress variant="determinate" value={floor.progress || 0} className={styles.progressBar} />
-                    <Typography variant="body2" color="textSecondary" align="center">
-                      {Math.round(floor.progress || 0)}%
-                    </Typography>
+        <Box mt={8}>
+          {project.floors &&
+            project.floors.map((floor) => (
+              <Accordion
+                key={floor._id}
+                expanded={selectedFloor === floor._id}
+                onChange={() => handleFloorClick(floor._id)}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box width="100%" display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="h6">{floor.name}</Typography>
+                    <Box width="40%">
+                      <LinearProgress
+                        variant="determinate"
+                        value={floor.progress || 0}
+                        sx={{
+                          height: 10,
+                          borderRadius: 5,
+                          [`& .MuiLinearProgress-bar`]: {
+                            backgroundColor: '#a7b194',
+                          },
+                          backgroundColor: '#e0e0e0',
+                        }}
+                      />
+                      <Typography variant="body2" color="textSecondary" align="center">
+                        {Math.round(floor.progress || 0)}%
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails className={styles.tasks}>
-                <Typography variant="h6" className={styles.tasksTitle}>Tasks</Typography>
-                {floor.tasks && floor.tasks.map((task) => (
-                  <Box key={task._id} mb={2} className={styles.taskItem}>
-                    <Typography variant="body1" className={styles.taskName}>{task.name}</Typography>
-                    <LinearProgress variant="determinate" value={task.progress || 0} className={styles.taskProgressBar} />
-                    <Typography variant="body2" color="textSecondary" align="center">
-                      {task.progress?.toFixed(2)}%
-                    </Typography>
-                  </Box>
-                ))}
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="h6">Tasks</Typography>
+                  {floor.tasks &&
+                    floor.tasks.map((task) => (
+                      <Box key={task._id} mb={2}>
+                        <Typography variant="body1">{task.name}</Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={task.progress || 0}
+                          sx={{
+                            height: 10,
+                            borderRadius: 5,
+                            [`& .MuiLinearProgress-bar`]: {
+                              backgroundColor: '#a7b194',
+                            },
+                            backgroundColor: '#e0e0e0',
+                          }}
+                        />
+                        <Typography variant="body2" align="center">
+                          {task.progress?.toFixed(2)}%
+                        </Typography>
+                      </Box>
+                    ))}
+                </AccordionDetails>
+              </Accordion>
+            ))}
         </Box>
 
-        <Typography variant="body2" color="textSecondary" mt={4} className={styles.lastUpdate}>
-          LAST UPDATE: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }) : 'No updates available'}
+        <Typography variant="body2" color="textSecondary" mt={4}>
+          LAST UPDATE:{' '}
+          {project.updatedAt
+            ? new Date(project.updatedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })
+            : 'No updates available'}
         </Typography>
       </Box>
     </div>

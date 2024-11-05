@@ -1,1365 +1,1584 @@
-    import { useEffect, useState, useContext } from "react";
-    import axios from "axios";
-    import Navbar from "../components/Navbar";
-    import styles from "../css/ProjectList.module.css";
-    import { AuthContext } from "../context/AuthContext";
-    import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-    import { jsPDF } from "jspdf";
-    import "jspdf-autotable";
-    import foxconrights from '../assets/foxconrights.jpg';
-    import Nigma from '../components/AlertModal'
-    import { FaPlay, FaEdit, FaTrash, FaPause, FaRedo, FaStop } from 'react-icons/fa';
-    import Tooltips from "../components/Tooltip";
-    
+// src/components/ProjectList.jsx
+import React, { useEffect, useState, useContext } from "react";
+import axios from "axios";
+import Navbar from "../components/Navbar";
+import { AuthContext } from "../context/AuthContext";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
+import foxconrights from '../assets/foxconrights.jpg';
+import AlertModal from '../components/AlertModal';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  Typography,
+  InputLabel,
+  FormControl,
+  IconButton,
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormHelperText,
+  Checkbox,
+  FormControlLabel,
+} from '@mui/material';
+import {
+  PlayArrow as PlayArrowIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Pause as PauseIcon,
+  Redo as RedoIcon,
+  Stop as StopIcon,
+  ExpandMore as ExpandMoreIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 
-    const Modal = ({ isOpen, onClose, children }) => {
-      if (!isOpen) return null;
 
-      return (
-        <div className={styles.modalOverlay} onClick={onClose}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <span className={styles.closeButton} onClick={onClose}>
-              &times;
-            </span>
-            <div className={styles.modalScrollableContent}>{children}</div>
-          </div>
-        </div>
-      );
-    };
+const Modal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
 
-    // Loading Spinner Component
-    const LoadingSpinner = () => (
-      <div className={styles.loadingSpinnerContainer}>
-        <div className={styles.spinner}></div>
-        <p>Please wait, fetching projects...</p>
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <span className={styles.closeButton} onClick={onClose}>
+          &times;
+        </span>
+        <div className={styles.modalScrollableContent}>{children}</div>
       </div>
-    );
+    </div>
+  );
+};
 
-    const ProjectList = () => {
-      const [projects, setProjects] = useState([]);
-      const [isLoading, setIsLoading] = useState(true); 
-      const [newProject, setNewProject] = useState({
-        name: "",
-        user: "",
-        contractor: "",
-        numFloors: 1, // Assuming minimum 1 floor
-        floors: [],
-        template: "",
-        timeline: { duration: 0, unit: "months" },
-        location: "",
-        totalArea: 0,  
-        avgFloorHeight: 0,  
-        roomCount: 1, 
-        foundationDepth: 0, 
+// Loading Spinner Component
+const LoadingSpinner = () => (
+  <div className={styles.loadingSpinnerContainer}>
+    <div className={styles.spinner}></div>
+    <p>Please wait, fetching projects...</p>
+  </div>
+);
+
+const ProjectList = () => {
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newProject, setNewProject] = useState({
+    name: "",
+    user: "",
+    contractor: "",
+    numFloors: 1,
+    floors: [],
+    template: "",
+    timeline: { duration: 0, unit: "months" },
+    location: "",
+    totalArea: 0,
+    avgFloorHeight: 0,
+    roomCount: 1,
+    foundationDepth: 0,
+  });
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("info"); // Default type
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editProjectId, setEditProjectId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useContext(AuthContext);
+  const [heightError, setHeightError] = useState("");
+  const [floorError, setFloorError] = useState("");
+  const [roomCountError, setRoomCountError] = useState("");
+  const [foundationDepthError, setFoundationDepthError] = useState("");
+  const [templates, setTemplates] = useState([]);
+  const [totalAreaError, setTotalAreaError] = useState("");
+  const [expandedSections, setExpandedSections] = useState({
+    timeline: false,
+    projectDates: false,
+    postponedDates: false,
+    resumedDates: false,
+    floorsAndTasks: false,
+    floors: {},
+  });
+
+  const toggleDetails = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+  
+  const toggleFloor = (index) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      floors: {
+        ...prev.floors,
+        [index]: !prev.floors[index],
+      },
+    }));
+  };
+  
+  
+
+  const showAlert = (title, message, type = "info") => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setIsAlertOpen(true);
+  };
+
+  const togggleDetails = () => {
+    setIsDetailsExpanded(!isDetailsExpanded);
+  };
+  
+
+  const toggleFloorExpansion = (index) => {
+    if (expandedFloors.includes(index)) {
+      setExpandedFloors(expandedFloors.filter((i) => i !== index));
+    } else {
+      setExpandedFloors([...expandedFloors, index]);
+    }
+  };
+  
+  // Fetch project details for the modal
+  const fetchProjectDetails = async (projectId) => {
+    try {
+      const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
       });
-      
-      const [isAlertOpen, setIsAlertOpen] = useState(false);
-    const [alertTitle, setAlertTitle] = useState("");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [alertType, setAlertType] = useState("info"); // Default type
-      const [isModalOpen, setIsModalOpen] = useState(false);
-      const [isEditing, setIsEditing] = useState(false);
-      const [editProjectId, setEditProjectId] = useState(null);
-      const [selectedProject, setSelectedProject] = useState(null);
-      const [showDetailsModal, setShowDetailsModal] = useState(false); 
-      const [showDeleteModal, setShowDeleteModal] = useState(false);
-      const [users, setUsers] = useState([]);
-      const [locations, setLocations] = useState([]); 
-      const [searchTerm, setSearchTerm] = useState("");
-      const { user } = useContext(AuthContext);
-      const [heightError, setHeightError] = useState(""); 
-      const [floorError, setFloorError] = useState(""); 
-      const [roomCountError, setRoomCountError] = useState(""); 
-      const [foundationDepthError, setFoundationDepthError] = useState(""); 
-      const [templates, setTemplates] = useState([]);
-      const [totalAreaError, setTotalAreaError] = useState("");
-      const [expandedFloors, setExpandedFloors] = useState([]);
-      const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
-      const [expandedSections, setExpandedSections] = useState({
-        timeline: false,
-        projectDates: false,
-        postponedDates: false,
-        resumedDates: false,
-        floorsAndTasks: false,
-        floors: {},
-      });
-      
-      const toggleDetails = (section) => {
-        setExpandedSections((prev) => ({
-          ...prev,
-          [section]: !prev[section],
-        }));
-      };
-      
-      const toggleFloor = (index) => {
-        setExpandedSections((prev) => ({
-          ...prev,
-          floors: {
-            ...prev.floors,
-            [index]: !prev.floors[index],
-          },
-        }));
-      };
-      
-      
 
-      const showAlert = (title, message, type = "info") => {
-        setAlertTitle(title);
-        setAlertMessage(message);
-        setAlertType(type);
-        setIsAlertOpen(true);
-      };
+      setSelectedProject(response.data); 
+      setShowDetailsModal(true); 
+    } catch (error) {
+      console.error('Error fetching project details:', error);
+      showAlert("Error","Failed to fetch project details. Please try again.", "error");
+    }
+  };
 
-      const togggleDetails = () => {
-        setIsDetailsExpanded(!isDetailsExpanded);
-      };
-      
-
-      const toggleFloorExpansion = (index) => {
-        if (expandedFloors.includes(index)) {
-          setExpandedFloors(expandedFloors.filter((i) => i !== index));
-        } else {
-          setExpandedFloors([...expandedFloors, index]);
-        }
-      };
-      
-      // Fetch project details for the modal
-      const fetchProjectDetails = async (projectId) => {
-        try {
-          const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
-            headers: {
-              Authorization: `Bearer ${user.token}`,
-            },
-          });
-
-          setSelectedProject(response.data); 
-          setShowDetailsModal(true); 
-        } catch (error) {
-          console.error('Error fetching project details:', error);
-          showAlert("Error","Failed to fetch project details. Please try again.", "error");
-        }
-      };
-
-      // Fetch all projects, locations, and templates
-      useEffect(() => {
-        if (!user || !user.token) return;
-      
-        const fetchProjectsAndLocationsAndTemplates = async () => {
-          try {
-            setIsLoading(true);
-      
-            const [projectsResponse, locationsResponse, templatesResponse] = await Promise.all([
-              axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
-                headers: { Authorization: `Bearer ${user.token}` },
-              }),
-              axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
-                headers: { Authorization: `Bearer ${user.token}` },
-              }),
-              axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
-                headers: { Authorization: `Bearer ${user.token}` },
-              }),
-            ]);
-      
-            setProjects(projectsResponse.data);
-            setLocations(locationsResponse.data); // Assuming /api/locations returns an array
-            setTemplates(templatesResponse.data.templates); // Assuming /api/templates returns { templates: [...] }
-
-            // **Debugging Logs**
-            console.log("Fetched Templates:", templatesResponse.data.templates);
-            console.log("Fetched Locations:", locationsResponse.data);
-          } catch (error) {
-            console.error("Error fetching data:", error);
-            showAlert("Error","Failed to fetch projects, locations, or templates. Please try again later.", "error");
-          } finally {
-            setIsLoading(false);
-          }
-        };
-      
-        fetchProjectsAndLocationsAndTemplates();
-      }, [user]);
-
-      const handleFloorHeightChange = (e) => {
-        const value = parseFloat(e.target.value);
-        
-      
-      
-        if (value > 15) {
-          setHeightError("The floor height cannot exceed 15 meters.");
-          showAlert("Validation Error", "The floor height cannot exceed 15 meters.", "error");
-        } else if (value < 0) {
-          setHeightError("The floor height cannot be negative.");
-          showAlert("Validation Error", "The floor height cannot be negative.", "error");
-        } else {
-          setHeightError(""); 
-          setNewProject({ ...newProject, avgFloorHeight: value });
-        }
-      };
-      
-
-      const handleTotalAreaChange = (e) => {
-        const value = parseFloat(e.target.value);
-        
-        if (isNaN(value)) {
-          setTotalAreaError("Please enter a valid number.");
-          showAlert("Validation Error", "Please enter a valid number for total area.", "error");
-          return;
-        }
-      
-        if (value <= 0) {
-          setTotalAreaError("Total area must be greater than 0.");
-          showAlert("Validation Error", "Total area must be greater than 0.", "error");
-        } else {
-          setTotalAreaError("");
-          setNewProject({ ...newProject, totalArea: value });
-        }
-      };
-      
-      const handleToggleProgressMode = async (projectId, isAutomatic) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/progress-mode`,
-            { isAutomatic },
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
-      
-          // Log the entire response.data to examine its structure
-          console.log("Response Data:", response.data);
-      
-          // Attempt to access the project data, with more fallback and error handling
-          const updatedProject = response.data?.project || response.data;
-      
-          if (updatedProject && updatedProject._id) {
-            // Update the projects list with the newly retrieved project
-            setProjects((prevProjects) =>
-              prevProjects.map((project) =>
-                project._id === updatedProject._id ? updatedProject : project
-              )
-            );
-            showAlert("Success", `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`, "success");
-          } else {
-            console.error("Error: Updated project data is undefined or missing _id in the response:", response.data);
-            showAlert("Error", "Failed to retrieve updated project data.", "error");
-          }
-        } catch (error) {
-          console.error("Error toggling progress mode:", error);
-          showAlert("Error", "Failed to toggle progress mode. Please try again.", "error");
-        }
-      };
-      
-      
-      
-      
-      
-      
-      
-      
-      // Handle input change for numFloors with validation
-      const handleNumFloorsChange = (e) => {
-      const value = parseInt(e.target.value, 10);
-      
-      if (isNaN(value)) {
-        setFloorError("Please enter a valid number.");
-        showAlert("Validation Error", "Please enter a valid number for the number of floors.", "error");
-        return;
-      }
-
-      if (value > 5) {
-        setFloorError("The number of floors cannot exceed 5.");
-        showAlert("Validation Error", "The number of floors cannot exceed 5.", "error");
-      } else if (value < 1) {
-        setFloorError("The number of floors cannot be less than 1.");
-        showAlert("Validation Error", "The number of floors cannot be less than 1.", "error");
-      } else {
-        setFloorError(""); 
-        setNewProject({ ...newProject, numFloors: value });
+  // Fetch all projects, locations, and templates
+  useEffect(() => {
+    if (!user || !user.token) return;
+  
+    const fetchProjectsAndLocationsAndTemplates = async () => {
+      try {
+        setIsLoading(true);
+  
+        const [projectsResponse, locationsResponse, templatesResponse] = await Promise.all([
+          axios.get(`http://localhost:4000/api/project/contractor`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`http://localhost:4000/api/locations`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`http://localhost:4000/api/templates`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+        ]);
+  
+        setProjects(projectsResponse.data);
+        setLocations(locationsResponse.data);
+  
+        // Sort templates based on 'tier' property
+        const desiredOrder = ['economy', 'standard', 'premium'];
+        const sortedTemplates = [...templatesResponse.data.templates].sort((a, b) => {
+          const tierA = (a.tier || '').toLowerCase();
+          const tierB = (b.tier || '').toLowerCase();
+          return desiredOrder.indexOf(tierA) - desiredOrder.indexOf(tierB);
+        });
+        setTemplates(sortedTemplates);
+  
+        // Debugging Logs
+        console.log("Fetched Templates:", sortedTemplates);
+        console.log("Fetched Locations:", locationsResponse.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        showAlert("Error", "Failed to fetch projects, locations, or templates. Please try again later.", "error");
+      } finally {
+        setIsLoading(false);
       }
     };
+  
+    fetchProjectsAndLocationsAndTemplates();
+  }, [user]);
+  
+  
 
+  const handleFloorHeightChange = (e) => {
+    const inputValue = e.target.value;
+  
+    // Update the state with the raw input value
+    setNewProject({ ...newProject, avgFloorHeight: inputValue });
+  
+    // If the input is empty, clear the error and return
+    if (inputValue === '') {
+      setHeightError('');
+      return;
+    }
+  
+    const value = parseFloat(inputValue);
+  
+    if (isNaN(value)) {
+      setHeightError("Please enter a valid number.");
+      showAlert("Validation Error", "Please enter a valid number for floor height.", "error");
+    } else if (value < 0) {
+      setHeightError("The floor height cannot be negative.");
+      showAlert("Validation Error", "The floor height cannot be negative.", "error");
+    } else if (value > 15) {
+      setHeightError("The floor height cannot exceed 15 meters.");
+      showAlert("Validation Error", "The floor height cannot exceed 15 meters.", "error");
+    } else {
+      setHeightError("");
+      setNewProject({ ...newProject, avgFloorHeight: value });
+    }
+  };
+  
+  
 
-      // Fetch users when dropdown is clicked
-      const handleDropdownClick = async () => {
-        if (users.length === 0) {
-          try {
-            const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
-              headers: { Authorization: `Bearer ${user?.token || ""}` },
-            });
-            setUsers(response.data);
-            console.log("Fetched Users:", response.data);
-          } catch (error) {
-            console.error("Error fetching users:", error);
-            showAlert("Error","Failed to fetch users. Please try again later.", "error");
-          }
-        }
-      };
-
-      // Function to handle project deletion after confirmation
-      const handleConfirmDelete = () => {
-        if (selectedProject) {
-          handleDeleteProject();
-        } else {
-          console.error("No project selected for deletion.");
-          showAlert("Error","No project selected for deletion.", "error");
-        }
-      };
-
-      // Function to handle when the user cancels the delete operation
-      const handleCancelDelete = () => {
-        setShowDeleteModal(false); 
-        setSelectedProject(null);  
-      };
-
-      // Handle creating a new project
-      const handleCreateProject = async () => {
-        try {
-          if (!newProject.template) {
-            showAlert("Error", "Please select a template.", "error");
-            return;
-          }
-          if (newProject.totalArea <= 0) {
-            showAlert("Error", "Total area must be greater than 0.", "error");
-            return;
-          }
-      
-          const defaultFloors = Array.from({ length: newProject.numFloors }, (_, i) => ({
-            name: `FLOOR ${i + 1}`,
-            progress: 0,
-            tasks: [],
-          }));
-      
-          const processedProject = {
-            ...newProject,
-            contractor: user.Username,
-            floors: defaultFloors,
-          };
-      
-          const response = await axios.post(
-            `https://foxconstruction-final.onrender.com/api/project`,
-            processedProject,
-            {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }
-          );
-      
-          setProjects([...projects, response.data.data]);
-          resetProjectForm();
-          setIsModalOpen(false);
-          showAlert("Success", "Project created successfully!", "success");
-        } catch (error) {
-          if (error.response && error.response.status === 404) {
-            showAlert("Error", "The selected template was not found. Please select a valid template.", "error");
-          } else {
-            console.error("Error creating project:", error);
-            showAlert("Error", "Failed to create project. Please try again.", "error");
-          }
-        }
-      };
-      
-      // Handle updating an existing project
-     // Handle updating an existing project
-     const handleUpdateProject = async () => {
-      try {
-        if (!newProject.template) {
-          showAlert("Error", "Please select a template.", "error");
-          return;
-        }
-        if (newProject.totalArea <= 0) {
-          showAlert("Error", "Total area must be greater than 0.", "error");
-          return;
-        }
-    
-        const updatedFloors = newProject.floors.map((floor) => ({
-          ...floor,
-          tasks: floor.tasks.map((task) => ({
-            ...task,
-            progress: task.progress || 0,
-          })),
-        }));
-    
-        const processedProject = {
-          ...newProject,
-          floors: updatedFloors,
-        };
-    
-        const response = await axios.patch(
-          `https://foxconstruction-final.onrender.com/api/project/${editProjectId}`,
-          processedProject,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
-    
-        if (!response || !response.data.project) {
-          showAlert("Error", "Failed to update project. No valid response from the server.", "error");
-          return;
-        }
-    
+  const handleTotalAreaChange = (e) => {
+    const inputValue = e.target.value;
+  
+    // Update the state with the raw input value
+    setNewProject({ ...newProject, totalArea: inputValue });
+  
+    // If the input is empty, clear the error and return
+    if (inputValue === '') {
+      setTotalAreaError('');
+      return;
+    }
+  
+    const value = parseFloat(inputValue);
+  
+    if (isNaN(value)) {
+      setTotalAreaError("Please enter a valid number.");
+      showAlert("Validation Error", "Please enter a valid number for total area.", "error");
+    } else if (value <= 0) {
+      setTotalAreaError("Total area must be greater than 0.");
+      showAlert("Validation Error", "Total area must be greater than 0.", "error");
+    } else {
+      setTotalAreaError("");
+      setNewProject({ ...newProject, totalArea: value });
+    }
+  };
+  
+  
+  const handleToggleProgressMode = async (projectId, isAutomatic) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/progress-mode`,
+        { isAutomatic },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+  
+      // Log the entire response.data to examine its structure
+      console.log("Response Data:", response.data);
+  
+      // Attempt to access the project data, with more fallback and error handling
+      const updatedProject = response.data?.project || response.data;
+  
+      if (updatedProject && updatedProject._id) {
+        // Update the projects list with the newly retrieved project
         setProjects((prevProjects) =>
           prevProjects.map((project) =>
-            project._id === editProjectId ? response.data.project : project
+            project._id === updatedProject._id ? updatedProject : project
           )
         );
-        resetProjectForm();
-        setIsEditing(false);
-        setIsModalOpen(false);
-        showAlert("Success", "Project updated successfully!", "success");
-      } catch (error) {
-        console.error("Error updating project:", error);
-        showAlert("Error", "Failed to update project. Please try again.", "error");
+        showAlert("Success", `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`, "success");
+      } else {
+        console.error("Error: Updated project data is undefined or missing _id in the response:", response.data);
+        showAlert("Error", "Failed to retrieve updated project data.", "error");
       }
-    };
-    
-
-      
-      // Handle deleting a project
-      const handleDeleteProject = async () => {
-        try {
-          await axios.delete(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          });
-
-          setProjects(projects.filter((project) => project._id !== selectedProject._id));
-          setShowDeleteModal(false);
-          setSelectedProject(null);
-          showAlert("Success","Project deleted successfully!", "success");
-        } catch (error) {
-          console.error("Error deleting project:", error);
-          showAlert("Error","Failed to delete project. Please try again.", "error");
-        }
-      };
-
-      // Reset the project form
-      const resetProjectForm = () => {
-        setNewProject({
-          name: "",
-          contractor: "",
-          user: "",
-          numFloors: "",
-          template: "",
-          floors: [],
-          timeline: {
-            duration: "",
-            unit: "months",
-          },
-          location: "", 
-          totalArea: "",
-          avgFloorHeight: "",
-          roomCount: "",
-          foundationDepth: "",
-        });
-        // Reset validation errors
-        setHeightError("");
-        setFloorError("");
-        setRoomCountError("");
-        setFoundationDepthError("");
-      };
-      
-      const handleStartProject = async (projectId) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/start`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
-          const updatedProject = response.data.project;
-      
-          // Update the projects state with the updated project
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              project._id === updatedProject._id ? updatedProject : project
-            )
-          );
-          showAlert("Success","Project started successfully!", "success");
-        } catch (error) {
-          console.error("Error starting project:", error);
-          showAlert("Error","Failed to start project. Please try again.", "error");
-        }
-      };
-
-      const handlePostponeProject = async (projectId) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/postpone`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
-
-          const updatedProject = response.data.project;
-
-          // Update projects state directly with the new status
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              project._id === updatedProject._id ? updatedProject : project
-            )
-          );
-          showAlert("Success","Project postponed successfully!", "success");
-        } catch (error) {
-          console.error("Error postponing project:", error);
-          showAlert("Error","Failed to postpone project. Please try again.", "error");
-        }
-      };
-
-      const handleResumeProject = async (projectId) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/resume`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
-
-          const updatedProject = response.data.project;
-
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              project._id === updatedProject._id ? updatedProject : project
-            )
-          );
-          showAlert("Success","Project resumed successfully!", "success");
-        } catch (error) {
-          console.error("Error resuming project:", error);
-          showAlert("Error","Failed to resume project. Please try again.", "error");
-        }
-      };
-
-      const handleEndProject = async (projectId) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/end`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
-
-          const updatedProject = response.data.project;
-
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              project._id === updatedProject._id ? updatedProject : project
-            )
-          );
-          showAlert("Success","Project ended successfully!", "success");
-        } catch (error) {
-          console.error("Error ending project:", error);
-          showAlert("Error","Failed to end project. Please try again.", "error");
-        }
-      };
-
-      // Handle editing a project
-      const handleEditProject = (project) => {
-    setIsEditing(true);
-    setEditProjectId(project._id);
+    } catch (error) {
+      console.error("Error toggling progress mode:", error);
+      showAlert("Error", "Failed to toggle progress mode. Please try again.", "error");
+    }
+  };
   
-    const floorsWithProgress = project.floors.map((floor) => ({
+  
+  
+  
+  
+  
+  
+  
+  // Handle input change for numFloors with validation
+  const handleNumFloorsChange = (e) => {
+    const inputValue = e.target.value;
+  
+    // Update the state with the raw input value
+    setNewProject({ ...newProject, numFloors: inputValue });
+  
+    // If the input is empty, clear the error and return
+    if (inputValue === '') {
+      setFloorError('');
+      return;
+    }
+  
+    const value = parseInt(inputValue, 10);
+  
+    if (isNaN(value)) {
+      setFloorError("Please enter a valid number.");
+      showAlert("Validation Error", "Please enter a valid number for the number of floors.", "error");
+    } else if (value < 1) {
+      setFloorError("The number of floors cannot be less than 1.");
+      showAlert("Validation Error", "The number of floors cannot be less than 1.", "error");
+    } else if (value > 5) {
+      setFloorError("The number of floors cannot exceed 5.");
+      showAlert("Validation Error", "The number of floors cannot exceed 5.", "error");
+    } else {
+      setFloorError("");
+      setNewProject({ ...newProject, numFloors: value });
+    }
+  };
+  
+
+
+  // Fetch users when dropdown is clicked
+  const handleDropdownClick = async () => {
+    if (users.length === 0) {
+      try {
+        const response = await axios.get(`http://localhost:4000/api/user/get`, {
+          headers: { Authorization: `Bearer ${user?.token || ""}` },
+        });
+        setUsers(response.data);
+        console.log("Fetched Users:", response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        showAlert("Error","Failed to fetch users. Please try again later.", "error");
+      }
+    }
+  };
+
+  // Function to handle project deletion after confirmation
+  const handleConfirmDelete = () => {
+    if (selectedProject) {
+      handleDeleteProject();
+    } else {
+      console.error("No project selected for deletion.");
+      showAlert("Error","No project selected for deletion.", "error");
+    }
+  };
+
+  // Function to handle when the user cancels the delete operation
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false); 
+    setSelectedProject(null);  
+  };
+
+  // Handle creating a new project
+  const handleCreateProject = async () => {
+    try {
+      if (!newProject.template) {
+        showAlert("Error", "Please select a template.", "error");
+        return;
+      }
+      if (newProject.totalArea <= 0) {
+        showAlert("Error", "Total area must be greater than 0.", "error");
+        return;
+      }
+  
+      const defaultFloors = Array.from({ length: newProject.numFloors }, (_, i) => ({
+        name: `FLOOR ${i + 1}`,
+        progress: 0,
+        tasks: [],
+      }));
+  
+      const processedProject = {
+        ...newProject,
+        contractor: user.Username,
+        floors: defaultFloors,
+      };
+  
+      const response = await axios.post(
+        `http://localhost:4000/api/project`,
+        processedProject,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      setProjects([...projects, response.data.data]);
+      resetProjectForm();
+      setIsModalOpen(false);
+      showAlert("Success", "Project created successfully!", "success");
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        showAlert("Error", "The selected template was not found. Please select a valid template.", "error");
+      } else {
+        console.error("Error creating project:", error);
+        showAlert("Error", "Failed to create project. Please try again.", "error");
+      }
+    }
+  };
+  
+  // Handle updating an existing project
+ // Handle updating an existing project
+ const handleUpdateProject = async () => {
+  try {
+    if (!newProject.template) {
+      showAlert("Error", "Please select a template.", "error");
+      return;
+    }
+    if (newProject.totalArea <= 0) {
+      showAlert("Error", "Total area must be greater than 0.", "error");
+      return;
+    }
+
+    const updatedFloors = newProject.floors.map((floor) => ({
       ...floor,
-      progress: floor.progress || 0,
       tasks: floor.tasks.map((task) => ({
         ...task,
         progress: task.progress || 0,
       })),
     }));
+
+    const processedProject = {
+      ...newProject,
+      floors: updatedFloors,
+    };
+
+    const response = await axios.patch(
+      `http://localhost:4000/api/project/${editProjectId}`,
+      processedProject,
+      {
+        headers: { Authorization: `Bearer ${user.token}` },
+      }
+    );
+
+    if (!response || !response.data.project) {
+      showAlert("Error", "Failed to update project. No valid response from the server.", "error");
+      return;
+    }
+
+    setProjects((prevProjects) =>
+      prevProjects.map((project) =>
+        project._id === editProjectId ? response.data.project : project
+      )
+    );
+    resetProjectForm();
+    setIsEditing(false);
+    setIsModalOpen(false);
+    showAlert("Success", "Project updated successfully!", "success");
+  } catch (error) {
+    console.error("Error updating project:", error);
+    showAlert("Error", "Failed to update project. Please try again.", "error");
+  }
+};
+
+
   
-    // Check if project.template is a valid ObjectId
-    const isValidTemplateId = /^[0-9a-fA-F]{24}$/.test(project.template);
-  
-    setNewProject({
-      ...project,
-      floors: floorsWithProgress,
-      location: project.location || "",
-      totalArea: project.totalArea || 0,
-      avgFloorHeight: project.avgFloorHeight || 0,
-      template: isValidTemplateId ? project.template : "", 
-    });
-  
-    setIsModalOpen(true);
+  // Handle deleting a project
+  const handleDeleteProject = async () => {
+    try {
+      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
+      setProjects(projects.filter((project) => project._id !== selectedProject._id));
+      setShowDeleteModal(false);
+      setSelectedProject(null);
+      showAlert("Success","Project deleted successfully!", "success");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      showAlert("Error","Failed to delete project. Please try again.", "error");
+    }
   };
 
-      // Handle updating project status
-      const handleUpdateStatus = async (projectId, newStatus) => {
-        try {
-          const response = await axios.patch(
-            `https://foxconstruction-final.onrender.com/api/project/${projectId}/status`,
-            { status: newStatus },
-            {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }
-          );
+  // Reset the project form
+  const resetProjectForm = () => {
+    setNewProject({
+      name: "",
+      contractor: "",
+      user: "",
+      numFloors: "",
+      template: "",
+      floors: [],
+      timeline: {
+        duration: "",
+        unit: "months",
+      },
+      location: "", 
+      totalArea: "",
+      avgFloorHeight: "",
+      roomCount: "",
+      foundationDepth: "",
+    });
+    // Reset validation errors
+    setHeightError("");
+    setFloorError("");
+    setRoomCountError("");
+    setFoundationDepthError("");
+  };
+  
+  const handleStartProject = async (projectId) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/start`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      const updatedProject = response.data.project;
+  
+      // Update the projects state with the updated project
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      showAlert("Success","Project started successfully!", "success");
+    } catch (error) {
+      console.error("Error starting project:", error);
+      showAlert("Error","Failed to start project. Please try again.", "error");
+    }
+  };
 
-          const updatedProject = response.data.project;
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              project._id === updatedProject._id ? updatedProject : project
-            )
-          );
-          showAlert("Success","Project status updated successfully!", "success");
-        } catch (error) {
-          console.error("Error updating project status:", error);
-          showAlert("Error","Failed to update project status. Please try again.", "error");
+  const handlePostponeProject = async (projectId) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/postpone`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const updatedProject = response.data.project;
+
+      // Update projects state directly with the new status
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      showAlert("Success","Project postponed successfully!", "success");
+    } catch (error) {
+      console.error("Error postponing project:", error);
+      showAlert("Error","Failed to postpone project. Please try again.", "error");
+    }
+  };
+
+  const handleResumeProject = async (projectId) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/resume`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const updatedProject = response.data.project;
+
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      showAlert("Success","Project resumed successfully!", "success");
+    } catch (error) {
+      console.error("Error resuming project:", error);
+      showAlert("Error","Failed to resume project. Please try again.", "error");
+    }
+  };
+
+  const handleEndProject = async (projectId) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/end`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const updatedProject = response.data.project;
+
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      showAlert("Success","Project ended successfully!", "success");
+    } catch (error) {
+      console.error("Error ending project:", error);
+      showAlert("Error","Failed to end project. Please try again.", "error");
+    }
+  };
+
+  // Handle editing a project
+  const handleEditProject = (project) => {
+setIsEditing(true);
+setEditProjectId(project._id);
+
+const floorsWithProgress = project.floors.map((floor) => ({
+  ...floor,
+  progress: floor.progress || 0,
+  tasks: floor.tasks.map((task) => ({
+    ...task,
+    progress: task.progress || 0,
+  })),
+}));
+
+// Check if project.template is a valid ObjectId
+const isValidTemplateId = /^[0-9a-fA-F]{24}$/.test(project.template);
+
+setNewProject({
+  ...project,
+  floors: floorsWithProgress,
+  location: project.location || "",
+  totalArea: project.totalArea || 0,
+  avgFloorHeight: project.avgFloorHeight || 0,
+  template: isValidTemplateId ? project.template : "", 
+});
+
+setIsModalOpen(true);
+};
+
+  // Handle updating project status
+  const handleUpdateStatus = async (projectId, newStatus) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/status`,
+        { status: newStatus },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
         }
-      };
+      );
 
-      // Helper functions for floors and tasks
-      const handleFloorChange = (floorIndex, key, value) => {
-        const updatedFloors = newProject.floors.map((floor, index) => {
-          if (index === floorIndex) {
-            return { ...floor, [key]: value };
-          }
-          return floor;
-        });
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+      const updatedProject = response.data.project;
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      showAlert("Success","Project status updated successfully!", "success");
+    } catch (error) {
+      console.error("Error updating project status:", error);
+      showAlert("Error","Failed to update project status. Please try again.", "error");
+    }
+  };
 
-      const handleTaskChange = (floorIndex, taskIndex, key, value) => {
-        const updatedTasks = newProject.floors[floorIndex].tasks.map((task, index) => {
-          if (index === taskIndex) {
-            return { ...task, [key]: value };
-          }
-          return task;
-        });
-        const updatedFloors = newProject.floors.map((floor, index) => {
-          if (index === floorIndex) {
-            return { ...floor, tasks: updatedTasks };
-          }
-          return floor;
-        });
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+  // Helper functions for floors and tasks
+  const handleFloorChange = (floorIndex, key, value) => {
+    const updatedFloors = newProject.floors.map((floor, index) => {
+      if (index === floorIndex) {
+        return { ...floor, [key]: value };
+      }
+      return floor;
+    });
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-      const addTaskToFloor = (floorIndex) => {
-        const updatedFloors = newProject.floors.map((floor, i) =>
-          i === floorIndex
-            ? { ...floor, tasks: [...floor.tasks, { name: "", progress: 0, isManual: false }] }
-            : floor
-        );
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+  const handleTaskChange = (floorIndex, taskIndex, key, value) => {
+    const updatedTasks = newProject.floors[floorIndex].tasks.map((task, index) => {
+      if (index === taskIndex) {
+        return { ...task, [key]: value };
+      }
+      return task;
+    });
+    const updatedFloors = newProject.floors.map((floor, index) => {
+      if (index === floorIndex) {
+        return { ...floor, tasks: updatedTasks };
+      }
+      return floor;
+    });
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-      const addFloor = () => {
-        if (newProject.floors.length >= 5) {
-          showAlert("Error","Cannot add more than 5 floors.", "error");
-          return;
-        }
+  const addTaskToFloor = (floorIndex) => {
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === floorIndex
+        ? { ...floor, tasks: [...floor.tasks, { name: "", progress: 0, isManual: false }] }
+        : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-        const newFloorIndex = newProject.floors.length + 1;
-        const updatedFloors = [
-          ...newProject.floors,
-          { name: `FLOOR ${newFloorIndex}`, progress: 0, tasks: [], isManual: false },
-        ];
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+  const addFloor = () => {
+    if (newProject.floors.length >= 5) {
+      showAlert("Error","Cannot add more than 5 floors.", "error");
+      return;
+    }
 
-      const deleteFloor = (index) => {
-        const updatedFloors = newProject.floors.filter((_, i) => i !== index);
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+    const newFloorIndex = newProject.floors.length + 1;
+    const updatedFloors = [
+      ...newProject.floors,
+      { name: `FLOOR ${newFloorIndex}`, progress: 0, tasks: [], isManual: false },
+    ];
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-      const deleteTask = (floorIndex, taskIndex) => {
-        const updatedTasks = newProject.floors[floorIndex].tasks.filter((_, i) => i !== taskIndex);
-        const updatedFloors = newProject.floors.map((floor, i) =>
-          i === floorIndex ? { ...floor, tasks: updatedTasks } : floor
-        );
-        setNewProject({ ...newProject, floors: updatedFloors });
-      };
+  const deleteFloor = (index) => {
+    const updatedFloors = newProject.floors.filter((_, i) => i !== index);
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-      // View project details in the modal
-      const handleViewProjectDetails = (project) => {
-        setSelectedProject(project); 
-        setShowDetailsModal(true);  
-      };
+  const deleteTask = (floorIndex, taskIndex) => {
+    const updatedTasks = newProject.floors[floorIndex].tasks.filter((_, i) => i !== taskIndex);
+    const updatedFloors = newProject.floors.map((floor, i) =>
+      i === floorIndex ? { ...floor, tasks: updatedTasks } : floor
+    );
+    setNewProject({ ...newProject, floors: updatedFloors });
+  };
 
-      // Generate BOM PDF
-      const handleGenerateBOMPDF = (version = 'client') => {
-        if (!selectedProject || !selectedProject.bom) {
-          showAlert("Error","BOM data is not available for this project.", "error");
-          return;
-        }
-      
-        const { bom, name } = selectedProject;
-      
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.width;
-        let yPosition = 20; // Starting y position for details
-      
-        // Add the logo at the top
-        const imgWidth = pageWidth - 40; // Adjust width to make it centered and smaller than page width
-        const imgHeight = imgWidth * 0.2; // Maintain aspect ratio
-        doc.addImage(foxconrights, 'JPEG', 20, 10, imgWidth, imgHeight);
-        yPosition += imgHeight + 10; // Adjust y position below the logo
-      
-        doc.setFontSize(18);
-        doc.text("Generated BOM: Custom Generation", pageWidth / 2, yPosition, { align: 'center' });
+  // View project details in the modal
+  const handleViewProjectDetails = (project) => {
+    setSelectedProject(project); 
+    setShowDetailsModal(true);  
+  };
+
+  // Generate BOM PDF
+  const handleGenerateBOMPDF = (version = 'client') => {
+    if (!selectedProject || !selectedProject.bom) {
+      showAlert("Error","BOM data is not available for this project.", "error");
+      return;
+    }
+  
+    const { bom, name } = selectedProject;
+  
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let yPosition = 20; // Starting y position for details
+  
+    // Add the logo at the top
+    const imgWidth = pageWidth - 40; // Adjust width to make it centered and smaller than page width
+    const imgHeight = imgWidth * 0.2; // Maintain aspect ratio
+    doc.addImage(foxconrights, 'JPEG', 20, 10, imgWidth, imgHeight);
+    yPosition += imgHeight + 10; // Adjust y position below the logo
+  
+    doc.setFontSize(18);
+    doc.text("Generated BOM: Custom Generation", pageWidth / 2, yPosition, { align: 'center' });
+    doc.setFontSize(12);
+    yPosition += 10;
+  
+    // Project details
+    doc.text(`Total Area: ${bom.projectDetails.totalArea || 'N/A'} sqm`, 10, yPosition);
+    yPosition += 10;
+    doc.text(`Number of Floors: ${bom.projectDetails.numFloors || 'N/A'}`, 10, yPosition);
+    yPosition += 10;
+    doc.text(`Floor Height: ${bom.projectDetails.avgFloorHeight || 'N/A'} meters`, 10, yPosition);
+    yPosition += 10;
+  
+    doc.text(`Project Owner: ${selectedProject.user || 'N/A'}`, 10, yPosition);
+    yPosition += 10;
+    doc.text(`Project Contractor: ${selectedProject.contractor || 'N/A'}`, 10, yPosition);
+    yPosition += 10;
+  
+    if (version === 'client') {
+      const formattedGrandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
+      doc.setFontSize(14);
+      doc.text(`Grand Total: ${formattedGrandTotal}`, 10, yPosition);
+      yPosition += 15;
+  
+      // Add the summary table for high-level categories
+      doc.autoTable({
+        head: [['#', 'Category', 'Total Amount (PHP)']],
+        body: bom.categories.map((category, index) => [
+          index + 1,
+          category.category.toUpperCase(),
+          `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+            category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
+          )}`
+        ]),
+        startY: yPosition,
+        headStyles: { fillColor: [41, 128, 185] },
+        bodyStyles: { textColor: [44, 62, 80] },
+      });
+    } else if (version === 'contractor') {
+      // Contractor-specific details
+      const originalProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.totalProjectCost || 0)}`;
+      const originalLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.laborCost || 0)}`;
+      const markup = bom.projectDetails.location.markup || 0;
+      const markedUpProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
+      const markedUpLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.laborCost || 0)}`;
+  
+      doc.setFontSize(14);
+      doc.text("Contractor Cost Breakdown", 10, yPosition);
+      yPosition += 10;
+  
+      doc.setFontSize(12);
+      doc.text(`Original Project Cost (without markup): ${originalProjectCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Original Labor Cost (without markup): ${originalLaborCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Location: ${bom.projectDetails.location.name || 'N/A'} (Markup: ${markup}%)`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Marked-Up Project Cost: ${markedUpProjectCost}`, 10, yPosition);
+      yPosition += 10;
+      doc.text(`Marked-Up Labor Cost: ${markedUpLaborCost}`, 10, yPosition);
+      yPosition += 20;
+  
+      // Detailed table with totals for each category
+      bom.categories.forEach((category, categoryIndex) => {
         doc.setFontSize(12);
-        yPosition += 10;
-      
-        // Project details
-        doc.text(`Total Area: ${bom.projectDetails.totalArea || 'N/A'} sqm`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Number of Floors: ${bom.projectDetails.numFloors || 'N/A'}`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Floor Height: ${bom.projectDetails.avgFloorHeight || 'N/A'} meters`, 10, yPosition);
-        yPosition += 10;
-      
-        doc.text(`Project Owner: ${selectedProject.user || 'N/A'}`, 10, yPosition);
-        yPosition += 10;
-        doc.text(`Project Contractor: ${selectedProject.contractor || 'N/A'}`, 10, yPosition);
-        yPosition += 10;
-      
-        if (version === 'client') {
-          const formattedGrandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
-          doc.setFontSize(14);
-          doc.text(`Grand Total: ${formattedGrandTotal}`, 10, yPosition);
-          yPosition += 15;
-      
-          // Add the summary table for high-level categories
-          doc.autoTable({
-            head: [['#', 'Category', 'Total Amount (PHP)']],
-            body: bom.categories.map((category, index) => [
-              index + 1,
-              category.category.toUpperCase(),
-              `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
-                category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
-              )}`
-            ]),
-            startY: yPosition,
-            headStyles: { fillColor: [41, 128, 185] },
-            bodyStyles: { textColor: [44, 62, 80] },
-          });
-        } else if (version === 'contractor') {
-          // Contractor-specific details
-          const originalProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.totalProjectCost || 0)}`;
-          const originalLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.originalCosts.laborCost || 0)}`;
-          const markup = bom.projectDetails.location.markup || 0;
-          const markedUpProjectCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
-          const markedUpLaborCost = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.laborCost || 0)}`;
-      
-          doc.setFontSize(14);
-          doc.text("Contractor Cost Breakdown", 10, yPosition);
-          yPosition += 10;
-      
-          doc.setFontSize(12);
-          doc.text(`Original Project Cost (without markup): ${originalProjectCost}`, 10, yPosition);
-          yPosition += 10;
-          doc.text(`Original Labor Cost (without markup): ${originalLaborCost}`, 10, yPosition);
-          yPosition += 10;
-          doc.text(`Location: ${bom.projectDetails.location.name || 'N/A'} (Markup: ${markup}%)`, 10, yPosition);
-          yPosition += 10;
-          doc.text(`Marked-Up Project Cost: ${markedUpProjectCost}`, 10, yPosition);
-          yPosition += 10;
-          doc.text(`Marked-Up Labor Cost: ${markedUpLaborCost}`, 10, yPosition);
-          yPosition += 20;
-      
-          // Detailed table with totals for each category
-          bom.categories.forEach((category, categoryIndex) => {
-            doc.setFontSize(12);
-            doc.text(category.category.toUpperCase(), 10, yPosition);
-            yPosition += 5;
-      
-            doc.autoTable({
-              head: [['Item', 'Description', 'Quantity','Unit', 'Unit Cost (PHP)', 'Total Amount (PHP)']],
-              body: category.materials.map((material, index) => [
-                `${categoryIndex + 1}.${index + 1}`,
-                material.description || 'N/A',
-                material.quantity ? material.quantity.toFixed(2) : 'N/A',
-                material.unit || 'N/A',
-                `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost || 0)}`,
-                `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.totalAmount || 0)}`
-              ]),
-              startY: yPosition,
-              headStyles: { fillColor: [41, 128, 185] },
-              bodyStyles: { textColor: [44, 62, 80] },
-            });
-      
-            yPosition = doc.lastAutoTable.finalY + 5;
-      
-            // Add total for each category
-            const categoryTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
-              category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
-            )}`;
-            doc.text(`Total for ${category.category.toUpperCase()}: ${categoryTotal}`, 10, yPosition);
-            yPosition += 15;
-          });
-        }
-      
-        // Save the PDF with the selected version and project name
-        doc.save(`BOM_${name}_${version}.pdf`);
-      };
+        doc.text(category.category.toUpperCase(), 10, yPosition);
+        yPosition += 5;
+  
+        doc.autoTable({
+          head: [['Item', 'Description', 'Quantity','Unit', 'Unit Cost (PHP)', 'Total Amount (PHP)']],
+          body: category.materials.map((material, index) => [
+            `${categoryIndex + 1}.${index + 1}`,
+            material.description || 'N/A',
+            material.quantity ? material.quantity.toFixed(2) : 'N/A',
+            material.unit || 'N/A',
+            `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost || 0)}`,
+            `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.totalAmount || 0)}`
+          ]),
+          startY: yPosition,
+          headStyles: { fillColor: [41, 128, 185] },
+          bodyStyles: { textColor: [44, 62, 80] },
+        });
+  
+        yPosition = doc.lastAutoTable.finalY + 5;
+  
+        // Add total for each category
+        const categoryTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+          category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
+        )}`;
+        doc.text(`Total for ${category.category.toUpperCase()}: ${categoryTotal}`, 10, yPosition);
+        yPosition += 15;
+      });
+    }
+  
+    // Save the PDF with the selected version and project name
+    doc.save(`BOM_${name}_${version}.pdf`);
+  };
 
-      // Handle changes and validation for roomCount
-      const handleRoomCountChange = (e) => {
-        const value = parseInt(e.target.value, 10);
-        if (value < 1) {
-          setRoomCountError("Room count must be at least 1.");
-          showAlert("Validation Error", "Room count must be at least 1.", "error");
-        } else {
-          setRoomCountError("");
-          setNewProject({ ...newProject, roomCount: value });
-        }
-      };
+  // Handle changes and validation for roomCount
+  const handleRoomCountChange = (e) => {
+    const inputValue = e.target.value;
+  
+    // Update the state with the raw input value
+    setNewProject({ ...newProject, roomCount: inputValue });
+  
+    // If the input is empty, clear the error and return
+    if (inputValue === '') {
+      setRoomCountError('');
+      return;
+    }
+  
+    const value = parseInt(inputValue, 10);
+  
+    if (isNaN(value)) {
+      setRoomCountError("Please enter a valid number.");
+      showAlert("Validation Error", "Please enter a valid number for room count.", "error");
+    } else if (value < 1) {
+      setRoomCountError("Room count must be at least 1.");
+      showAlert("Validation Error", "Room count must be at least 1.", "error");
+    } else {
+      setRoomCountError("");
+      setNewProject({ ...newProject, roomCount: value });
+    }
+  };
+  
 
-      // Handle changes and validation for foundationDepth
-      const handleFoundationDepthChange = (e) => {
-        const value = parseFloat(e.target.value);
-        
-        if (isNaN(value)) {
-          setFoundationDepthError("Please enter a valid number.");
-          showAlert("Validation Error", "Please enter a valid number for foundation depth.", "error");
-          return;
-        }
-      
-        if (value <= 0) {
-          setFoundationDepthError("Foundation depth must be greater than 0.");
-          showAlert("Validation Error", "Foundation depth must be greater than 0.", "error");
-        } else {
-          setFoundationDepthError("");
-          setNewProject({ ...newProject, foundationDepth: value });
-        }
-      };
-      
+  // Handle changes and validation for foundationDepth
+  const handleFoundationDepthChange = (e) => {
+    const inputValue = e.target.value;
+  
+    // Update the state with the raw input value
+    setNewProject({ ...newProject, foundationDepth: inputValue });
+  
+    // If the input is empty, clear the error and return
+    if (inputValue === '') {
+      setFoundationDepthError('');
+      return;
+    }
+  
+    const value = parseFloat(inputValue);
+  
+    if (isNaN(value)) {
+      setFoundationDepthError("Please enter a valid number.");
+      showAlert("Validation Error", "Please enter a valid number for foundation depth.", "error");
+    } else if (value <= 0) {
+      setFoundationDepthError("Foundation depth must be greater than 0.");
+      showAlert("Validation Error", "Foundation depth must be greater than 0.", "error");
+    } else {
+      setFoundationDepthError("");
+      setNewProject({ ...newProject, foundationDepth: value });
+    }
+  };
+  
+  
 
-      // Define handleDeleteClick function
-      const handleDeleteClick = (project) => {
-        setSelectedProject(project); 
-        setShowDeleteModal(true); 
-      };
+  // Define handleDeleteClick function
+  const handleDeleteClick = (project) => {
+    setSelectedProject(project); 
+    setShowDeleteModal(true); 
+  };
 
-      // Filter projects based on search term
-      const filterProjects = () => {
-        if (!searchTerm) return projects;
-        return projects.filter(
-          (project) =>
-            project.name && project.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      };
+  // Filter projects based on search term
+  const filterProjects = () => {
+    if (!searchTerm) return projects;
+    return projects.filter(
+      (project) =>
+        project.name && project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
 
-      const filteredProjects = filterProjects();
+  const filteredProjects = filterProjects();
+  const theme = createTheme({
+    palette: {
+      primary: {
+        main: '#a7b194', // Set your desired color here
+      },
+      secondary: {
+        main: '#6f7d5e', // Optional: Set a complementary secondary color
+      },
+    },
+  });
+  return (
+    <>
+    <ThemeProvider theme={theme}>
+      <Navbar />
+      <Box p={3}>
+        <Typography variant="h4" gutterBottom>
+          Projects
+        </Typography>
 
-      return (
-        <>
-          <Navbar />
-          <div className={styles.locationsContainer}>
-            <h2 className={styles.heading}>Projects</h2>
-
-            {isLoading ? (
-              <LoadingSpinner /> 
-            ) : (
-              <>
-                <div className={styles.searchBarContainer}>
-                  <input
-                    type="text"
-                    placeholder="Search project list"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={styles.searchInput}
-                  />
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      resetProjectForm();
-                      setIsModalOpen(true);
-                    }}
-                    className={styles.createButton}
-                  >
-                    + Create Project
-                  </button>
-                </div>
-                <p className={styles.locationCount}>
-                  Total Projects: {filteredProjects.length}
-                </p>
-
-                <div className={styles.scrollableTableContainer}>
-                  <table className={styles.locationsTable}>
-                    <thead>
-                      <tr>
-                        <th>Project Name</th>
-                        <th>Project Owner</th>
-                        <th>Project Contractor</th>
-                        <th>Date Created</th>
-                        <th>Cost Tier</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-  {filteredProjects.map((project) => (
-    <tr key={project._id}>
-      <td onClick={() => handleViewProjectDetails(project)}>
-        {project?.name || 'N/A'}
-      </td>
-      <td onClick={() => handleViewProjectDetails(project)}>
-        {project?.user || 'N/A'}
-      </td>
-      <td onClick={() => handleViewProjectDetails(project)}>
-        {project?.contractor || 'N/A'}
-      </td>
-      <td onClick={() => handleViewProjectDetails(project)}>
-        {project?.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
-      </td>
-      <td>
-        {templates.find((template) => template._id === project.template)?.title || 'N/A'}
-      </td>
-      
-      {/* Status Column */}
-      <td>
-        <span className={project?.status === 'finished' ? styles.finishedStatus : styles.ongoingStatus}>
-          {project?.status || 'N/A'}
-        </span>
-      </td>
-
-      {/* Actions Column */}
-      <td className={styles.actionsContainer}>
-        {project?.status === "not started" || project?.status === "finished" ? (
-          <Tooltips message="Start Project">
-            <button onClick={() => handleStartProject(project._id)} className={styles.startButton}>
-              <FaPlay /> Start
-            </button>
-          </Tooltips>
-        ) : project?.status === "ongoing" ? (
+        {isLoading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+            <CircularProgress />
+            <Typography ml={2}>Please wait, fetching projects...</Typography>
+          </Box>
+        ) : (
           <>
-            <Tooltips message="Postpone Project">
-              <button onClick={() => handlePostponeProject(project._id)} className={styles.postponeButton}>
-                <FaPause /> Postpone
-              </button>
-            </Tooltips>
-            <Tooltips message="End Project">
-              <button onClick={() => handleEndProject(project._id)} className={styles.endButton}>
-                <FaStop /> End
-              </button>
-            </Tooltips>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <TextField
+                label="Search project list"
+                variant="outlined"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                fullWidth
+                sx={{ mr: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => {
+                  setIsEditing(false);
+                  resetProjectForm();
+                  setIsModalOpen(true);
+                }}
+              >
+                + Create Project
+              </Button>
+            </Box>
+            <Typography variant="subtitle1" gutterBottom>
+              Total Projects: {filteredProjects.length}
+            </Typography>
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Project Name</TableCell>
+                    <TableCell>Project Owner</TableCell>
+                    <TableCell>Project Contractor</TableCell>
+                    <TableCell>Date Created</TableCell>
+                    <TableCell>Cost Tier</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredProjects.map((project) => (
+                    <TableRow key={project._id} hover>
+                      <TableCell onClick={() => handleViewProjectDetails(project)} style={{ cursor: 'pointer' }}>
+                        {project.name || 'N/A'}
+                      </TableCell>
+                      <TableCell onClick={() => handleViewProjectDetails(project)} style={{ cursor: 'pointer' }}>
+                        {project.user || 'N/A'}
+                      </TableCell>
+                      <TableCell onClick={() => handleViewProjectDetails(project)} style={{ cursor: 'pointer' }}>
+                        {project.contractor || 'N/A'}
+                      </TableCell>
+                      <TableCell onClick={() => handleViewProjectDetails(project)} style={{ cursor: 'pointer' }}>
+                        {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {templates.find((template) => template._id === project.template)?.title || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <Typography
+                          color={project.status === 'finished' ? 'green' : 'orange'}
+                        >
+                          {project.status || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {project.status === "not started" || project.status === "finished" ? (
+                          <Tooltip title="Start Project">
+                            <IconButton onClick={() => handleStartProject(project._id)} color="secondary">
+                              <PlayArrowIcon />
+                            </IconButton>
+                          </Tooltip>
+                        ) : project.status === "ongoing" ? (
+                          <>
+                            <Tooltip title="Postpone Project">
+                              <IconButton onClick={() => handlePostponeProject(project._id)} color="secondary">
+                                <PauseIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="End Project">
+                              <IconButton onClick={() => handleEndProject(project._id)} color="secondary">
+                                <StopIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        ) : project.status === "postponed" && (
+                          <Tooltip title="Resume Project">
+                            <IconButton onClick={() => handleResumeProject(project._id)} color="secondary">
+                              <RedoIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Edit Project">
+                          <IconButton onClick={() => handleEditProject(project)} color="secondary">
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip
+                          title={project.isAutomaticProgress ? "Switch to Manual Mode" : "Switch to Automatic Mode"}
+                        >
+                          <Button
+                            variant="contained"
+                            color="secondary"
+                            size="small"
+                            onClick={() => handleToggleProgressMode(project._id, !project.isAutomaticProgress)}
+                            sx={{ ml: 1 }}
+                          >
+                            {project.isAutomaticProgress ? "Automatic" : "Manual"}
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="Delete Project">
+                          <IconButton onClick={() => handleDeleteClick(project)} color="secondary">
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
-        ) : project?.status === "postponed" && (
-          <Tooltips message="Resume Project">
-            <button onClick={() => handleResumeProject(project._id)} className={styles.resumeButton}>
-              <FaRedo /> Resume
-            </button>
-          </Tooltips>
         )}
-        <Tooltips message="Edit Project">
-          <button onClick={() => handleEditProject(project)} className={styles.editButton}>
-            <FaEdit /> Edit
-          </button>
-        </Tooltips>
-        <Tooltips message={project?.isAutomaticProgress ? "Switch to Manual Mode" : "Switch to Automatic Mode"}>
-          <button
-            onClick={() => handleToggleProgressMode(project._id, !project?.isAutomaticProgress)}
-            className={styles.editButton}
-          >
-            {project?.isAutomaticProgress ? "Automatic" : "Manual"}
-          </button>
-        </Tooltips>
-        <Tooltips message="Delete Project">
-          <button onClick={() => handleDeleteClick(project)} className={styles.deleteButton}>
-            <FaTrash /> Delete
-          </button>
-        </Tooltips>
-      </td>
-    </tr>
-  ))}
-</tbody>
 
+        {/* Create/Edit Project Modal */}
+        <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} fullWidth maxWidth="md">
+          <DialogTitle>
+            {isEditing ? "Edit Project" : "Create New Project"}
+            <IconButton
+              aria-label="close"
+              onClick={() => setIsModalOpen(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {/* Project Name */}
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Project Name"
+              value={newProject.name}
+              onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+            />
 
+            {/* Project Owner */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Select Project Owner (User)</InputLabel>
+              <Select
+                value={newProject.user}
+                onChange={(e) => setNewProject({ ...newProject, user: e.target.value })}
+                onOpen={handleDropdownClick}
+                label="Select Project Owner (User)"
+              >
+                {users.length > 0 ? (
+                  users.map((userOption) => (
+                    <MenuItem key={userOption._id} value={userOption.Username}>
+                      {userOption.Username}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value="" disabled>
+                    No Users Available
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
 
-                  </table>
-                </div>
-              </>
+            {/* Template */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Select Template</InputLabel>
+              <Select
+                value={newProject.template}
+                onChange={(e) => setNewProject({ ...newProject, template: e.target.value })}
+                label="Select Template"
+              >
+                {templates && templates.length > 0 ? (
+                  templates.map((template) => (
+                    <MenuItem key={template._id} value={template._id}>
+                      {template.title}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value="" disabled>
+                    No Templates Available
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
+
+            {/* Location */}
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Select Project Location</InputLabel>
+              <Select
+                value={newProject.location}
+                onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
+                label="Select Project Location"
+              >
+                {locations && locations.length > 0 ? (
+                  locations.map((locationOption) => (
+                    <MenuItem key={locationOption._id} value={locationOption.name}>
+                      {locationOption.name} - {locationOption.markup}% markup
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value="" disabled>
+                    No Locations Available
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
+
+            {/* Total Area */}
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Total Area (sqm)"
+              type="number"
+              value={newProject.totalArea}
+              onChange={handleTotalAreaChange}
+              error={!!totalAreaError}
+              helperText={totalAreaError}
+              InputProps={{
+                inputProps: { min: 0 },
+              }}
+            />
+
+            {/* Floor Height */}
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Floor Height (meters)"
+              type="number"
+              value={newProject.avgFloorHeight}
+              onChange={handleFloorHeightChange}
+              error={!!heightError}
+              helperText={heightError}
+              InputProps={{
+                inputProps: { min: 0 },
+              }}
+            />
+
+            {/* Room Count */}
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Number of Rooms"
+              type="number"
+              value={newProject.roomCount}
+              onChange={handleRoomCountChange}
+              error={!!roomCountError}
+              helperText={roomCountError}
+              InputProps={{
+                inputProps: { min: 0 },
+              }}
+            />
+
+            {/* Foundation Depth */}
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Foundation Depth (meters)"
+              type="number"
+              value={newProject.foundationDepth}
+              onChange={handleFoundationDepthChange}
+              error={!!foundationDepthError}
+              helperText={foundationDepthError}
+              InputProps={{
+                inputProps: { min: 0 },
+              }}
+            />
+
+            {/* Number of Floors */}
+            {!isEditing && (
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Number of Floors"
+                type="number"
+                value={newProject.numFloors}
+                onChange={handleNumFloorsChange}
+                error={!!floorError}
+                helperText={floorError}
+                InputProps={{
+                  inputProps: { min: 0 },
+                }}
+              />
             )}
 
-            {isModalOpen && (
-              <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <div className={styles.modalForm}>
-                  <h3>{isEditing ? "Edit Project" : "Create New Project"}</h3>
-                  <input
-                    type="text"
-                    placeholder="Project Name"
-                    value={newProject.name}
-                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                    className={styles.inputField}
-                  />
-                  <select
-                    value={newProject.user}
-                    onChange={(e) => setNewProject({ ...newProject, user: e.target.value })}
-                    onClick={handleDropdownClick}
-                    className={styles.inputField}
-                  >
-                    <option value="" disabled>
-                      Select Project Owner (User)
-                    </option>
-                    {users.length > 0 ? (
-                      users.map((userOption) => (
-                        <option key={userOption._id} value={userOption.Username}>
-                          {userOption.Username}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        No Users Available
-                      </option>
-                    )}
-                  </select>
-                  <select
-                    value={newProject.template}
-                    onChange={(e) => setNewProject({ ...newProject, template: e.target.value })}
-                    className={styles.inputField}
-                  >
-                    <option value="" disabled>
-                      Select Template
-                    </option>
-                    {templates && templates.length > 0 ? (
-                      templates.map((template) => (
-                        <option key={template._id} value={template._id}>
-                          {template.title}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        No Templates Available
-                      </option>
-                    )}
-                  </select>
+            {/* Project Timeline */}
+            <Box display="flex" alignItems="center" mt={2}>
+              <TextField
+                label="Duration"
+                type="number"
+                value={newProject.timeline.duration}
+                onChange={(e) => {
+                  const value = Math.max(0, parseInt(e.target.value, 10));
+                  setNewProject({
+                    ...newProject,
+                    timeline: { ...newProject.timeline, duration: value },
+                  });
+                }}
+                sx={{ mr: 2 }}
+                InputProps={{
+                  inputProps: { min: 0 },
+                }}
+              />
+              <FormControl>
+                <InputLabel>Unit</InputLabel>
+                <Select
+                  value={newProject.timeline.unit}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      timeline: { ...newProject.timeline, unit: e.target.value },
+                    })
+                  }
+                  label="Unit"
+                >
+                  <MenuItem value="weeks">Weeks</MenuItem>
+                  <MenuItem value="months">Months</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
-
-                  <select
-                    value={newProject.location}
-                    onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
-                    className={styles.inputField}
-                  >
-                    <option value="" disabled>
-                      Select Project Location
-                    </option>
-                    {locations && locations.length > 0 ? (
-                      locations.map((locationOption) => (
-                        <option key={locationOption._id} value={locationOption.name}>
-                          {locationOption.name} - {locationOption.markup}% markup
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        No Locations Available
-                      </option>
-                    )}
-                  </select>
-
-                  <h3>Total Area</h3>
-    <input
-      type="number"
-      placeholder="Total Area (sqm)"
-      value={newProject.totalArea}
-      onChange={handleTotalAreaChange}
-      className={styles.inputField}
-    />
-    {totalAreaError && <p style={{ color: "red" }}>{totalAreaError}</p>}
-
-
-                  <h3>Floor Height</h3>
-                  <input
+            {/* Floors and Tasks */}
+            {newProject.floors.map((floor, index) => (
+              <Accordion key={index}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>{floor.name}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <TextField
+                    fullWidth
+                    margin="dense"
+                    label="Progress"
                     type="number"
-                    placeholder="Floor Height (m)"
-                    value={newProject.avgFloorHeight}
-                    onChange={handleFloorHeightChange}
-                    className={styles.inputField}
+                    value={floor.progress}
+                    onChange={(e) => handleFloorChange(index, "progress", parseInt(e.target.value, 10))}
+                    InputProps={{
+                      inputProps: { min: 0 },
+                    }}
                   />
-                  {heightError && <p style={{ color: "red" }}>{heightError}</p>} 
-
-                  <h3>Room Count</h3>
-                <input
-                  type="number"
-                  placeholder="Number of Rooms"
-                  value={newProject.roomCount}
-                  onChange={handleRoomCountChange}
-                  className={styles.inputField}
-                />
-                {roomCountError && <p style={{ color: "red" }}>{roomCountError}</p>}
-
-                {/* Foundation Depth Input */}
-                <h3>Foundation Depth</h3>
-                <input
-                  type="number"
-                  placeholder="Foundation Depth (m)"
-                  value={newProject.foundationDepth}
-                  onChange={handleFoundationDepthChange}
-                  className={styles.inputField}
-                />
-                {foundationDepthError && <p style={{ color: "red" }}>{foundationDepthError}</p>}
-
-
-                  {!isEditing && (
-                    <>
-                      <h3>Number of Floors</h3>
-                      <input
-                        type="number"
-                        placeholder="Number of Floors"
-                        value={newProject.numFloors}
-                        onChange={handleNumFloorsChange}
-                        className={styles.inputField}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={floor.isManual}
+                        onChange={(e) => handleFloorChange(index, "isManual", e.target.checked)}
                       />
-                        {floorError && <p style={{ color: "red" }}>{floorError}</p>} 
+                    }
+                    label="Manual Progress"
+                  />
+                  {/* Tasks */}
+                  {floor.tasks.map((task, taskIndex) => (
+                    <Box key={taskIndex} mt={2} mb={2} p={2} border={1} borderRadius={1}>
+                      <TextField
+                        fullWidth
+                        margin="dense"
+                        label="Task Name"
+                        value={task.name}
+                        onChange={(e) => handleTaskChange(index, taskIndex, "name", e.target.value)}
+                      />
+                      <TextField
+                        fullWidth
+                        margin="dense"
+                        label="Task Progress"
+                        type="number"
+                        value={task.progress}
+                        onChange={(e) => handleTaskChange(index, taskIndex, "progress", parseInt(e.target.value, 10))}
+                        InputProps={{
+                          inputProps: { min: 0 },
+                        }}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={task.isManual}
+                            onChange={(e) => handleTaskChange(index, taskIndex, "isManual", e.target.checked)}
+                          />
+                        }
+                        label="Manual Progress"
+                      />
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => deleteTask(index, taskIndex)}
+                        sx={{ mt: 1 }}
+                      >
+                        Delete Task
+                      </Button>
+                    </Box>
+                  ))}
+                  {isEditing && (
+                    <>
+                      <Button variant="contained" onClick={() => addTaskToFloor(index)} sx={{ mt: 1 }}>
+                        Add Task
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => deleteFloor(index)}
+                        sx={{ mt: 1, ml: 2 }}
+                      >
+                        Delete Floor
+                      </Button>
                     </>
                   )}
-
-                  <h3>Project Timeline</h3>
-                  <input
-                    type="number"
-                    placeholder="Duration"
-                    value={newProject.timeline.duration}
-                    onChange={(e) => {
-                      const value = Math.max(0, parseInt(e.target.value, 10));
-                      setNewProject({
-                        ...newProject,
-                        timeline: { ...newProject.timeline, duration: value },
-                      });
-                    }}
-                    className={styles.inputField}
-                  />
-
-                  <select
-                    value={newProject.timeline.unit}
-                    onChange={(e) =>
-                      setNewProject({
-                        ...newProject,
-                        timeline: { ...newProject.timeline, unit: e.target.value },
-                      })
-                    }
-                    className={styles.inputField}
-                  >
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
-
-                  {newProject.floors.map((floor, index) => (
-      <div key={index} className={styles.floorContainer}>
-        {/* Floor Name with Toggle */}
-        <h4 onClick={() => toggleFloorExpansion(index)} className={styles.floorHeader}>
-          {floor.name} {expandedFloors.includes(index) ? "▼" : "►"}
-        </h4>
-
-        {/* Conditionally Render Tasks if Floor is Expanded */}
-        {expandedFloors.includes(index) && (
-          <div className={styles.scrollableTaskList}>
-            <input
-              type="number"
-              placeholder="Progress"
-              value={floor.progress}
-              onChange={(e) => handleFloorChange(index, "progress", parseInt(e.target.value, 10))}
-              className={styles.inputField}
-            />
-            <label className={styles.manualCheckboxLabel}>
-              <input
-                type="checkbox"
-                checked={floor.isManual}
-                onChange={(e) => handleFloorChange(index, "isManual", e.target.checked)}
-                className={styles.manualCheckbox}
-              />
-              Manual Progress
-            </label>
-            <h5>Tasks</h5>
-            <div className={styles.scrollableTaskListContent}>
-              {floor.tasks.map((task, taskIndex) => (
-                <div key={taskIndex} className={styles.taskContainer}>
-                  <input
-                    type="text"
-                    placeholder="Task Name"
-                    value={task.name}
-                    onChange={(e) => handleTaskChange(index, taskIndex, "name", e.target.value)}
-                    className={styles.inputField}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Task Progress"
-                    value={task.progress}
-                    onChange={(e) => handleTaskChange(index, taskIndex, "progress", parseInt(e.target.value, 10))}
-                    className={styles.inputField}
-                  />
-                  <label className={styles.manualCheckboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={task.isManual}
-                      onChange={(e) => handleTaskChange(index, taskIndex, "isManual", e.target.checked)}
-                      className={styles.manualCheckbox}
-                    />
-                    Manual Progress
-                  </label>
-                  <button
-                    className={styles.deleteTaskButton}
-                    onClick={() => deleteTask(index, taskIndex)}
-                  >
-                    Delete Task
-                  </button>
-                </div>
-              ))}
-            </div>
+                </AccordionDetails>
+              </Accordion>
+            ))}
             {isEditing && (
-              <>
-                <button className={styles.addTaskButton} onClick={() => addTaskToFloor(index)}>
-                  Add Task
-                </button>
-                <button className={styles.deleteFloorButton} onClick={() => deleteFloor(index)}>
-                  Delete Floor
-                </button>
-              </>
+              <Button variant="contained" onClick={addFloor} sx={{ mt: 2 }}>
+                Add Floor
+              </Button>
             )}
-          </div>
-        )}
-      </div>
-    ))}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={isEditing ? handleUpdateProject : handleCreateProject}
+              variant="contained"
+              color="secondary"
+            >
+              {isEditing ? "Update Project" : "Create Project"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
+        {/* Project Details Modal */}
+        {showDetailsModal && selectedProject && (
+          <Dialog open={showDetailsModal} onClose={() => setShowDetailsModal(false)} fullWidth maxWidth="md">
+            <DialogTitle>
+              Project Details - {selectedProject.name}
+              <IconButton
+                aria-label="close"
+                onClick={() => setShowDetailsModal(false)}
+                sx={{ position: 'absolute', right: 8, top: 8 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+              {/* Basic Information */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Basic Information</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography><strong>Project Owner:</strong> {selectedProject.user || 'N/A'}</Typography>
+                  <Typography><strong>Project Contractor:</strong> {selectedProject.contractor || 'N/A'}</Typography>
+                  <Typography>
+                    <strong>Template:</strong>{" "}
+                    {templates.find((template) => template._id === selectedProject.template)?.title || "N/A"}
+                  </Typography>
+                  <Typography><strong>Status:</strong> {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}</Typography>
+                </AccordionDetails>
+              </Accordion>
 
+              {/* Location */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Location</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography><strong>Location Name:</strong> {selectedProject.location || 'N/A'}</Typography>
+                  <Typography><strong>Markup:</strong> {locations.find(loc => loc.name === selectedProject.location)?.markup || 'N/A'}%</Typography>
+                </AccordionDetails>
+              </Accordion>
 
+              {/* Specifications */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Specifications</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography><strong>Total Area:</strong> {selectedProject.totalArea} sqm</Typography>
+                  <Typography><strong>Floor Height:</strong> {selectedProject.avgFloorHeight} meters</Typography>
+                  <Typography><strong>Number of Rooms:</strong> {selectedProject.roomCount}</Typography>
+                  <Typography><strong>Foundation Depth:</strong> {selectedProject.foundationDepth} meters</Typography>
+                </AccordionDetails>
+              </Accordion>
 
-                  {isEditing && (
-                    <button className={styles.addFloorButton} onClick={addFloor}>
-                      Add Floor
-                    </button>
-                  )}
+              {/* Timeline */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Timeline</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography>
+                    <strong>Duration:</strong> {selectedProject.timeline.duration} {selectedProject.timeline.unit}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
 
-                  <button
-                    className={styles.createButton}
-                    onClick={isEditing ? handleUpdateProject : handleCreateProject}
-                  >
-                    {isEditing ? "Update Project" : "Create Project"}
-                  </button>
-                </div>
-              </Modal>
-            )}
+              {/* Project Dates */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Project Dates</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography><strong>Start Date:</strong> {selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : 'N/A'}</Typography>
+                  <Typography><strong>End Date:</strong> {selectedProject.endDate ? new Date(selectedProject.endDate).toLocaleDateString() : 'N/A'}</Typography>
+                  {/* Postponed Dates */}
+                  <Accordion>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography>Postponed Dates</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {selectedProject.postponedDates.length > 0 ? (
+                        selectedProject.postponedDates.map((date, index) => (
+                          <Typography key={index}>{new Date(date).toLocaleDateString()}</Typography>
+                        ))
+                      ) : (
+                        <Typography>No postponed dates</Typography>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                  {/* Resumed Dates */}
+                  <Accordion>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography>Resumed Dates</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {selectedProject.resumedDates.length > 0 ? (
+                        selectedProject.resumedDates.map((date, index) => (
+                          <Typography key={index}>{new Date(date).toLocaleDateString()}</Typography>
+                        ))
+                      ) : (
+                        <Typography>No resumed dates</Typography>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                </AccordionDetails>
+              </Accordion>
 
-      {showDetailsModal && selectedProject && (
-        <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)}>
-        <h3 onClick={togggleDetails} className={styles.expandableHeader}>
-          Project Details - {selectedProject.name} {isDetailsExpanded ? "▼" : "►"}
-        </h3>
-        {isDetailsExpanded && (
-          <div className={styles.detailsSection}>
-            {/* Project Basic Details */}
-            <h4>Basic Information</h4>
-            <p><strong>Project Owner:</strong> {selectedProject.user || 'N/A'}</p>
-            <p><strong>Project Contractor:</strong> {selectedProject.contractor || 'N/A'}</p>
-            <p>
-              <strong>Template:</strong>{" "}
-              {templates.find((template) => template._id === selectedProject.template)?.title || "N/A"}
-            </p>
-            <p><strong>Status:</strong> {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}</p>
-
-            {/* Location and Markup Details */}
-            <h4>Location</h4>
-            <p><strong>Location Name:</strong> {selectedProject.location || 'N/A'}</p>
-            <p><strong>Markup:</strong> {locations.find(loc => loc.name === selectedProject.location)?.markup || 'N/A'}%</p>
-
-            {/* Project Specifications */}
-            <h4>Specifications</h4>
-            <p><strong>Total Area:</strong> {selectedProject.totalArea} sqm</p>
-            <p><strong>Floor Height:</strong> {selectedProject.avgFloorHeight} meters</p>
-            <p><strong>Number of Rooms:</strong> {selectedProject.roomCount}</p>
-            <p><strong>Foundation Depth:</strong> {selectedProject.foundationDepth} meters</p>
-
-            {/* Timeline */}
-            <h4 onClick={() => toggleDetails("timeline")} className={styles.expandableHeader}>
-      Timeline {expandedSections.timeline ? "▼" : "►"}
-    </h4>
-    {expandedSections.timeline && (
-      <div className={styles.sectionContent}>
-        <p><strong>Duration:</strong> {selectedProject.timeline.duration} {selectedProject.timeline.unit}</p>
-      </div>
-    )}
-
-            {/* Project Status Dates */}
-            <h4 onClick={() => toggleDetails("projectDates")} className={styles.expandableHeader}>
-      Project Dates {expandedSections.projectDates ? "▼" : "►"}
-    </h4>
-    {expandedSections.projectDates && (
-      <div className={styles.sectionContent}>
-        <p><strong>Start Date:</strong> {selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : 'N/A'}</p>
-        
-        {/* Postponed Dates */}
-        <h5 onClick={() => toggleDetails("postponedDates")} className={styles.expandableHeader}>
-          Postponed Dates {expandedSections.postponedDates ? "▼" : "►"}
-        </h5>
-        {expandedSections.postponedDates && (
-          <ul className={styles.sectionContent}>
-            {selectedProject.postponedDates.map((date, index) => (
-              <li key={index}>{new Date(date).toLocaleDateString()}</li>
-            ))}
-          </ul>
-        )}
-
-        {/* Resumed Dates */}
-        <h5 onClick={() => toggleDetails("resumedDates")} className={styles.expandableHeader}>
-          Resumed Dates {expandedSections.resumedDates ? "▼" : "►"}
-        </h5>
-        {expandedSections.resumedDates && (
-          <ul className={styles.sectionContent}>
-            {selectedProject.resumedDates.map((date, index) => (
-              <li key={index}>{new Date(date).toLocaleDateString()}</li>
-            ))}
-          </ul>
-        )}
-
-        <p><strong>End Date:</strong> {selectedProject.endDate ? new Date(selectedProject.endDate).toLocaleDateString() : 'N/A'}</p>
-      </div>
-    )}
-
-            {/* Floor and Task Details */}
-            {/* Floors and Tasks Section */}
-    <h4 onClick={() => toggleDetails("floorsAndTasks")} className={styles.expandableHeader}>
-      Floors and Tasks {expandedSections.floorsAndTasks ? "▼" : "►"}
-    </h4>
-    {expandedSections.floorsAndTasks && (
-      <div className={styles.sectionContent}>
-        {selectedProject.floors.map((floor, index) => (
-          <div key={index}>
-            <h5 onClick={() => toggleFloor(index)} className={styles.floorHeader}>
-              {floor.name} - Progress: {floor.progress}% {expandedSections.floors[index] ? "▼" : "►"}
-            </h5>
-            {expandedSections.floors[index] && (
-              <div className={styles.scrollableTaskList}>
-                <h6>Tasks</h6>
-                <ul className={styles.scrollableTaskListContent}>
-                  {floor.tasks.map((task, taskIndex) => (
-                    <li key={taskIndex}>
-                      <p><strong>Task Name:</strong> {task.name}</p>
-                      <p><strong>Task Progress:</strong> {task.progress}%</p>
-                    </li>
+              {/* Floors and Tasks */}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Floors and Tasks</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {selectedProject.floors.map((floor, index) => (
+                    <Accordion key={index}>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography>{floor.name} - Progress: {floor.progress}%</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        {floor.tasks.length > 0 ? (
+                          floor.tasks.map((task, taskIndex) => (
+                            <Box key={taskIndex} mb={2}>
+                              <Typography><strong>Task Name:</strong> {task.name}</Typography>
+                              <Typography><strong>Task Progress:</strong> {task.progress}%</Typography>
+                            </Box>
+                          ))
+                        ) : (
+                          <Typography>No tasks available</Typography>
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
                   ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )}
+                </AccordionDetails>
+              </Accordion>
 
+              {/* BOM Section */}
+              {selectedProject.bom && selectedProject.bom.categories.length > 0 ? (
+                <>
+                  <Typography variant="h6" mt={2}>Bill of Materials (BOM)</Typography>
+                  <Typography>
+                    <strong>Total Project Cost:</strong> ₱{selectedProject.bom.markedUpCosts?.totalProjectCost?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Labor Cost:</strong> ₱{selectedProject.bom.markedUpCosts?.laborCost?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Button variant="contained" color="secondary" onClick={() => handleGenerateBOMPDF('client')} sx={{ mt: 2, mr: 2 }}>
+                    Download BOM for Client
+                  </Button>
+                  <Button variant="contained" color="secondary" onClick={() => handleGenerateBOMPDF('contractor')} sx={{ mt: 2 }}>
+                    Download BOM for Contractor
+                  </Button>
+                </>
+              ) : (
+                <Typography mt={2}><strong>BOM data is not available for this project.</strong></Typography>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowDetailsModal(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
+        )}
 
-            {/* BOM Section */}
-            {selectedProject.bom && selectedProject.bom.categories.length > 0 ? (
-        <>
-          <h4>Bill of Materials (BOM)</h4>
-          <p><strong>Total Project Cost:</strong> ₱{selectedProject.bom.markedUpCosts?.totalProjectCost?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
-          <p><strong>Labor Cost:</strong> ₱{selectedProject.bom.markedUpCosts?.laborCost?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
-          <button className={styles.downloadButton} onClick={() => handleGenerateBOMPDF('client')}>Download BOM for Client</button>
-          <button className={styles.downloadButton} onClick={() => handleGenerateBOMPDF('contractor')}>Download BOM for Contractor</button>
-        </>
-      ) : (
-        <p><strong>BOM data is not available for this project.</strong></p>
-      )}
+        {/* Confirm Delete Dialog */}
+        <Dialog
+          open={showDeleteModal}
+          onClose={handleCancelDelete}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogContent>
+            <Typography id="alert-dialog-description">
+              Are you sure you want to delete the project "{selectedProject?.name}"?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} color="secondary" variant="contained" autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-
-          </div>
-          )}
-        </Modal>
-      )}
-
-            <ConfirmDeleteModal
-              show={showDeleteModal}
-              onConfirm={handleConfirmDelete}
-              onCancel={handleCancelDelete}
-              project={selectedProject}
-            />
-            <Nigma
-              isOpen={isAlertOpen}
-              onClose={() => setIsAlertOpen(false)}
-              title={alertTitle}
-              message={alertMessage}
-              type={alertType}
-            />
-          </div>
-          
-        </>
-      );
-    };
+        {/* Alert Modal */}
+        <AlertModal
+          isOpen={isAlertOpen}
+          onClose={() => setIsAlertOpen(false)}
+          title={alertTitle}
+          message={alertMessage}
+          type={alertType}
+        />
+      </Box>
+      </ThemeProvider>
+    </>
+  );
+};
 
 export default ProjectList;
