@@ -31,7 +31,7 @@ function App() {
       "/Materials": "Materials",
       "/Location": "Location",
       "/UserDashboard": "User Dashboard",
-      "/Project/:projectId": "Project Progress",
+      "/project/:projectId": "Project Progress",
       "/ContractorDashboard": "Contractor Dashboard",
       "/Templates": "Templates",
       "/ProjectList": "Project List",
