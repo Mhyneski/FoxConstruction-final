@@ -1,4 +1,5 @@
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
@@ -20,11 +21,36 @@ import Templates from './pages/Templates';
 import { CssBaseline } from '@mui/material';
 
 function App() {
+  const location = useLocation();
+  useEffect(() => {
+    const routeTitles = {
+      "/": "Homepage",
+      "/login": "Login",
+      "/adminDashboard": "Admin Dashboard",
+      "/accounts": "Accounts",
+      "/materials": "Materials",
+      "/location": "Location",
+      "/userDashboard": "User Dashboard",
+      "/project/:projectId": "Project Progress",
+      "/contractorDashboard": "Contractor Dashboard",
+      "/templates": "Templates",
+      "/projectList": "Project List",
+      "/generator": "Generator",
+      "/aboutus": "About Us",
+      "/collection": "Collection",
+      "/services": "Services",
+      "/contacts": "Contacts",
+      "/unauthorized": "Unauthorized",
+    };
+
+    // Set the document title based on the current route
+    document.title = routeTitles[location.pathname] || "My App";
+  }, [location]);
 
   return (
     <>
     <CssBaseline />
-    <Router>
+    
       <Routes>  
         <Route path="/Login" element={<Login />} />
         <Route path="/" element={<Homepage />} />
@@ -124,7 +150,7 @@ function App() {
         {/* Unauthorized page */}
         <Route path="/Unauthorized" element={<Unauthorized />} />
       </Routes>
-    </Router>
+  
     </>
   );
 }
