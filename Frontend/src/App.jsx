@@ -1,5 +1,4 @@
-import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
@@ -21,92 +20,111 @@ import Templates from './pages/Templates';
 import { CssBaseline } from '@mui/material';
 
 function App() {
-  const location = useLocation();
-
-  useEffect(() => {
-    const routeTitles = {
-      "/": "Homepage",
-      "/Login": "Login",
-      "/AdminDashboard": "Admin Dashboard",
-      "/Accounts": "Accounts",
-      "/Materials": "Materials",
-      "/Location": "Location",
-      "/UserDashboard": "User Dashboard",
-      "/project/:projectId": "Project Progress",
-      "/ContractorDashboard": "Contractor Dashboard",
-      "/Templates": "Templates",
-      "/ProjectList": "Project List",
-      "/Generator": "Generator",
-      "/AboutUs": "About Us",
-      "/Collection": "Collection",
-      "/Services": "Services",
-      "/Contacts": "Contacts",
-      "/Unauthorized": "Unauthorized",
-    };
-
-    // Set the document title based on the current route
-    document.title = routeTitles[location.pathname] || "My App";
-  }, [location]);
 
   return (
     <>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/Login" element={<Login />} />
-          <Route path="/" element={<Homepage />} />
-          {/* Admin Routes */}
-          <Route
-            path="/AdminDashboard"
-            element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>}
-          />
-          <Route
-            path="/Accounts"
-            element={<ProtectedRoute allowedRoles={['admin']}><Accounts /></ProtectedRoute>}
-          />
-          <Route
-            path="/Materials"
-            element={<ProtectedRoute allowedRoles={['admin']}><Materials /></ProtectedRoute>}
-          />
-          <Route
-            path="/Location"
-            element={<ProtectedRoute allowedRoles={['admin']}><Location /></ProtectedRoute>}
-          />
-          {/* User Routes */}
-          <Route
-            path="/UserDashboard"
-            element={<ProtectedRoute allowedRoles={['user']}><UserDashboard /></ProtectedRoute>}
-          />
-          <Route
-            path="/project/:projectId"
-            element={<ProtectedRoute allowedRoles={['user']}><ProjectProgress /></ProtectedRoute>}
-          />
-          {/* Contractor Routes */}
-          <Route
-            path="/ContractorDashboard"
-            element={<ProtectedRoute allowedRoles={['contractor']}><ContractorDashboard /></ProtectedRoute>}
-          />
-          <Route
-            path="/Templates"
-            element={<ProtectedRoute allowedRoles={['contractor']}><Templates /></ProtectedRoute>}
-          />
-          <Route
-            path="/ProjectList"
-            element={<ProtectedRoute allowedRoles={['contractor']}><ProjectList /></ProtectedRoute>}
-          />
-          <Route
-            path="/Generator"
-            element={<ProtectedRoute allowedRoles={['contractor']}><Generator /></ProtectedRoute>}
-          />
-          {/* General Routes */}
-          <Route path="/AboutUs" element={<AboutUs />} />
-          <Route path="/Collection" element={<Collection />} />
-          <Route path="/Services" element={<Services />} />
-          <Route path="/Contacts" element={<Contacts />} />
-          {/* Unauthorized page */}
-          <Route path="/Unauthorized" element={<Unauthorized />} />
-        </Routes>
-      </Router>
+    <CssBaseline />
+    <Router>
+      <Routes>  
+        <Route path="/Login" element={<Login />} />
+        <Route path="/" element={<Homepage />} />
+
+       
+        <Route
+          path="/AdminDashboard"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/Accounts"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Accounts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/Materials"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Materials />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/Location"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Location />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Routes accessible only by User */}
+        <Route
+          path="/UserDashboard"
+          element={
+            <ProtectedRoute allowedRoles={['user']}>
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project/:projectId"
+          element={
+            <ProtectedRoute allowedRoles={['user']}>
+              <ProjectProgress />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Routes accessible only by Contractor */}
+        <Route
+          path="/ContractorDashboard"
+          element={
+            <ProtectedRoute allowedRoles={['contractor']}>
+              <ContractorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+        path="/Templates"
+        element={
+          <ProtectedRoute allowedRoles={['contractor']}>
+            <Templates />
+          </ProtectedRoute>
+        }
+        />
+        <Route
+          path="/ProjectList"
+          element={
+            <ProtectedRoute allowedRoles={['contractor']}>
+              <ProjectList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/Generator"
+          element={
+            <ProtectedRoute allowedRoles={['contractor']}>
+              <Generator />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* General Routes */}
+        <Route path="/AboutUs" element={<AboutUs/>} />
+        <Route path="/Collection" element={<Collection />} />
+        <Route path="/Services" element={<Services />} />
+        <Route path="/Contacts" element={<Contacts />} />
+
+        {/* Unauthorized page */}
+        <Route path="/Unauthorized" element={<Unauthorized />} />
+      </Routes>
+    </Router>
     </>
   );
 }
