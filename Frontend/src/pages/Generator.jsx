@@ -703,7 +703,8 @@ const Generator = () => {
               ...material,
               description: newMaterial.description,
               cost: parseFloat(newMaterial.cost),
-              totalAmount: parseFloat(material.quantity) * parseFloat(newMaterial.cost),
+              totalAmount: parseFloat((parseFloat(material.quantity) * parseFloat(newMaterial.cost)).toFixed(2)),
+
             };
           }
           return material;
