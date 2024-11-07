@@ -71,7 +71,8 @@ const generateBOM = async (req, res) => {
         scaledQuantity *= material.scaling.roomCountFactor ? roomFactor : 1;
         scaledQuantity *= material.scaling.foundationDepthFactor ? foundationFactor : 1;
 
-        const unitsToRound = ['bags', 'pieces', 'units', 'pcs', 'shts', 'set', 'lot'];
+        const unitsToRound = ['bags', 'pieces', 'units','gals','gal', 'pcs', 'shts', 'set', 'lot','cu.m',
+  'set', 'm', 'L-m', 'sheets', 'pieces', 'meters', 'bar', 'tin', 'tubes','boxes'];
         if (unitsToRound.includes(material.unit.toLowerCase())) {
           scaledQuantity = Math.ceil(scaledQuantity);
         }
