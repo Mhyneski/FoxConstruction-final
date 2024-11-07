@@ -18,9 +18,9 @@ const connectDB = async () => {
 
 const insertBaseTemplate = async () => {
   const baseTemplate = {
-    "title": "Residential House - Premium",
+    "title": "Residential House - Economy",
     "type": "residential",
-    "tier": "premium",
+    "tier": "economy",
     "bom": {
       "totalArea": 200,
       "numFloors": 2,

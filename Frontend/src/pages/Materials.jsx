@@ -29,7 +29,7 @@ import ConfirmDeleteMaterialModal from "../components/ConfirmDeleteMaterialModal
 
 const validUnits = [
   'lot', 'cu.m', 'bags', 'pcs', 'shts', 'kgs', 'gal', 'liters',
-  'set', 'm', 'L-m', 'sheets', 'pieces', 'meters',
+  'set', 'm', 'L-m', 'sheets', 'pieces', 'meters', 'bar', 'tin', 'tubes','boxes'
 ];
 
 const Materials = () => {
@@ -68,18 +68,25 @@ const Materials = () => {
 
   const handleEdit = (material) => {
     setIsEditing(material._id);
-    setEditedMaterial({ description: material.description, unit: material.unit, cost: material.cost });
+    setEditedMaterial({
+      description: material.description,
+      unit: material.unit,
+      cost: material.cost === 0 ? "" : material.cost // Set cost to empty if it’s 0
+    });
   };
 
   const handleSave = async (id) => {
     try {
-      const updatedMaterial = { ...editedMaterial };
+      const updatedMaterial = {
+        ...editedMaterial,
+        cost: editedMaterial.cost === "" ? 0 : editedMaterial.cost // Convert empty cost to 0 before saving
+      };
       await axios.patch(`https://foxconstruction-final.onrender.com/api/materials/${id}`, updatedMaterial, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
-
+  
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material._id === id ? { ...material, ...updatedMaterial } : material
@@ -235,18 +242,24 @@ const Materials = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {isEditing === material._id ? (
-                        <TextField
-                          type="number"
-                          variant="outlined"
-                          value={editedMaterial.cost}
-                          onChange={(e) => setEditedMaterial({ ...editedMaterial, cost: Math.max(0, e.target.value) || 0 })}
-                          fullWidth
-                        />
-                      ) : (
-                        `₱${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`
-                      )}
-                    </TableCell>
+  {isEditing === material._id ? (
+    <TextField
+      type="number"
+      variant="outlined"
+      value={editedMaterial.cost === "" ? "" : editedMaterial.cost} // Allow blank value
+      onChange={(e) => {
+        const value = e.target.value;
+        setEditedMaterial({
+          ...editedMaterial,
+          cost: value === "" ? "" : Math.max(0, parseFloat(value) || 0) // Set cost to blank if empty
+        });
+      }}
+      fullWidth
+    />
+  ) : (
+    `₱${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost)}`
+  )}
+</TableCell>
                     <TableCell>{new Date(material.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       {isEditing === material._id ? (

@@ -122,37 +122,38 @@ const Templates = () => {
   const units = ["pcs", "bags", "kg", "m", "sqm", "cu.m", "liters", "sets"];
 
   // Fetch all templates
-  useEffect(() => {
+  const fetchTemplates = async () => {
     if (!user || !user.token) return;
   
-    const fetchTemplates = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
   
-        // Define the desired order
-        const desiredOrder = ['economy', 'standard', 'premium'];
+      // Define the desired order
+      const desiredOrder = ['economy', 'standard', 'premium'];
   
-        // Sort the templates based on 'tier' property
-        const sortedTemplates = [...response.data.templates].sort((a, b) => {
-          const tierA = (a.tier || '').toLowerCase();
-          const tierB = (b.tier || '').toLowerCase();
-          return desiredOrder.indexOf(tierA) - desiredOrder.indexOf(tierB);
-        });
+      // Sort the templates based on 'tier' property
+      const sortedTemplates = [...response.data.templates].sort((a, b) => {
+        const tierA = (a.tier || '').toLowerCase();
+        const tierB = (b.tier || '').toLowerCase();
+        return desiredOrder.indexOf(tierA) - desiredOrder.indexOf(tierB);
+      });
   
-        setTemplates(sortedTemplates);
-      } catch (error) {
-        console.error("Error fetching templates:", error);
-        showAlert("Error", "Failed to fetch templates. Please try again later.", "error");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setTemplates(sortedTemplates);
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+      showAlert("Error", "Failed to fetch templates. Please try again later.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
+  // Initial fetch on component mount
+  useEffect(() => {
     fetchTemplates();
-    fetchMaterials(); 
+    fetchMaterials();
   }, [user]);
   
 
@@ -170,25 +171,37 @@ const fetchTemplateDetails = async (templateId) => {
 };
 
 
-const handleRemoveMaterial = async (categoryName, materialId) => {
+const handleRemoveMaterial = async (categoryName, description) => {
   try {
     const templateId = selectedTemplate._id;
+    const encodedDescription = encodeURIComponent(description);
 
     await axios.delete(
-      `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials/${materialId}`,
-      {
-        headers: { Authorization: `Bearer ${user.token}` },
-      }
+      `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials/${encodedDescription}`,
+      { headers: { Authorization: `Bearer ${user.token}` } }
     );
 
-    // Refresh the template data after removing the material
-    fetchTemplateDetails(templateId);
+    // Update selectedTemplate in state by removing the material
+    setSelectedTemplate((prevTemplate) => {
+      const updatedCategories = prevTemplate.bom.categories.map((cat) => {
+        if (cat.category === categoryName) {
+          return {
+            ...cat,
+            materials: cat.materials.filter((material) => material.description !== description),
+          };
+        }
+        return cat;
+      });
+      return { ...prevTemplate, bom: { ...prevTemplate.bom, categories: updatedCategories } };
+    });
+
     showAlert("Success", "Material removed successfully.", "success");
   } catch (error) {
     console.error("Error removing material:", error);
     showAlert("Error", error.response?.data?.error || "Failed to remove material. Please try again later.", "error");
   }
 };
+
 
   
 
@@ -266,10 +279,8 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
 
   // Handle updating an existing template
   const handleUpdateTemplate = async () => {
-    // Validation is handled in isValid()
-    if (!isValid()) {
-      return;
-    }
+    if (!isValid()) return;
+    
     try {
       const response = await axios.patch(
         `https://foxconstruction-final.onrender.com/api/templates/${editTemplateId}`,
@@ -278,16 +289,14 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
           headers: { Authorization: `Bearer ${user.token}` },
         }
       );
-
-      const updatedTemplates = templates.map((template) =>
-        template._id === editTemplateId ? response.data.template : template
-      );
-
-      setTemplates(updatedTemplates);
-      resetTemplateForm();
+  
+      showAlert("Success", "Template updated successfully.", "success");
       setIsEditing(false);
       setIsModalOpen(false);
-      showAlert("Success", "Template updated successfully.", "success");
+      resetTemplateForm();
+      
+      // Refresh templates to reflect the latest update
+      fetchTemplates();
     } catch (error) {
       console.error("Error updating template:", error);
       showAlert("Error", "Failed to update template. Please try again later.", "error");
@@ -399,44 +408,16 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
   };
 
   const handleAddMaterial = async () => {
-    // Validate material fields
-    const {
-      materialId,
-      description,
-      quantity,
-      unit,
-      cost,
-      scaling: { areaFactor, heightFactor, roomCountFactor, foundationDepthFactor },
-    } = newMaterial;
-
-    const materialErrors = [];
-
+    const { materialId, description, quantity, unit, cost, scaling } = newMaterial;
+    
     if (!materialId && description.trim() === "") {
-      materialErrors.push("Description is required for new materials.");
-    }
-
-    if (quantity === "" || parseFloat(quantity) <= 0) {
-      materialErrors.push("Quantity must be greater than 0.");
-    }
-
-    if (!materialId && unit.trim() === "") {
-      materialErrors.push("Unit is required for new materials.");
-    }
-
-    if (!materialId && (cost === "" || parseFloat(cost) <= 0)) {
-      materialErrors.push("Cost must be greater than 0 for new materials.");
-    }
-
-    if (materialErrors.length > 0) {
-      showAlert("Validation Error", materialErrors.join(" "), "error");
+      showAlert("Validation Error", "Description is required for new materials.", "error");
       return;
     }
-
+    
     try {
       const templateId = selectedTemplate._id;
       const categoryName = selectedCategory;
-
-      // Prepare the data to send
       const data = {
         materialId: materialId || undefined,
         description: materialId ? undefined : description || undefined,
@@ -444,30 +425,45 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
         cost: materialId ? undefined : cost || undefined,
         quantity: parseFloat(quantity),
         scaling: {
-          areaFactor: parseFloat(areaFactor),
-          heightFactor: parseFloat(heightFactor),
-          roomCountFactor: parseFloat(roomCountFactor),
-          foundationDepthFactor: parseFloat(foundationDepthFactor),
+          areaFactor: parseFloat(scaling.areaFactor || 1),
+          heightFactor: parseFloat(scaling.heightFactor || 1),
+          roomCountFactor: parseFloat(scaling.roomCountFactor || 1),
+          foundationDepthFactor: parseFloat(scaling.foundationDepthFactor || 1),
         },
       };
-
-      // Remove undefined fields
-      Object.keys(data).forEach(
-        (key) => data[key] === undefined && delete data[key]
-      );
-
+  
       const response = await axios.post(
         `https://foxconstruction-final.onrender.com/api/templates/${templateId}/categories/${categoryName}/materials`,
         data,
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
-
-      // Update the selectedTemplate with the new data
-      setSelectedTemplate(response.data.template);
-
-      // Reset the form
+  
+      const addedMaterial = response.data.material;
+  
+      const updatedCategories = selectedTemplate.bom.categories.map((cat) => {
+        if (cat.category === categoryName) {
+          return {
+            ...cat,
+            materials: [...cat.materials, addedMaterial],
+          };
+        }
+        return cat;
+      });
+  
+      setSelectedTemplate((prevTemplate) => ({
+        ...prevTemplate,
+        bom: { ...prevTemplate.bom, categories: updatedCategories },
+      }));
+      setTemplates((prevTemplates) => 
+        prevTemplates.map((template) =>
+          template._id === templateId
+            ? { ...template, bom: { ...template.bom, categories: updatedCategories } }
+            : template
+        )
+      );
+  
+      showAlert("Success", "Material added successfully.", "success");
+      setShowAddMaterialModal(false);
       setNewMaterial({
         materialId: "",
         description: "",
@@ -481,16 +477,14 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
           foundationDepthFactor: 1,
         },
       });
-        // Refresh the template data after adding the material
-        fetchTemplateDetails(templateId);
-  
-      setShowAddMaterialModal(false);
-      showAlert("Success", "Material added successfully.", "success");
     } catch (error) {
       console.error("Error adding material:", error);
       showAlert("Error", "Failed to add material. Please try again later.", "error");
     }
   };
+  
+  
+  
 
   const closeAddMaterialModal = () => {
     setShowAddMaterialModal(false);
@@ -604,28 +598,25 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                         {new Date(template.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        {template.createdBy && (
-                          <>
-                            <Button
-                              variant="outlined"
-                              color="primary"
-                              size="small"
-                              onClick={() => handleEditTemplate(template)}
-                              style={{ marginRight: '8px' }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="secondary"
-                              size="small"
-                              onClick={() => handleDeleteClick(template)}
-                            >
-                              Delete
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>
+  <Button
+    variant="outlined"
+    color="primary"
+    size="small"
+    onClick={() => handleEditTemplate(template)}
+    style={{ marginRight: '8px' }}
+  >
+    Edit
+  </Button>
+  <Button
+    variant="outlined"
+    color="secondary"
+    size="small"
+    onClick={() => handleDeleteClick(template)}
+  >
+    Delete
+  </Button>
+</TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
@@ -694,7 +685,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                     <Typography variant="subtitle1" style={{ flexGrow: 1 }}>
                       {category.category}
                     </Typography>
-                    {selectedTemplate.createdBy && (
+                   
                       <Button
                         variant="contained"
                         color="secondary"
@@ -703,7 +694,7 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                       >
                         Add Material
                       </Button>
-                    )}
+               
                   </Box>
                   {category.materials.length > 0 ? (
                     <TableContainer>
@@ -714,33 +705,35 @@ const handleRemoveMaterial = async (categoryName, materialId) => {
                             <TableCell>Quantity</TableCell>
                             <TableCell>Unit</TableCell>
                             <TableCell>Cost</TableCell>
-                            {selectedTemplate.createdBy && <TableCell>Actions</TableCell>}
+                         && <TableCell>Actions</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {category.materials.map((material, index) => (
-                            <TableRow key={index}>
-                              <TableCell>{material.description}</TableCell>
-                              <TableCell>{material.quantity}</TableCell>
-                              <TableCell>{material.unit}</TableCell>
-                              <TableCell>₱{material.cost}</TableCell>
-                              {selectedTemplate.createdBy && (
-                                <TableCell>
-                                  <Button
-                                    variant="outlined"
-                                    color="secondary"
-                                    size="small"
-                                    onClick={() =>
-                                      handleRemoveMaterial(category.category, material._id)
-                                    }
-                                  >
-                                    Remove
-                                  </Button>
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          ))}
-                        </TableBody>
+                        {category.materials?.map((material, index) => (
+  material ? ( // Check if material is defined
+    <TableRow key={material._id || material.description}> {/* Use material._id if available */}
+      <TableCell>{material.description || "N/A"}</TableCell> {/* Default to "N/A" if undefined */}
+      <TableCell>{material.quantity || 0}</TableCell> {/* Default to 0 if undefined */}
+      <TableCell>{material.unit || "unit"}</TableCell> {/* Default unit */}
+      <TableCell>₱{material.cost || 0}</TableCell> {/* Default cost */}
+      <TableCell>
+        <Button
+          variant="outlined"
+          color="secondary"
+          size="small"
+          onClick={() =>
+            handleRemoveMaterial(category.category, material.description)
+          }
+        >
+          Remove
+        </Button>
+      </TableCell>
+    </TableRow>
+  ) : null // If material is undefined, render nothing
+))}
+
+</TableBody>
+
                       </Table>
                     </TableContainer>
                   ) : (

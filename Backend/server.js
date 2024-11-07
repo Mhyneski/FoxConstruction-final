@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 
 // Enable CORS
 app.use(cors({
-  origin: 'https://foxconstruction.netlify.app', // Your frontend URL
+  origin: 'https://foxconstruction.netlify.app/', // Your frontend URL
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)

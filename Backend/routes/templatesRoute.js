@@ -30,7 +30,7 @@ router.post('/:templateId/categories/:categoryName/materials', authMiddleware, a
 // Delete a template
 router.delete('/:id', authMiddleware, deleteTemplate);
 
-router.delete('/:templateId/categories/:categoryName/materials/:materialId', authMiddleware, removeMaterialFromCategory);
+router.delete('/:templateId/categories/:categoryName/materials/:description', authMiddleware, removeMaterialFromCategory);
 
 // Update a template
 router.patch('/:id', authMiddleware, updateTemplate);

@@ -370,6 +370,21 @@ const Generator = () => {
     setIsAlertOpen(true);
   };
 
+  // Load BOM from localStorage on component mount
+  useEffect(() => {
+    const savedBOM = localStorage.getItem('savedBOM');
+    if (savedBOM) {
+      setBom(JSON.parse(savedBOM));
+    }
+  }, []);
+
+  // Save BOM to localStorage when it updates
+  useEffect(() => {
+    if (bom) {
+      localStorage.setItem('savedBOM', JSON.stringify(bom));
+    }
+  }, [bom]);
+
   useEffect(() => {
     if (user && user.token) {
       setIsLoadingProjects(true);
@@ -694,6 +709,7 @@ const Generator = () => {
 
   const handleMaterialSelect = (newMaterial) => {
     if (materialToReplace && bom) {
+      // Update the materials with the selected replacement material and recalculate total amounts
       const updatedCategories = bom.categories.map((category) => {
         const updatedMaterials = category.materials.map((material) => {
           if (material._id === materialToReplace._id) {
@@ -706,18 +722,23 @@ const Generator = () => {
           }
           return material;
         });
-        return { ...category, materials: updatedMaterials };
+  
+        // Calculate the category total after updating the material
+        const categoryTotal = updatedMaterials.reduce((sum, material) => sum + material.totalAmount, 0);
+  
+        return { ...category, materials: updatedMaterials, categoryTotal };
       });
-
-      const updatedBom = {
+  
+      // Recalculate the project cost and marked-up cost
+      const { originalTotalProjectCost, markedUpTotalProjectCost } = calculateUpdatedCosts({
         ...bom,
         categories: updatedCategories,
-      };
-
-      const { originalTotalProjectCost, markedUpTotalProjectCost } = calculateUpdatedCosts(updatedBom);
-
+      });
+  
+      // Update BOM state to trigger re-render
       setBom({
-        ...updatedBom,
+        ...bom,
+        categories: updatedCategories,
         originalCosts: {
           ...bom.originalCosts,
           totalProjectCost: originalTotalProjectCost,
@@ -727,29 +748,31 @@ const Generator = () => {
           totalProjectCost: markedUpTotalProjectCost,
         },
       });
-
+  
+      // Close the material replacement modal and show success alert
       setMaterialModalOpen(false);
-
       showAlert("Success", "Material replaced successfully.", "success");
     }
   };
+  
 
   const calculateUpdatedCosts = (bom) => {
     const totalMaterialsCost = bom.categories.reduce((sum, category) => {
       return sum + category.materials.reduce((subSum, material) => subSum + material.totalAmount, 0);
     }, 0);
-
+  
     const originalLaborCost = bom.originalCosts.laborCost;
     const originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
-
+  
     const markupPercentage = bom.projectDetails.location.markup / 100;
     const markedUpTotalProjectCost = originalTotalProjectCost + (originalTotalProjectCost * markupPercentage);
-
+  
     return {
       originalTotalProjectCost,
       markedUpTotalProjectCost,
     };
   };
+  
 
   const handleSaveBOM = () => {
     if (!selectedProject || !selectedProject._id) {

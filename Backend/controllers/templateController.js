@@ -86,10 +86,10 @@ const mongoose = require('mongoose');
     // Remove a material from a category
     const removeMaterialFromCategory = async (req, res) => {
       try {
-        const { templateId, categoryName, materialId } = req.params;
+        const { templateId, categoryName, description } = req.params;
         const userId = req.user._id;
     
-        const template = await Template.findOne({ _id: templateId, createdBy: userId });
+        const template = await Template.findOne({ _id: templateId });
     
         if (!template) {
           return res.status(404).json({ error: 'Template not found.' });
@@ -100,12 +100,14 @@ const mongoose = require('mongoose');
           return res.status(404).json({ error: 'Category not found.' });
         }
     
-        const materialIndex = category.materials.findIndex(material => material._id.toString() === materialId);
+        const materialIndex = category.materials.findIndex(
+          (material) => material.description.toLowerCase() === description.toLowerCase()
+        );
         if (materialIndex === -1) {
           return res.status(404).json({ error: 'Material not found in the category.' });
         }
     
-        // Remove the material
+        // Remove the material by description
         category.materials.splice(materialIndex, 1);
     
         // Save the updated template
@@ -118,130 +120,91 @@ const mongoose = require('mongoose');
       }
     };
     
+    
   
 
     const addMaterialToCategory = async (req, res) => {
-        try {
+      try {
         const { templateId, categoryName } = req.params;
-        const userId = req.user._id;
         const { materialId, description, quantity, unit, cost, scaling } = req.body;
     
-        // Find the template owned by the user
-        const template = await Template.findOne({ _id: templateId, createdBy: userId });
-    
+        // Find the template
+        const template = await Template.findById(templateId);
         if (!template) {
-            return res.status(404).json({ error: 'Template not found.' });
+          return res.status(404).json({ error: 'Template not found.' });
         }
     
-        // Find the category
+        // Find the category in BOM
         const category = template.bom.categories.find(
-            (cat) => cat.category.toLowerCase() === categoryName.toLowerCase()
+          (cat) => cat.category.toLowerCase() === categoryName.toLowerCase()
         );
-    
         if (!category) {
-            return res.status(404).json({ error: 'Category not found.' });
+          return res.status(404).json({ error: 'Category not found.' });
         }
     
-        let materialData;
+        let materialData = {};
     
         if (materialId) {
-            // **User selected an existing material**
-    
-            // Retrieve material from database
-            const existingMaterial = await Material.findById(materialId);
-            if (!existingMaterial) {
+          // Find existing material by ID
+          const existingMaterial = await Material.findById(materialId);
+          if (!existingMaterial) {
             return res.status(404).json({ error: 'Material not found in the database.' });
-            }
+          }
     
-            // Use the existing material's data
-            materialData = {
+          // Set material data based on existing material
+          materialData = {
+            materialId, // Preserve materialId here
             description: existingMaterial.description,
             unit: existingMaterial.unit,
-            cost: existingMaterial.cost,
-            };
-    
-            // **Optionally allow overriding the cost**
-            if (cost !== undefined) {
-            if (isNaN(cost) || cost < 0) {
-                return res.status(400).json({ error: 'Cost must be a non-negative number.' });
-            }
-            materialData.cost = parseFloat(cost);
-            }
+            cost: cost !== undefined ? parseFloat(cost) : existingMaterial.cost
+          };
         } else {
-            // **User is inputting a new material**
-    
-            // **Validate 'description' field**
-            if (!description || typeof description !== 'string') {
-            return res.status(400).json({ error: 'Description is required and must be a string.' });
-            }
-    
-            // **Validate 'unit' field**
-            if (!unit || !validUnits.includes(unit)) {
-            return res.status(400).json({ error: `Invalid unit. Valid units are: ${validUnits.join(', ')}` });
-            }
-    
-            // **Validate 'cost' field**
-            if (isNaN(cost) || cost < 0) {
-            return res.status(400).json({ error: 'Cost must be a non-negative number.' });
-            }
-    
-            materialData = {
-            description,
-            unit,
-            cost: parseFloat(cost),
-            };
+          // New material entry
+          materialData = { description, unit, cost: parseFloat(cost) };
         }
     
-        // **Validate 'quantity' field**
+        // Calculate quantity and scaling values
         const parsedQuantity = parseFloat(quantity);
         if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-            return res.status(400).json({ error: 'Quantity must be a positive number.' });
+          return res.status(400).json({ error: 'Quantity must be a positive number.' });
         }
     
-        // **Set default scaling factors if not provided**
-        const scalingFactors = ['areaFactor', 'heightFactor', 'roomCountFactor', 'foundationDepthFactor'];
-        const scalingInput = scaling || {};
+        const scalingFactors = { areaFactor: 1, heightFactor: 1, roomCountFactor: 0, foundationDepthFactor: 0, ...scaling };
     
-        const materialScaling = {};
-        scalingFactors.forEach((factor) => {
-            materialScaling[factor] =
-            scalingInput[factor] !== undefined ? Number(scalingInput[factor]) : 1;
-        });
-
+        // Calculate item number
         const categoryIndex = template.bom.categories.findIndex(
-            (cat) => cat.category.toLowerCase() === categoryName.toLowerCase()
-        ) + 1; 
-    
-        const materialIndex = category.materials.length + 1; 
-    
+          (cat) => cat.category.toLowerCase() === categoryName.toLowerCase()
+        ) + 1;
+        const materialIndex = category.materials.length + 1;
         const item = `${categoryIndex}.${materialIndex}`;
     
-       
+        // Calculate total amount
         const totalAmount = parseFloat((parsedQuantity * materialData.cost).toFixed(2));
     
-        
-        const material = {
-            item,
-            description: materialData.description,
-            quantity: parsedQuantity,
-            unit: materialData.unit,
-            cost: materialData.cost,
-            totalAmount,
-            scaling: materialScaling,
+        // Add the material to the category
+        const newMaterial = {
+          item,
+          materialId: materialData.materialId || null, // Only set if materialId exists
+          description: materialData.description,
+          quantity: parsedQuantity,
+          unit: materialData.unit,
+          cost: materialData.cost,
+          totalAmount,
+          scaling: scalingFactors
         };
     
-        // **Add material to category**
-        category.materials.push(material);
+        category.materials.push(newMaterial);
     
-        // **Save the template**
+        // Save updated template
         await template.save();
     
         res.status(200).json({ success: true, template });
-        } catch (error) {
+      } catch (error) {
         console.error('Error adding material:', error);
         res.status(500).json({ error: 'Failed to add material.' });
-        }
+      }
     };
+    
 
     const getTemplates = async (req, res) => {
         try {
@@ -264,26 +227,26 @@ const mongoose = require('mongoose');
     
     // Get specific template by ID
     const getTemplateById = async (req, res) => {
-        try {
+      try {
         const { id } = req.params;
-        const userId = req.user._id;
     
         // Validate ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ error: 'Invalid template ID.' });
+          return res.status(400).json({ error: 'Invalid template ID.' });
         }
     
-        const template = await Template.findOne({ _id: id, createdBy: userId });
+        const template = await Template.findById(id);
         if (!template) {
-            return res.status(404).json({ error: 'Template not found.' });
+          return res.status(404).json({ error: 'Template not found.' });
         }
     
         res.status(200).json({ success: true, template });
-        } catch (error) {
+      } catch (error) {
         console.error('Error fetching template:', error);
         res.status(500).json({ error: 'Failed to fetch template.' });
-        }
+      }
     };
+    
     
     // Delete a template
     const deleteTemplate = async (req, res) => {

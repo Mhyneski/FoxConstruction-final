@@ -3,6 +3,7 @@ const schema = mongoose.Schema;
 
 const materialSchema = new schema({
   item: { type: String, required: true },
+  materialId: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' }, // Add this line
   description: { type: String, required: true },
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
@@ -15,6 +16,7 @@ const materialSchema = new schema({
     foundationDepthFactor: { type: Number, default: 0 } 
   }
 });
+
 
 const categorySchema = new schema({
   category: { type: String, required: true },
