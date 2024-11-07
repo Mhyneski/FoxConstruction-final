@@ -370,20 +370,6 @@ const Generator = () => {
     setIsAlertOpen(true);
   };
 
-  // Load BOM from localStorage on component mount
-  useEffect(() => {
-    const savedBOM = localStorage.getItem('savedBOM');
-    if (savedBOM) {
-      setBom(JSON.parse(savedBOM));
-    }
-  }, []);
-
-  // Save BOM to localStorage when it updates
-  useEffect(() => {
-    if (bom) {
-      localStorage.setItem('savedBOM', JSON.stringify(bom));
-    }
-  }, [bom]);
 
   useEffect(() => {
     if (user && user.token) {
@@ -716,18 +702,18 @@ const Generator = () => {
             return {
               ...material,
               description: newMaterial.description,
-              cost: newMaterial.cost,
-              totalAmount: material.quantity * newMaterial.cost,
+              cost: parseFloat(newMaterial.cost),
+              totalAmount: parseFloat(material.quantity) * parseFloat(newMaterial.cost),
             };
           }
           return material;
         });
-  
-        // Calculate the category total after updating the material
-        const categoryTotal = updatedMaterials.reduce((sum, material) => sum + material.totalAmount, 0);
-  
-        return { ...category, materials: updatedMaterials, categoryTotal };
+      
+        const categoryTotal = updatedMaterials.reduce((sum, material) => sum + (parseFloat(material.totalAmount) || 0), 0);
+      
+        return { ...category, materials: updatedMaterials, categoryTotal: parseFloat(categoryTotal.toFixed(2)) };
       });
+      
   
       // Recalculate the project cost and marked-up cost
       const { originalTotalProjectCost, markedUpTotalProjectCost } = calculateUpdatedCosts({
@@ -758,13 +744,17 @@ const Generator = () => {
 
   const calculateUpdatedCosts = (bom) => {
     const totalMaterialsCost = bom.categories.reduce((sum, category) => {
-      return sum + category.materials.reduce((subSum, material) => subSum + material.totalAmount, 0);
+      const categoryTotal = category.materials.reduce((subSum, material) => {
+        const materialTotal = parseFloat(material.totalAmount) || 0;
+        return subSum + materialTotal;
+      }, 0);
+      return sum + categoryTotal;
     }, 0);
   
-    const originalLaborCost = bom.originalCosts.laborCost;
+    const originalLaborCost = parseFloat(bom.originalCosts.laborCost) || 0;
     const originalTotalProjectCost = totalMaterialsCost + originalLaborCost;
   
-    const markupPercentage = bom.projectDetails.location.markup / 100;
+    const markupPercentage = parseFloat(bom.projectDetails.location.markup) / 100 || 0;
     const markedUpTotalProjectCost = originalTotalProjectCost + (originalTotalProjectCost * markupPercentage);
   
     return {
@@ -772,6 +762,7 @@ const Generator = () => {
       markedUpTotalProjectCost,
     };
   };
+  
   
 
   const handleSaveBOM = () => {
