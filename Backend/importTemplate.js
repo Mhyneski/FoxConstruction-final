@@ -1,8 +1,18 @@
 require('dotenv').config();
 
 const mongoose = require('mongoose');
-const Template = require('./models/templatesModel'); 
+const Preproject = require('./models/PreprojectModel'); 
+const cloudinary = require('cloudinary').v2;
+const path = require('path');
 
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const imagePath = path.resolve(__dirname, 'images', '170sqm.jpg');
 
 const connectDB = async () => {
   console.log(process.env.MONGO_URI);
@@ -16,51 +26,65 @@ const connectDB = async () => {
 };
 
 
-const insertBaseTemplate = async () => {
-  const baseTemplate = {
-    "title": "Residential House - Economy",
+const insertProject = async () => {
+
+
+  let uploadedImage;
+  try {
+    // Upload image to Cloudinary
+    uploadedImage = await cloudinary.uploader.upload(imagePath,);
+    console.log('Image uploaded to Cloudinary:', uploadedImage.secure_url);
+  } catch (error) {
+    console.error('Error uploading image to Cloudinary:', error);
+    return;
+  }
+
+  const project = {
+    "title": "Residential House - Premium",
     "type": "residential",
-    "tier": "economy",
+    "image": [
+      {
+        path: uploadedImage.secure_url, // Cloudinary image URL
+        public_id: uploadedImage.public_id, // Cloudinary public ID
+      },
+    ],
     "bom": {
-      "totalArea": 200,
+      "totalArea": 170,
       "numFloors": 2,
-      "avgFloorHeight": 3,
-	"roomCount": 6,
-"foundationDepth": 1.5,
+      "avgFloorHeight": 3.5,
+      "roomCount": 8,
+      "foundationDepth": 1.8,
       "categories": [
-        {
+         {
           "category": "Earthwork",
           "materials": [
-            { "item": "1.1", "description": "Site Clearing", "quantity": 1, "unit": "lot", "cost": 30000, "totalAmount": 30000 },
-            { "item": "1.2", "description": "Construction Layout and Surveying", "quantity": 1, "unit": "lot", "cost": 30000, "totalAmount": 30000 },
-            { "item": "1.3", "description": "Staking/ Batterboard Installation", "quantity": 1, "unit": "lot", "cost": 15000, "totalAmount": 15000 },
-            { "item": "1.4", "description": "Excavation for foundation and wall footings", "quantity": 38.51, "unit": "cu.m", "cost": 500, "totalAmount": 19255 },
-            { "item": "1.5", "description": "Backfill", "quantity": 116.074, "unit": "cu.m", "cost": 120, "totalAmount": 13928.88 }
+            { "item": "1.1", "description": "Site Clearing", "quantity": 1, "unit": "lot", "cost": 40000, "totalAmount": 40000 },
+            { "item": "1.2", "description": "Excavation", "quantity": 70, "unit": "cu.m", "cost": 500, "totalAmount": 35000 }
           ]
         },
         {
           "category": "Concrete",
           "materials": [
-            { "item": "2.1.1", "description": "Cement", "quantity": 421, "unit": "bags", "cost": 350, "totalAmount": 147350 },
-            { "item": "2.1.2", "description": "Sand", "quantity": 24.5, "unit": "cu.m", "cost": 2000, "totalAmount": 49000 },
+            { "item": "2.1.1", "description": "Cemex Cement", "quantity": 511, "unit": "bags", "cost": 300, "totalAmount": 153300 },
+            { "item": "2.1.2", "description": "Concrete Sand", "quantity": 30.5, "unit": "cu.m", "cost": 1300, "totalAmount": 39650 },
             { "item": "2.1.3", "description": "Gravel", "quantity": 41.83, "unit": "cu.m", "cost": 1800, "totalAmount": 75300 }
           ]
         },
         {
           "category": "Rebars",
           "materials": [
-            { "item": "2.2.1", "description": "16mm x 6m Std. RSB", "quantity": 225, "unit": "pcs", "cost": 500, "totalAmount": 112500 },
-            { "item": "2.2.2", "description": "12mm x 6m Std. RSB", "quantity": 227, "unit": "pcs", "cost": 300, "totalAmount": 68100 },
-            { "item": "2.2.3", "description": "10mm x 6m Std. RSB", "quantity": 562, "unit": "pcs", "cost": 200, "totalAmount": 112400 },
-            { "item": "2.2.4", "description": "No. 16 Tie wire", "quantity": 69, "unit": "kgs", "cost": 20, "totalAmount": 1380 }
+            { "item": "2.2.1", "description": "16mm x 6m Std. RSB", "quantity": 295, "unit": "pcs", "cost": 500, "totalAmount": 147500 },
+            { "item": "2.2.2", "description": "12mm x 6m Std. RSB", "quantity": 287, "unit": "pcs", "cost": 300, "totalAmount": 86100 },
+            { "item": "2.2.3", "description": "10mm x 6m Std. RSB", "quantity": 612, "unit": "pcs", "cost": 200, "totalAmount": 122400 },
+            { "item": "2.2.4", "description": "No. 16 Tie wire", "quantity": 79, "unit": "kgs", "cost": 20, "totalAmount": 1580 }
           ]
         },
         {
           "category": "Formworks",
           "materials": [
-            { "item": "2.3.1", "description": "4' x 8' 1/2\" Marine plywood", "quantity": 31, "unit": "shts", "cost": 1000, "totalAmount": 31000 },
-            { "item": "2.3.2", "description": "2\" x 2\" x 8' Good Lumber", "quantity": 225, "unit": "pcs", "cost": 150, "totalAmount": 33750 },
-            { "item": "2.3.3", "description": "Common wire nail (Assorted)", "quantity": 3, "unit": "kgs", "cost": 100, "totalAmount": 300 }
+            { "item": "2.3.1", "description": "4' x 8' 1/2\" Marine plywood", "quantity": 41, "unit": "shts", "cost": 1000, "totalAmount": 41000 },
+            { "item": "2.3.2", "description": "2\" x 2\" x 8' Good Lumber", "quantity": 250, "unit": "pcs", "cost": 150, "totalAmount": 37500 },
+            { "item": "2.3.3", "description": "Common wire nail (Assorted)", "quantity": 12, "unit": "kgs", "cost": 100, "totalAmount": 1200 }
           ]
         },
         {
@@ -93,9 +117,9 @@ const insertBaseTemplate = async () => {
         {
           "category": "Architectural - Painting",
           "materials": [
-            { "item": "3.2.1", "description": "Boysen Masonry Neutralizer B-44 - *Premium Brand*", "quantity": 25, "unit": "gal", "cost": 820, "totalAmount": 20500 },
-            { "item": "3.2.2", "description": "Acrylic Gloss Latex - Sinclair Gloss Latex Paint- *Premium Paint*", "quantity": 39, "unit": "gal", "cost": 612, "totalAmount": 23868 },
-            { "item": "3.2.3", "description": "Latex Colors - Boysen Permacoat Flat Latex Paint - *Premium Color Palette*", "quantity": 156, "unit": "liters", "cost": 272, "totalAmount": 42432 },
+            { "item": "3.2.1", "description": "Boysen Masonry Neutralizer B-44 - *Premium Brand*", "quantity": 30, "unit": "gal", "cost": 820, "totalAmount": 24600 },
+            { "item": "3.2.2", "description": "Acrylic Gloss Latex - Sinclair Gloss Latex Paint- *Premium Paint*", "quantity": 49, "unit": "gal", "cost": 612, "totalAmount": 29988 },
+            { "item": "3.2.3", "description": "Latex Colors - Boysen Permacoat Flat Latex Paint - *Premium Color Palette*", "quantity": 176, "unit": "liters", "cost": 272, "totalAmount": 47872 },
             { "item": "3.2.4", "description": "Paint Rollers & Trays - Truper Paint Tray with Roller - *Premium Tools*", "quantity": 8, "unit": "pcs", "cost": 360, "totalAmount": 2880 },
             { "item": "3.2.5", "description": "Paint Brush - Kenton Paint Brush (Thick Bristles) - *Premium Quality*", "quantity": 5, "unit": "pcs", "cost": 422, "totalAmount": 2110 },
             { "item": "3.2.6", "description": "Painters Tape - Protech Masking Tape (Painters Tape) - *Premium Tape*", "quantity": 4, "unit": "pcs", "cost": 329, "totalAmount": 1316 },
@@ -107,7 +131,7 @@ const insertBaseTemplate = async () => {
         {
           "category": "Roofing",
           "materials": [
-            { "item": "4.1", "description": "Trusses and Purlins", "quantity": 1, "unit": "lot", "cost": 150000, "totalAmount": 150000 },
+            { "item": "4.1", "description": "King post trusses and V Shape purlins", "quantity": 1, "unit": "lot", "cost": 170000, "totalAmount": 170000 },
             { "item": "4.2.1", "description": "Pre-painted Metal Roof-Rib Roof Panel - *Standard Gauge Metal*", "quantity": 20, "unit": "sheets", "cost": 1366, "totalAmount": 27320 },
             { "item": "4.2.2", "description": "Pre-painted Gutter - Galvanized Iron K Style Gutter - *Premium Gutter*", "quantity": 8, "unit": "pcs", "cost": 785, "totalAmount": 4000 },
             { "item": "4.2.3", "description": "End Flashing - *Premium Flashing*", "quantity": 8, "unit": "pcs", "cost": 1200, "totalAmount": 9600 },
@@ -187,15 +211,17 @@ const insertBaseTemplate = async () => {
           ]
         }
       ],
-      "laborCost": 400000,
-      "totalProjectCost": 1600000
+      "laborCost": 450000,
+      "materialTotalCost": 1244531,
+      "tax": 203343,
+      "totalProjectCost": 1897874
     }
   }
   
   
   try {
-    await Template.create(baseTemplate);
-    console.log('Base template created successfully');
+    await Preproject.create(project);
+    console.log('Proproject created successfully');
   } catch (err) {
     console.error('Error creating base template:', err);
   } finally {
@@ -206,7 +232,7 @@ const insertBaseTemplate = async () => {
 
 const run = async () => {
   await connectDB();
-  await insertBaseTemplate();
+  await insertProject();
 };
 
 run();

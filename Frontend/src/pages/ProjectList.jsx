@@ -119,6 +119,11 @@ const ProjectList = () => {
     floorsAndTasks: false,
     floors: {},
   });
+  const [localImages, setLocalImages] = useState({}); // To store images by floor and task
+  const [showImageDeleteModal, setShowImageDeleteModal] = useState(false);
+const [imageToDelete, setImageToDelete] = useState(null);
+
+
 
   const toggleDetails = (section) => {
     setExpandedSections((prev) => ({
@@ -161,43 +166,47 @@ const ProjectList = () => {
   
   // Fetch project details for the modal
   const fetchProjectDetails = async (projectId) => {
-    try {
-      const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      setSelectedProject(response.data); 
-      setShowDetailsModal(true); 
-    } catch (error) {
-      console.error('Error fetching project details:', error);
-      showAlert("Error","Failed to fetch project details. Please try again.", "error");
-    }
+    const response = await axios.get(`/api/projects/${projectId}`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+  
+    const project = response.data;
+    setNewProject({
+      ...project,
+      floors: project.floors.map((floor) => ({
+        ...floor,
+        _id: floor._id, // Ensure floor ID is included
+      })),
+    });
   };
+  
 
   // Fetch all projects, locations, and templates
   useEffect(() => {
     if (!user || !user.token) return;
   
-    const fetchProjectsAndLocationsAndTemplates = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
   
-        const [projectsResponse, locationsResponse, templatesResponse] = await Promise.all([
-          axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
+        const [projectsResponse, locationsResponse, templatesResponse, usersResponse] = await Promise.all([
+          axios.get(`http://localhost:4000/api/project/contractor`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
+          axios.get(`http://localhost:4000/api/locations`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
+          axios.get(`http://localhost:4000/api/templates`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`http://localhost:4000/api/user/get`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
         ]);
   
         setProjects(projectsResponse.data);
         setLocations(locationsResponse.data);
+        setUsers(usersResponse.data);
   
         // Sort templates based on 'tier' property
         const desiredOrder = ['economy', 'standard', 'premium'];
@@ -219,7 +228,7 @@ const ProjectList = () => {
       }
     };
   
-    fetchProjectsAndLocationsAndTemplates();
+    fetchData();
   }, [user]);
   
   
@@ -253,7 +262,82 @@ const ProjectList = () => {
     }
   };
   
+  const handleImageUpload = (e, floorIndex, taskIndex = null) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) {
+      showAlert("Error", "No files selected. Please select images to upload.", "error");
+      return;
+    }
   
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLocalImages((prev) => {
+          const updated = { ...prev };
+          if (!updated[floorIndex]) {
+            updated[floorIndex] = { images: [], tasks: {} };
+          }
+          if (taskIndex !== null) {
+            // Task image
+            if (!updated[floorIndex].tasks[taskIndex]) {
+              updated[floorIndex].tasks[taskIndex] = { images: [] };
+            }
+            updated[floorIndex].tasks[taskIndex].images.push({
+              preview: reader.result,
+              file,
+              isLocal: true,
+            });
+          } else {
+            // Floor image
+            updated[floorIndex].images.push({
+              preview: reader.result,
+              file,
+              isLocal: true,
+            });
+          }
+          return updated;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  
+  
+  
+  
+  
+  
+  
+  
+  const handleRemoveImage = (floorIndex, imageIndex, taskIndex = null) => {
+    setLocalImages((prev) => {
+      const updated = { ...prev };
+      if (taskIndex !== null) {
+        // Remove task image
+        updated[floorIndex].tasks[taskIndex].images.splice(imageIndex, 1);
+        if (updated[floorIndex].tasks[taskIndex].images.length === 0) {
+          delete updated[floorIndex].tasks[taskIndex];
+        }
+      } else {
+        // Remove floor image
+        updated[floorIndex].images.splice(imageIndex, 1);
+      }
+      return updated;
+    });
+  };
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   
 
   const handleTotalAreaChange = (e) => {
     const inputValue = e.target.value;
@@ -285,7 +369,7 @@ const ProjectList = () => {
   const handleToggleProgressMode = async (projectId, isAutomatic) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/progress-mode`,
+        `http://localhost:4000/api/project/${projectId}/progress-mode`,
         { isAutomatic },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -352,23 +436,6 @@ const ProjectList = () => {
   };
   
 
-
-  // Fetch users when dropdown is clicked
-  const handleDropdownClick = async () => {
-    if (users.length === 0) {
-      try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
-          headers: { Authorization: `Bearer ${user?.token || ""}` },
-        });
-        setUsers(response.data);
-        console.log("Fetched Users:", response.data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        showAlert("Error","Failed to fetch users. Please try again later.", "error");
-      }
-    }
-  };
-
   // Function to handle project deletion after confirmation
   const handleConfirmDelete = () => {
     if (selectedProject) {
@@ -410,7 +477,7 @@ const ProjectList = () => {
       };
   
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/project`,
+        `http://localhost:4000/api/project`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -432,65 +499,153 @@ const ProjectList = () => {
   };
   
   // Handle updating an existing project
- // Handle updating an existing project
- const handleUpdateProject = async () => {
-  try {
-    if (!newProject.template) {
-      showAlert("Error", "Please select a template.", "error");
-      return;
+  const handleUpdateProject = async () => {
+    try {
+      const projectId = newProject._id;
+      const updatedFloors = await Promise.all(
+        newProject.floors.map(async (floor, floorIndex) => {
+          const floorId = floor._id;
+          let uploadedFloorImages = [];
+  
+          // Upload new floor images
+          if (localImages[floorIndex]?.images?.length) {
+            uploadedFloorImages = await Promise.all(
+              localImages[floorIndex].images.map(async (img) => {
+                const formData = new FormData();
+                formData.append("image", img.file);
+                formData.append("remark", img.remark || "");
+            
+                const response = await axios.post(
+                  `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images`,
+                  formData,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${user.token}`,
+                      "Content-Type": "multipart/form-data",
+                    },
+                  }
+                );
+            
+                return response.data.image; // Use the image data returned from the server
+              })
+            );
+            
+          }
+  
+          // Handle tasks
+          const updatedTasks = await Promise.all(
+            floor.tasks.map(async (task, taskIndex) => {
+              const taskId = task._id;
+              let uploadedTaskImages = [];
+  
+              // Upload new task images
+              if (localImages[floorIndex]?.tasks?.[taskIndex]?.images?.length) {
+                uploadedTaskImages = await Promise.all(
+                  localImages[floorIndex].tasks[taskIndex].images.map(async (img) => {
+                    const formData = new FormData();
+                    formData.append("image", img.file);
+                    formData.append("remark", img.remark || "");
+  
+                    const response = await axios.post(
+                      `http://localhost:4000/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images`,
+                      formData,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${user.token}`,
+                          "Content-Type": "multipart/form-data",
+                        },
+                      }
+                    );
+  
+                    return response.data.image; // Assuming the API returns the uploaded image data
+                  })
+                );
+              }
+  
+              // Merge existing and new images
+              const allTaskImages = [
+                ...(task.images || []),
+                ...uploadedTaskImages,
+              ];
+  
+              return {
+                ...task,
+                images: allTaskImages,
+              };
+            })
+          );
+  
+          // Merge existing and new floor images
+          const allFloorImages = [
+            ...(floor.images || []),
+            ...uploadedFloorImages,
+          ];
+  
+          return {
+            ...floor,
+            images: allFloorImages,
+            tasks: updatedTasks,
+          };
+        })
+      );
+  
+      const processedProject = {
+        ...newProject,
+        floors: updatedFloors,
+      };
+
+       // Remove __v field to prevent versioning errors
+    delete processedProject.__v;
+
+    // Also, remove __v from nested subdocuments (floors and tasks)
+    processedProject.floors = processedProject.floors.map(floor => {
+      delete floor.__v;
+      floor.tasks = floor.tasks.map(task => {
+        delete task.__v;
+        return task;
+      });
+      return floor;
+    });
+  
+      // Send the updated project to the server
+      const response = await axios.patch(
+        `http://localhost:4000/api/project/${editProjectId}`,
+        processedProject,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      // Update the projects in the state with the updated project
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === editProjectId ? response.data.project : project
+        )
+      );
+  
+      // Reset local images
+      setLocalImages({});
+  
+      // Reset form and close modal
+      resetProjectForm();
+      setIsEditing(false);
+      setIsModalOpen(false);
+      showAlert("Success", "Project updated successfully!", "success");
+    } catch (error) {
+      console.error("Error updating project:", error);
+      showAlert("Error", "Failed to update project. Please try again.", "error");
     }
-    if (newProject.totalArea <= 0) {
-      showAlert("Error", "Total area must be greater than 0.", "error");
-      return;
-    }
+  };
+  
 
-    const updatedFloors = newProject.floors.map((floor) => ({
-      ...floor,
-      tasks: floor.tasks.map((task) => ({
-        ...task,
-        progress: task.progress || 0,
-      })),
-    }));
 
-    const processedProject = {
-      ...newProject,
-      floors: updatedFloors,
-    };
-
-    const response = await axios.patch(
-      `https://foxconstruction-final.onrender.com/api/project/${editProjectId}`,
-      processedProject,
-      {
-        headers: { Authorization: `Bearer ${user.token}` },
-      }
-    );
-
-    if (!response || !response.data.project) {
-      showAlert("Error", "Failed to update project. No valid response from the server.", "error");
-      return;
-    }
-
-    setProjects((prevProjects) =>
-      prevProjects.map((project) =>
-        project._id === editProjectId ? response.data.project : project
-      )
-    );
-    resetProjectForm();
-    setIsEditing(false);
-    setIsModalOpen(false);
-    showAlert("Success", "Project updated successfully!", "success");
-  } catch (error) {
-    console.error("Error updating project:", error);
-    showAlert("Error", "Failed to update project. Please try again.", "error");
-  }
-};
 
 
   
   // Handle deleting a project
   const handleDeleteProject = async () => {
     try {
-      await axios.delete(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}`, {
+      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -533,7 +688,7 @@ const ProjectList = () => {
   const handleStartProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/start`,
+        `http://localhost:4000/api/project/${projectId}/start`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -555,7 +710,7 @@ const ProjectList = () => {
   const handlePostponeProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/postpone`,
+        `http://localhost:4000/api/project/${projectId}/postpone`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -578,7 +733,7 @@ const ProjectList = () => {
   const handleResumeProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/resume`,
+        `http://localhost:4000/api/project/${projectId}/resume`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -600,7 +755,7 @@ const ProjectList = () => {
   const handleEndProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/end`,
+        `http://localhost:4000/api/project/${projectId}/end`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -618,41 +773,152 @@ const ProjectList = () => {
       showAlert("Error","Failed to end project. Please try again.", "error");
     }
   };
+  const handleDeleteExistingImage = (floorIndex, imageIndex) => {
+    setImageToDelete({ type: 'floor', floorIndex, imageIndex });
+    setShowImageDeleteModal(true);
+  };
+
+  const handleDeleteExistingTaskImage = (floorIndex, taskIndex, imageIndex) => {
+    setImageToDelete({ type: 'task', floorIndex, taskIndex, imageIndex });
+    setShowImageDeleteModal(true);
+  };
+
+
+  const handleUpdateImageRemark = (floorIndex, imageIndex, newRemark) => {
+    setNewProject((prevProject) => {
+      const updatedFloors = [...prevProject.floors];
+      updatedFloors[floorIndex].images[imageIndex].remark = newRemark; // Update the remark
+      return { ...prevProject, floors: updatedFloors };
+    });
+  };
+  
+  const handleConfirmDeleteImage = async () => {
+    const { type, floorIndex, taskIndex, imageIndex } = imageToDelete;
+  
+    try {
+      const projectId = newProject._id; // Get the project ID
+  
+      if (type === 'floor') {
+        const floor = newProject.floors[floorIndex];
+        const floorId = floor._id; // Get the floor ID
+        const image = floor.images[imageIndex];
+        const imageId = image._id; // Get the image ID
+
+         // Ensure IDs are valid before making the API call
+      if (!projectId || !floorId || !imageId) {
+        showAlert('Error', 'Invalid IDs for deleting floor image.', 'error');
+        return;
+      }
+  
+        // Send delete request to the server
+        await axios.delete(
+          `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+  
+        // Remove the image from the state
+// Remove the image from the state
+const updatedFloors = [...newProject.floors];
+if (type === 'floor') {
+  updatedFloors[floorIndex].images = updatedFloors[floorIndex].images.filter(
+    (_, idx) => idx !== imageIndex
+  );
+} else if (type === 'task') {
+  updatedFloors[floorIndex].tasks[taskIndex].images = updatedFloors[floorIndex].tasks[taskIndex].images.filter(
+    (_, idx) => idx !== imageIndex
+  );
+}
+setNewProject({ ...newProject, floors: updatedFloors });
+
+
+      } else if (type === 'task') {
+        const floor = newProject.floors[floorIndex];
+        const floorId = floor._id; // Get the floor ID
+        const task = floor.tasks[taskIndex];
+        const taskId = task._id; // Get the task ID
+        const image = task.images[imageIndex];
+        const imageId = image._id; // Get the image ID
+  
+        // Send delete request to the server
+        await axios.delete(
+          `http://localhost:4000/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images/${imageId}`,
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+  
+        // Remove the image from the state
+// Remove the image from the state
+const updatedFloors = [...newProject.floors];
+if (type === 'floor') {
+  updatedFloors[floorIndex].images = updatedFloors[floorIndex].images.filter(
+    (_, idx) => idx !== imageIndex
+  );
+} else if (type === 'task') {
+  updatedFloors[floorIndex].tasks[taskIndex].images = updatedFloors[floorIndex].tasks[taskIndex].images.filter(
+    (_, idx) => idx !== imageIndex
+  );
+}
+setNewProject({ ...newProject, floors: updatedFloors });
+
+
+      }
+  
+      showAlert('Success', 'Image deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      showAlert('Error', 'Failed to delete image. Please try again.', 'error');
+    } finally {
+      setShowImageDeleteModal(false);
+      setImageToDelete(null);
+    }
+  };
+  
+
+  const handleCancelDeleteImage = () => {
+    setShowImageDeleteModal(false);
+    setImageToDelete(null);
+  };
+
 
   // Handle editing a project
   const handleEditProject = (project) => {
-setIsEditing(true);
-setEditProjectId(project._id);
-
-const floorsWithProgress = project.floors.map((floor) => ({
-  ...floor,
-  progress: floor.progress || 0,
-  tasks: floor.tasks.map((task) => ({
-    ...task,
-    progress: task.progress || 0,
-  })),
-}));
-
-// Check if project.template is a valid ObjectId
-const isValidTemplateId = /^[0-9a-fA-F]{24}$/.test(project.template);
-
-setNewProject({
-  ...project,
-  floors: floorsWithProgress,
-  location: project.location || "",
-  totalArea: project.totalArea || 0,
-  avgFloorHeight: project.avgFloorHeight || 0,
-  template: isValidTemplateId ? project.template : "", 
-});
-
-setIsModalOpen(true);
-};
+    setSelectedProject(project);
+    setIsEditing(true);
+    setEditProjectId(project._id);
+  
+    const floorsWithProgress = project.floors.map((floor) => ({
+      ...floor,
+      progress: floor.progress || 0,
+      images: (floor.images || []).filter(Boolean), // Filter out nulls
+      tasks: floor.tasks.map((task) => ({
+        ...task,
+        progress: task.progress || 0,
+        images: (task.images || []).filter(Boolean), // Filter out nulls
+      })),
+    }));
+    
+  
+    // Check if project.template is a valid ObjectId
+    const isValidTemplateId = /^[0-9a-fA-F]{24}$/.test(project.template);
+  
+    setNewProject({
+      ...project,
+      floors: floorsWithProgress,
+      location: project.location || "",
+      totalArea: project.totalArea || 0,
+      avgFloorHeight: project.avgFloorHeight || 0,
+      template: isValidTemplateId ? project.template : "",
+    });
+  
+    setIsModalOpen(true);
+  };
+  
+  
 
   // Handle updating project status
   const handleUpdateStatus = async (projectId, newStatus) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/status`,
+        `http://localhost:4000/api/project/${projectId}/status`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -682,6 +948,7 @@ setIsModalOpen(true);
     });
     setNewProject({ ...newProject, floors: updatedFloors });
   };
+  
 
   const handleTaskChange = (floorIndex, taskIndex, key, value) => {
     const updatedTasks = newProject.floors[floorIndex].tasks.map((task, index) => {
@@ -702,25 +969,39 @@ setIsModalOpen(true);
   const addTaskToFloor = (floorIndex) => {
     const updatedFloors = newProject.floors.map((floor, i) =>
       i === floorIndex
-        ? { ...floor, tasks: [...floor.tasks, { name: "", progress: 0, isManual: false }] }
+        ? {
+            ...floor,
+            tasks: [
+              ...floor.tasks,
+              { name: "", progress: 0, isManual: false, images: [] }, // Initialize images
+            ],
+          }
         : floor
     );
     setNewProject({ ...newProject, floors: updatedFloors });
   };
+  
 
   const addFloor = () => {
     if (newProject.floors.length >= 5) {
-      showAlert("Error","Cannot add more than 5 floors.", "error");
+      showAlert("Error", "Cannot add more than 5 floors.", "error");
       return;
     }
-
+  
     const newFloorIndex = newProject.floors.length + 1;
     const updatedFloors = [
       ...newProject.floors,
-      { name: `FLOOR ${newFloorIndex}`, progress: 0, tasks: [], isManual: false },
+      {
+        name: `FLOOR ${newFloorIndex}`,
+        progress: 0,
+        tasks: [],
+        isManual: false,
+        images: [], // Initialize images as an empty array
+      },
     ];
     setNewProject({ ...newProject, floors: updatedFloors });
   };
+  
 
   const deleteFloor = (index) => {
     const updatedFloors = newProject.floors.filter((_, i) => i !== index);
@@ -737,18 +1018,19 @@ setIsModalOpen(true);
 
   // View project details in the modal
   const handleViewProjectDetails = (project) => {
-    setSelectedProject(project); 
-    setShowDetailsModal(true);  
+    setSelectedProject(project);
+    setShowDetailsModal(true);
   };
+  
 
   // Generate BOM PDF
   const handleGenerateBOMPDF = (version = 'client') => {
     if (!selectedProject || !selectedProject.bom) {
-      showAlert("Error","BOM data is not available for this project.", "error");
+      showAlert("Error", "BOM data is not available for this project.", "error");
       return;
     }
   
-    const { bom, name } = selectedProject;
+    const { bom, name, user: ownerName } = selectedProject;
   
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -760,31 +1042,32 @@ setIsModalOpen(true);
     doc.addImage(foxconrights, 'JPEG', 20, 10, imgWidth, imgHeight);
     yPosition += imgHeight + 10; // Adjust y position below the logo
   
+    // Determine BOM Type (Project or Custom)
+    const bomType = bom.projectGenerated ? "Project-Generated BOM" : "Custom-Generated BOM";
+  
+    // Add Title
     doc.setFontSize(18);
-    doc.text("Generated BOM: Custom Generation", pageWidth / 2, yPosition, { align: 'center' });
+    doc.text(`${bomType}: ${name || "N/A"}`, pageWidth / 2, yPosition, { align: 'center' });
     doc.setFontSize(12);
     yPosition += 10;
   
     // Project details
-    doc.text(`Total Area: ${bom.projectDetails.totalArea || 'N/A'} sqm`, 10, yPosition);
+    doc.text(`Owner: ${ownerName || "N/A"}`, 10, yPosition);
     yPosition += 10;
-    doc.text(`Number of Floors: ${bom.projectDetails.numFloors || 'N/A'}`, 10, yPosition);
+    doc.text(`Total Area: ${bom.projectDetails.totalArea || "N/A"} sqm`, 10, yPosition);
     yPosition += 10;
-    doc.text(`Floor Height: ${bom.projectDetails.avgFloorHeight || 'N/A'} meters`, 10, yPosition);
+    doc.text(`Number of Floors: ${bom.projectDetails.numFloors || "N/A"}`, 10, yPosition);
     yPosition += 10;
-  
-    doc.text(`Project Owner: ${selectedProject.user || 'N/A'}`, 10, yPosition);
-    yPosition += 10;
-    doc.text(`Project Contractor: ${selectedProject.contractor || 'N/A'}`, 10, yPosition);
+    doc.text(`Floor Height: ${bom.projectDetails.avgFloorHeight || "N/A"} meters`, 10, yPosition);
     yPosition += 10;
   
+    // Handle client vs. contractor-specific details
     if (version === 'client') {
       const formattedGrandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(bom.markedUpCosts.totalProjectCost || 0)}`;
       doc.setFontSize(14);
       doc.text(`Grand Total: ${formattedGrandTotal}`, 10, yPosition);
       yPosition += 15;
   
-      // Add the summary table for high-level categories
       doc.autoTable({
         head: [['#', 'Category', 'Total Amount (PHP)']],
         body: bom.categories.map((category, index) => [
@@ -815,7 +1098,7 @@ setIsModalOpen(true);
       yPosition += 10;
       doc.text(`Original Labor Cost (without markup): ${originalLaborCost}`, 10, yPosition);
       yPosition += 10;
-      doc.text(`Location: ${bom.projectDetails.location.name || 'N/A'} (Markup: ${markup}%)`, 10, yPosition);
+      doc.text(`Location: ${bom.projectDetails.location.name || "N/A"} (Markup: ${markup}%)`, 10, yPosition);
       yPosition += 10;
       doc.text(`Marked-Up Project Cost: ${markedUpProjectCost}`, 10, yPosition);
       yPosition += 10;
@@ -829,12 +1112,12 @@ setIsModalOpen(true);
         yPosition += 5;
   
         doc.autoTable({
-          head: [['Item', 'Description', 'Quantity','Unit', 'Unit Cost (PHP)', 'Total Amount (PHP)']],
+          head: [['Item', 'Description', 'Quantity', 'Unit', 'Unit Cost (PHP)', 'Total Amount (PHP)']],
           body: category.materials.map((material, index) => [
             `${categoryIndex + 1}.${index + 1}`,
-            material.description || 'N/A',
-            material.quantity ? material.quantity.toFixed(2) : 'N/A',
-            material.unit || 'N/A',
+            material.description || "N/A",
+            material.quantity ? material.quantity.toFixed(2) : "N/A",
+            material.unit || "N/A",
             `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.cost || 0)}`,
             `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(material.totalAmount || 0)}`
           ]),
@@ -845,7 +1128,6 @@ setIsModalOpen(true);
   
         yPosition = doc.lastAutoTable.finalY + 5;
   
-        // Add total for each category
         const categoryTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
           category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
         )}`;
@@ -854,9 +1136,32 @@ setIsModalOpen(true);
       });
     }
   
-    // Save the PDF with the selected version and project name
-    doc.save(`BOM_${name}_${version}.pdf`);
+    // Save the PDF
+    doc.save(`BOM_${name}_${bomType}.pdf`);
   };
+  
+  
+
+  const saveImageRemarkToServer = async (floorIndex, imageIndex, imageId, newRemark) => {
+    try {
+      const projectId = newProject._id;
+      const floorId = newProject.floors[floorIndex]._id;
+  
+      await axios.patch(
+        `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
+        { remark: newRemark },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      showAlert("Success", "Image remark updated successfully!", "success");
+    } catch (error) {
+      console.error("Error updating image remark:", error);
+      showAlert("Error", "Failed to update image remark. Please try again.", "error");
+    }
+  };
+  
 
   // Handle changes and validation for roomCount
   const handleRoomCountChange = (e) => {
@@ -1103,26 +1408,26 @@ setIsModalOpen(true);
 
             {/* Project Owner */}
             <FormControl fullWidth margin="dense">
-              <InputLabel>Select Project Owner (User)</InputLabel>
-              <Select
-                value={newProject.user}
-                onChange={(e) => setNewProject({ ...newProject, user: e.target.value })}
-                onOpen={handleDropdownClick}
-                label="Select Project Owner (User)"
-              >
-                {users.length > 0 ? (
-                  users.map((userOption) => (
-                    <MenuItem key={userOption._id} value={userOption.Username}>
-                      {userOption.Username}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem value="" disabled>
-                    No Users Available
-                  </MenuItem>
-                )}
-              </Select>
-            </FormControl>
+  <InputLabel>Select Project Owner (User)</InputLabel>
+  <Select
+    value={newProject.user}
+    onChange={(e) => setNewProject({ ...newProject, user: e.target.value })}
+    label="Select Project Owner (User)"
+  >
+    {users.length > 0 ? (
+      users.map((userOption) => (
+        <MenuItem key={userOption._id} value={userOption.Username}>
+          {userOption.Username}
+        </MenuItem>
+      ))
+    ) : (
+      <MenuItem value="" disabled>
+        No Users Available
+      </MenuItem>
+    )}
+  </Select>
+</FormControl>
+
 
             {/* Template */}
             <FormControl fullWidth margin="dense">
@@ -1282,90 +1587,258 @@ setIsModalOpen(true);
             </Box>
 
             {/* Floors and Tasks */}
-            {newProject.floors.map((floor, index) => (
-              <Accordion key={index}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>{floor.name}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <TextField
-                    fullWidth
-                    margin="dense"
-                    label="Progress"
-                    type="number"
-                    value={floor.progress}
-                    onChange={(e) => handleFloorChange(index, "progress", parseInt(e.target.value, 10))}
-                    InputProps={{
-                      inputProps: { min: 0 },
-                    }}
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={floor.isManual}
-                        onChange={(e) => handleFloorChange(index, "isManual", e.target.checked)}
-                      />
-                    }
-                    label="Manual Progress"
-                  />
-                  {/* Tasks */}
-                  {floor.tasks.map((task, taskIndex) => (
-                    <Box key={taskIndex} mt={2} mb={2} p={2} border={1} borderRadius={1}>
-                      <TextField
-                        fullWidth
-                        margin="dense"
-                        label="Task Name"
-                        value={task.name}
-                        onChange={(e) => handleTaskChange(index, taskIndex, "name", e.target.value)}
-                      />
-                      <TextField
-                        fullWidth
-                        margin="dense"
-                        label="Task Progress"
-                        type="number"
-                        value={task.progress}
-                        onChange={(e) => handleTaskChange(index, taskIndex, "progress", parseInt(e.target.value, 10))}
-                        InputProps={{
-                          inputProps: { min: 0 },
-                        }}
-                      />
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={task.isManual}
-                            onChange={(e) => handleTaskChange(index, taskIndex, "isManual", e.target.checked)}
-                          />
-                        }
-                        label="Manual Progress"
-                      />
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => deleteTask(index, taskIndex)}
-                        sx={{ mt: 1 }}
-                      >
-                        Delete Task
-                      </Button>
-                    </Box>
-                  ))}
-                  {isEditing && (
-                    <>
-                      <Button variant="contained" onClick={() => addTaskToFloor(index)} sx={{ mt: 1 }}>
-                        Add Task
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => deleteFloor(index)}
-                        sx={{ mt: 1, ml: 2 }}
-                      >
-                        Delete Floor
-                      </Button>
-                    </>
-                  )}
-                </AccordionDetails>
-              </Accordion>
-            ))}
+{newProject.floors.map((floor, floorIndex) => (
+  <Accordion key={floorIndex}>
+    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <Typography>{floor.name}</Typography>
+    </AccordionSummary>
+    <AccordionDetails>
+      {/* Floor Progress */}
+      <TextField
+        fullWidth
+        margin="dense"
+        label="Progress"
+        type="number"
+        value={floor.progress}
+        onChange={(e) =>
+          handleFloorChange(floorIndex, "progress", parseInt(e.target.value, 10))
+        }
+      />
+
+<Box mt={2} mb={2}>
+  <Typography variant="subtitle2">Upload Floor Image & Remark</Typography>
+  <TextField
+    fullWidth
+    margin="dense"
+    label="Remark"
+    value={floor.remark || ""}
+    onChange={(e) => handleFloorChange(floorIndex, "remark", e.target.value)}
+  />
+  <Button variant="contained" component="label" sx={{ mt: 1 }}>
+    Upload Floor Image
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      multiple
+      onChange={(e) => handleImageUpload(e, floorIndex)}
+    />
+  </Button>
+
+  <Box mt={2} mb={2}>
+  <Typography variant="subtitle2">Existing Floor Images</Typography>
+  <Box display="flex" flexWrap="wrap" gap={2}>
+    {(floor.images || []).filter(Boolean).map((img, imageIndex) => (
+      <Box key={imageIndex} position="relative" display="flex" flexDirection="column" alignItems="center">
+        {/* Image Display */}
+        <img
+          src={img.path}
+          alt={`Floor Image ${imageIndex + 1}`}
+          style={{
+            width: "150px",
+            height: "150px",
+            objectFit: "cover",
+            borderRadius: "8px",
+          }}
+        />
+
+        {/* Remark Field */}
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Remark"
+          value={img.remark || ""} // Display the current remark
+          onChange={(e) =>
+            handleUpdateImageRemark(floorIndex, imageIndex, e.target.value) // Handle remark changes
+          }
+          sx={{ mt: 1 }}
+        />
+
+        {/* Delete Button */}
+        <IconButton
+          size="small"
+          onClick={() => handleDeleteExistingImage(floorIndex, imageIndex)}
+          style={{
+            position: "absolute",
+            top: 5,
+            right: 5,
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    ))}
+  </Box>
+</Box>
+
+
+
+
+
+
+</Box>
+
+
+      {/* Tasks */}
+      {floor.tasks.map((task, taskIndex) => (
+        <Box key={taskIndex} mt={2} mb={2} p={2} border={1} borderRadius={1}>
+          {/* Task Name */}
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Task Name"
+            value={task.name}
+            onChange={(e) => handleTaskChange(floorIndex, taskIndex, "name", e.target.value)}
+          />
+
+          {/* Task Progress */}
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Task Progress"
+            type="number"
+            value={task.progress}
+            onChange={(e) =>
+              handleTaskChange(floorIndex, taskIndex, "progress", parseInt(e.target.value, 10))
+            }
+          />
+      
+          {/* Task Image and Remark */}
+          <Box mt={2} mb={2}>
+  <Typography variant="subtitle2">Upload Task Image & Remark</Typography>
+  <TextField
+    fullWidth
+    margin="dense"
+    label="Remark"
+    value={task.remark || ""}
+    onChange={(e) =>
+      handleTaskChange(floorIndex, taskIndex, "remark", e.target.value)
+    }
+  />
+             <Button variant="contained" component="label" sx={{ mt: 1 }}>
+    Upload Task Image
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      multiple
+      onChange={(e) => handleImageUpload(e, floorIndex, taskIndex)}
+    />
+  </Button>
+          </Box>
+
+
+          <Box mt={2} mb={2}>
+  <Typography variant="subtitle2">Existing Tasks Images</Typography>
+  <Box display="flex" flexWrap="wrap" gap={2}>
+    {(task.images || []).filter(Boolean).map((img, imageIndex) => (
+      <Box key={imageIndex} position="relative" display="flex" flexDirection="column" alignItems="center">
+        {/* Image Display */}
+        <img
+          src={img.path}
+          alt={`Floor Image ${imageIndex + 1}`}
+          style={{
+            width: "150px",
+            height: "150px",
+            objectFit: "cover",
+            borderRadius: "8px",
+          }}
+        />
+
+        {/* Remark Field */}
+        <TextField
+          fullWidth
+          margin="dense"
+          label="Remark"
+          value={img.remark || ""} // Display the current remark
+          onChange={(e) =>
+            handleUpdateImageRemark(floorIndex, imageIndex, e.target.value) // Handle remark changes
+          }
+          sx={{ mt: 1 }}
+        />
+
+        {/* Delete Button */}
+        <IconButton
+          size="small"
+          onClick={() => handleDeleteExistingTaskImage(floorIndex, taskIndex, imageIndex)}
+          style={{
+            position: "absolute",
+            top: 5,
+            right: 5,
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    ))}
+  </Box>
+</Box>
+        
+          {/* Task Images */}
+{localImages[floorIndex]?.tasks[taskIndex]?.images?.map((img, imageIndex) => (
+  <Box key={imageIndex} mt={2} position="relative" display="inline-block">
+    <img
+      src={img.preview}
+      alt="Task Preview"
+      style={{
+        width: "150px",
+        height: "150px",
+        objectFit: "cover",
+        borderRadius: "8px",
+      }}
+    />
+    <IconButton
+      size="small"
+      onClick={() => handleRemoveImage(floorIndex, imageIndex, taskIndex)}
+      style={{
+        position: "absolute",
+        top: 5,
+        right: 5,
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+      }}
+    >
+      <CloseIcon fontSize="small" />
+    </IconButton>
+  </Box>
+))}
+
+
+{isEditing && (
+      <Button
+        variant="outlined"
+        color="secondary"
+        onClick={() => deleteTask(floorIndex, taskIndex)}
+        sx={{ mt: 1 }}
+      >
+        Delete Task
+      </Button>
+    )}
+        </Box>
+      ))}
+      {/* Add Task and Delete Floor Buttons */}
+{isEditing && (
+  <>
+    <Button variant="contained" onClick={() => addTaskToFloor(floorIndex)} sx={{ mt: 1 }}>
+      Add Task
+    </Button>
+    <Button
+      variant="outlined"
+      color="secondary"
+      onClick={() => deleteFloor(floorIndex)}
+      sx={{ mt: 1, ml: 2 }}
+    >
+      Delete Floor
+    </Button>
+  </>
+)}
+
+    </AccordionDetails>
+  </Accordion>
+))}
+
+
             {isEditing && (
               <Button variant="contained" onClick={addFloor} sx={{ mt: 2 }}>
                 Add Floor
@@ -1545,6 +2018,25 @@ setIsModalOpen(true);
             </DialogActions>
           </Dialog>
         )}
+
+        {/* Confirm Delete Image Dialog */}
+<Dialog
+  open={showImageDeleteModal}
+  onClose={handleCancelDeleteImage}
+  aria-labelledby="confirm-delete-image-title"
+>
+  <DialogTitle id="confirm-delete-image-title">Confirm Delete</DialogTitle>
+  <DialogContent>
+    <Typography>Are you sure you want to delete this image?</Typography>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCancelDeleteImage}>Cancel</Button>
+    <Button onClick={handleConfirmDeleteImage} color="secondary" variant="contained">
+      Delete
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
         {/* Confirm Delete Dialog */}
         <Dialog

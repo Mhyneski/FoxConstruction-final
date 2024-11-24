@@ -18,7 +18,9 @@ import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './components/ProtectedRoute';
 import AboutUs from './pages/AboutUs';
 import Templates from './pages/Templates';
+import HouseSliders from './pages/HouseSliders'
 import { CssBaseline } from '@mui/material';
+import ProjectDetails from './components/ProjectDetails';
 
 function App() {
   const location = useLocation();
@@ -36,6 +38,7 @@ function App() {
       "/Templates": "Templates",
       "/ProjectList": "Project List",
       "/Generator": "Generator",
+      "/HouseSliders": "House Sliders",
       "/aboutus": "About Us",
       "/collection": "Collection",
       "/services": "Services",
@@ -116,6 +119,19 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/HouseSliders"
+          element={
+            <ProtectedRoute allowedRoles={['contractor']}>
+              <HouseSliders />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/projects/:id" element={
+            <ProtectedRoute allowedRoles={['contractor']}>
+              <ProjectDetails />
+            </ProtectedRoute>
+          } />
         <Route
         path="/Templates"
         element={

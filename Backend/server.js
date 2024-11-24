@@ -7,6 +7,7 @@ const templatesRoutes = require('./routes/templatesRoute');
 const bomRoutes = require('./routes/bomRoute');
 const userRoutes = require('./routes/usersRoute');
 const projectRoutes = require('./routes/projectRoute');
+const preprojectRoutes = require('./routes/preprojectRoute');
 const { authMiddleware, authorizeRoles } = require('./middlewares/authMiddleware');
 const cors = require('cors');
 const cron = require('node-cron'); // Import cron
@@ -25,7 +26,7 @@ app.use((req, res, next) => {
 
 // Enable CORS
 app.use(cors({
-  origin: 'https://foxconstruction.netlify.app', // Your frontend URL
+  origin: 'http://localhost:5173', // Your frontend URL
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
@@ -43,6 +44,7 @@ app.use('/api/locations', authMiddleware, authorizeRoles(['contractor', 'admin',
 app.use('/api/templates', authMiddleware, authorizeRoles(['contractor', 'admin']), templatesRoutes);
 app.use('/api/bom', authMiddleware, authorizeRoles(['contractor', 'admin']), bomRoutes);
 app.use('/api/project', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), projectRoutes);
+app.use('/api/preprojects', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), preprojectRoutes);
 
 // Function to calculate and update project progress
 const updateDailyProgress = async () => {

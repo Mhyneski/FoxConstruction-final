@@ -18,6 +18,9 @@ const {
   toggleProgressMode 
 } = require('../controllers/projectController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/upload'); // Your Multer configuration for Cloudinary
+const { uploadTaskImage, uploadFloorImage, deleteTaskImage,
+  deleteFloorImage, } = require('../controllers/imagesController');
 
 const router = express.Router();
 
@@ -37,6 +40,24 @@ router.patch('/:id/status', updateProjectStatus); // Update project status
 // Floor and task-related routes
 router.patch('/:projectId/floors/:floorId', updateFloorProgress); // Update floor progress
 router.post('/:projectId/floors/:floorId/reset', resetFloorProgressToAutomatic); // Reset floor progress to automatic
+
+// Upload image for a specific task
+router.post('/:projectId/floors/:floorId/tasks/:taskId/images', upload.single('image'), uploadTaskImage);
+
+// Upload image for a specific floor
+router.post('/:projectId/floors/:floorId/images', upload.single('image'), uploadFloorImage);
+
+// Route to delete a task image
+router.delete(
+  '/:projectId/floors/:floorId/tasks/:taskId/images/:imageId',
+  deleteTaskImage
+);
+
+// Route to delete a floor image
+router.delete(
+  '/:projectId/floors/:floorId/images/:imageId',
+  deleteFloorImage
+);
 
 // BOM-related route
 router.post('/:id/boms', saveBOMToProject); // Save BOM to project

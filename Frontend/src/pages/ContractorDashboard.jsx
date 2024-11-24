@@ -17,7 +17,7 @@ const ContractorDashboard = () => {
   useEffect(() => {
     const checkDefaultPassword = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/user/is-default-password`, {
+        const response = await axios.get(`http://localhost:4000/api/user/is-default-password`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -41,7 +41,7 @@ const ContractorDashboard = () => {
   const handlePasswordChange = async (newPassword) => {
     setIsSubmitting(true);
     try {
-      await axios.patch(`https://foxconstruction-final.onrender.com/api/user/change-password`, { newPassword }, {
+      await axios.patch(`http://localhost:4000/api/user/change-password`, { newPassword }, {
         headers: {
           Authorization: `Bearer ${user.token}`
         }
@@ -88,6 +88,10 @@ const ContractorDashboard = () => {
             <Link to="/ProjectList" className={styles.dashboardCard}>
               <img src={Picture} alt="Project List" className={styles.dashboardImage} />
               <div className={styles.cardText}>PROJECT LISTS</div>
+            </Link>
+            <Link to="/HouseSliders" className={styles.dashboardCard}>
+              <img src={Picture} alt="House Sliders" className={styles.dashboardImage} />
+              <div className={styles.cardText}>House Sliders</div>
             </Link>
             <Link to="/Templates" className={styles.dashboardCard}>
               <img src={Picture} alt="Templates" className={styles.dashboardImage} />

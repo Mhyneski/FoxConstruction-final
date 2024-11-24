@@ -1,20 +1,14 @@
-// src/components/ProjectProgress.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import {
-  Typography,
-  Box,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  CircularProgress
-} from '@mui/material';
+import { Typography, Box, LinearProgress, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../hooks/useAuthContext';
 import Navbar from './Navbar';
 import styles from '../css/ProjectProgress.module.css';
+import { jsPDF } from 'jspdf'; // Import jsPDF for PDF generation
+import 'jspdf-autotable'; // Import autoTable plugin for jsPDF
+import foxconrights from '../assets/foxconrights.jpg'; // Assuming you want to include a logo in the BOM PDF
 
 const ProjectProgress = () => {
   const { projectId } = useParams();
@@ -26,7 +20,7 @@ const ProjectProgress = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/project/${projectId}`, {
+        const response = await axios.get(`http://localhost:4000/api/project/${projectId}`, {
           headers: {
             Authorization: `Bearer ${user?.token}`,
           },
@@ -48,6 +42,66 @@ const ProjectProgress = () => {
 
   const handleFloorClick = (floorId) => {
     setSelectedFloor(selectedFloor === floorId ? null : floorId);
+  };
+
+  // Function to generate and download the BOM PDF
+  const handleDownloadBOM = () => {
+    if (!project || !project.bom) {
+      console.error('No BOM data available.');
+      return;
+    }
+
+    const { bom, name } = project;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let yPosition = 20; // Starting y position for details
+
+    // Add the logo at the top
+    const imgWidth = pageWidth - 40; // Adjust width to make it centered and smaller than page width
+    const imgHeight = imgWidth * 0.2; // Maintain aspect ratio
+    doc.addImage(foxconrights, 'JPEG', 20, 10, imgWidth, imgHeight);
+    yPosition += imgHeight + 10; // Adjust y position below the logo
+
+    // Add Title
+    doc.setFontSize(18);
+    doc.text(`Client BOM: ${name || 'N/A'}`, pageWidth / 2, yPosition, { align: 'center' });
+    doc.setFontSize(12);
+    yPosition += 10;
+
+    // Project details
+    doc.text(`Total Area: ${bom.projectDetails.totalArea || 'N/A'} sqm`, 10, yPosition);
+    yPosition += 10;
+    doc.text(`Number of Floors: ${bom.projectDetails.numFloors || 'N/A'}`, 10, yPosition);
+    yPosition += 10;
+    doc.text(`Floor Height: ${bom.projectDetails.avgFloorHeight || 'N/A'} meters`, 10, yPosition);
+    yPosition += 10;
+
+    // BOM Grand Total
+    const grandTotal = `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+      bom.markedUpCosts.totalProjectCost || 0
+    )}`;
+    doc.setFontSize(14);
+    doc.text(`Grand Total: ${grandTotal}`, 10, yPosition);
+    yPosition += 15;
+
+    // BOM Categories
+    doc.autoTable({
+      head: [['#', 'Category', 'Total Amount (PHP)']],
+      body: bom.categories.map((category, index) => [
+        index + 1,
+        category.category.toUpperCase(),
+        `PHP ${new Intl.NumberFormat('en-PH', { style: 'decimal', minimumFractionDigits: 2 }).format(
+          category.materials.reduce((sum, material) => sum + material.totalAmount, 0)
+        )}`,
+      ]),
+      startY: yPosition,
+      headStyles: { fillColor: [41, 128, 185] },
+      bodyStyles: { textColor: [44, 62, 80] },
+    });
+
+    // Save the PDF
+    doc.save(`Client_BOM_${name}.pdf`);
   };
 
   if (isLoading) {
@@ -89,6 +143,15 @@ const ProjectProgress = () => {
           STATUS: {project.status ? project.status.toUpperCase() : 'UNKNOWN'}
         </Typography>
 
+        {/* Download BOM Button */}
+        {project.bom && (
+          <Box mt={2}>
+            <Button variant="contained" color="secondary" onClick={handleDownloadBOM}>
+              Download you're BOM
+            </Button>
+          </Box>
+        )}
+
         <Box mt={8}>
           {project.floors &&
             project.floors.map((floor) => (
@@ -120,29 +183,77 @@ const ProjectProgress = () => {
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Typography variant="h6">Tasks</Typography>
-                  {floor.tasks &&
-                    floor.tasks.map((task) => (
-                      <Box key={task._id} mb={2}>
-                        <Typography variant="body1">{task.name}</Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={task.progress || 0}
-                          sx={{
-                            height: 10,
-                            borderRadius: 5,
-                            [`& .MuiLinearProgress-bar`]: {
-                              backgroundColor: '#a7b194',
-                            },
-                            backgroundColor: '#e0e0e0',
-                          }}
-                        />
-                        <Typography variant="body2" align="center">
-                          {task.progress?.toFixed(2)}%
-                        </Typography>
-                      </Box>
-                    ))}
-                </AccordionDetails>
+  <Typography variant="h6">Tasks</Typography>
+
+  {/* Display Floor Images */}
+  {floor.images && floor.images.length > 0 && (
+    <>
+      <Typography variant="subtitle1" gutterBottom>
+        Floor Images & Remarks
+      </Typography>
+      <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
+        {floor.images.map((image, index) => (
+          <Box key={index} textAlign="center">
+            <img
+              src={image.path}
+              alt={`Floor ${floor.name} Image ${index + 1}`}
+              style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
+            />
+            <Typography variant="body2" mt={1}>
+              {image.remark || 'No remark'}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </>
+  )}
+
+  {/* Display Tasks */}
+  {floor.tasks &&
+    floor.tasks.map((task) => (
+      <Box key={task._id} mb={2}>
+        <Typography variant="body1">{task.name}</Typography>
+        <LinearProgress
+          variant="determinate"
+          value={task.progress || 0}
+          sx={{
+            height: 10,
+            borderRadius: 5,
+            [`& .MuiLinearProgress-bar`]: {
+              backgroundColor: '#a7b194',
+            },
+            backgroundColor: '#e0e0e0',
+          }}
+        />
+        <Typography variant="body2" align="center">
+          {task.progress?.toFixed(2)}%
+        </Typography>
+
+        {/* Display Task Images */}
+        {task.images && task.images.length > 0 && (
+          <>
+            <Typography variant="subtitle1" mt={2}>
+              Task Images & Remarks
+            </Typography>
+            <Box display="flex" flexWrap="wrap" gap={2}>
+              {task.images.map((image, index) => (
+                <Box key={index} textAlign="center">
+                  <img
+                    src={image.path}
+                    alt={`Task ${task.name} Image ${index + 1}`}
+                    style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <Typography variant="body2" mt={1}>
+                    {image.remark || 'No remark'}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </>
+        )}
+      </Box>
+    ))}
+</AccordionDetails>
               </Accordion>
             ))}
         </Box>

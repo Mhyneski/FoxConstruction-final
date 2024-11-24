@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const imageSchema = new mongoose.Schema({
+  path: String,
+  public_id: String,
+  remark: String,
+}, { _id: true })
+
 // Task Schema with isManual flag and complexityWeight
 const taskSchema = new Schema({
   name: {
@@ -20,7 +26,8 @@ const taskSchema = new Schema({
   complexityWeight: {
     type: Number,
     default: 1 // Set a default weight of 1 if not specified
-  }
+  },
+  images: [imageSchema]
 }, { timestamps: true });
 
 // Floor Schema with isManual flag, tasks, and complexityWeight
@@ -42,7 +49,7 @@ const floorSchema = new Schema({
   complexityWeight: {
     type: Number,
     default: 1 // Set a default weight of 1 if not specified
-  },
+  }, images: [imageSchema],
   tasks: [taskSchema]
 }, { timestamps: true });
 
@@ -278,6 +285,15 @@ projectSchema.pre('save', function(next) {
   }
   next();
 });
+
+projectSchema.pre('save', function(next) {
+  // Only apply progress updates if relevant fields have changed
+  if (this.isModified('floors') || this.isModified('tasks') || this.isModified('status')) {
+    this.applyHybridProgress();
+  }
+  next();
+});
+
 
 
 
