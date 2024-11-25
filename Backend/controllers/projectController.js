@@ -525,26 +525,44 @@ const updateProject = async (req, res) => {
 
 const toggleProgressMode = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // Project ID
     const { isAutomatic } = req.body;
 
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
     project.isAutomaticProgress = isAutomatic;
+
     if (isAutomatic) {
-      project.referenceDate = new Date(); // Reset referenceDate when switching to automatic
+      // Reset reference date when switching to automatic mode
+      project.referenceDate = new Date();
+
+      // Set all floors and tasks to automatic mode
+      project.floors.forEach(floor => {
+        floor.isManual = false;
+        floor.tasks.forEach(task => {
+          task.isManual = false;
+        });
+      });
+    } else {
+      // Set all floors and tasks to manual mode
+      project.floors.forEach(floor => {
+        floor.isManual = true;
+        floor.tasks.forEach(task => {
+          task.isManual = true;
+        });
+      });
     }
 
     await project.save();
 
-    // Return the updated project instead of just a message
     res.status(200).json({ success: true, project });
   } catch (error) {
-    console.error("Error toggling progress mode:", error);
+    console.error('Error toggling progress mode:', error);
     res.status(500).json({ error: 'Failed to toggle progress mode', details: error.message });
   }
 };
+
 
 
 

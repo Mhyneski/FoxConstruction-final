@@ -374,29 +374,26 @@ const [imageToDelete, setImageToDelete] = useState(null);
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
   
-      // Log the entire response.data to examine its structure
-      console.log("Response Data:", response.data);
+      const updatedProject = response.data.project;
   
-      // Attempt to access the project data, with more fallback and error handling
-      const updatedProject = response.data?.project || response.data;
+      // Update the projects state with the new project data
+      setProjects(prevProjects =>
+        prevProjects.map(project =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
   
-      if (updatedProject && updatedProject._id) {
-        // Update the projects list with the newly retrieved project
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            project._id === updatedProject._id ? updatedProject : project
-          )
-        );
-        showAlert("Success", `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`, "success");
-      } else {
-        console.error("Error: Updated project data is undefined or missing _id in the response:", response.data);
-        showAlert("Error", "Failed to retrieve updated project data.", "error");
-      }
+      showAlert(
+        'Success',
+        `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`,
+        'success'
+      );
     } catch (error) {
-      console.error("Error toggling progress mode:", error);
-      showAlert("Error", "Failed to toggle progress mode. Please try again.", "error");
+      console.error('Error toggling progress mode:', error);
+      showAlert('Error', 'Failed to toggle progress mode. Please try again.', 'error');
     }
   };
+  
   
   
   
@@ -1536,18 +1533,24 @@ setNewProject({ ...newProject, floors: updatedFloors });
             {/* Number of Floors */}
             {!isEditing && (
               <TextField
-                fullWidth
-                margin="dense"
-                label="Number of Floors"
-                type="number"
-                value={newProject.numFloors}
-                onChange={handleNumFloorsChange}
-                error={!!floorError}
-                helperText={floorError}
-                InputProps={{
-                  inputProps: { min: 0 },
-                }}
-              />
+              fullWidth
+              margin="dense"
+              label="Number of Floors"
+              type="number"
+              value={newProject.numFloors}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value > 0 && value <= 5) { // Validate range (1 to 5)
+                  setNewProject({ ...newProject, numFloors: value });
+                } else if (value <= 0) {
+                  setNewProject({ ...newProject, numFloors: 1 }); // Default to 1 if invalid
+                }
+              }}
+              InputProps={{
+                inputProps: { min: 1, max: 5 },
+              }}
+            />
+            
             )}
 
             {/* Project Timeline */}
@@ -1594,16 +1597,26 @@ setNewProject({ ...newProject, floors: updatedFloors });
     </AccordionSummary>
     <AccordionDetails>
       {/* Floor Progress */}
-      <TextField
-        fullWidth
-        margin="dense"
-        label="Progress"
-        type="number"
-        value={floor.progress}
-        onChange={(e) =>
-          handleFloorChange(floorIndex, "progress", parseInt(e.target.value, 10))
-        }
-      />
+      {/* Floor Progress */}
+<TextField
+  fullWidth
+  margin="dense"
+  label="Progress (%)"
+  type="number"
+  value={floor.progress}
+  onChange={(e) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0 && value <= 100) { // Ensure valid range 0-100
+      handleFloorChange(floorIndex, "progress", value);
+    } else if (value < 0) {
+      handleFloorChange(floorIndex, "progress", 0); // Set to 0 if input is negative
+    }
+  }}
+  InputProps={{
+    inputProps: { min: 0, max: 100 },
+  }}
+/>
+
 
 <Box mt={2} mb={2}>
   <Typography variant="subtitle2">Upload Floor Image & Remark</Typography>
@@ -1693,16 +1706,26 @@ setNewProject({ ...newProject, floors: updatedFloors });
           />
 
           {/* Task Progress */}
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Task Progress"
-            type="number"
-            value={task.progress}
-            onChange={(e) =>
-              handleTaskChange(floorIndex, taskIndex, "progress", parseInt(e.target.value, 10))
-            }
-          />
+          {/* Task Progress */}
+<TextField
+  fullWidth
+  margin="dense"
+  label="Task Progress (%)"
+  type="number"
+  value={task.progress}
+  onChange={(e) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0 && value <= 100) { // Ensure valid range 0-100
+      handleTaskChange(floorIndex, taskIndex, "progress", value);
+    } else if (value < 0) {
+      handleTaskChange(floorIndex, taskIndex, "progress", 0); // Set to 0 if input is negative
+    }
+  }}
+  InputProps={{
+    inputProps: { min: 0, max: 100 },
+  }}
+/>
+
       
           {/* Task Image and Remark */}
           <Box mt={2} mb={2}>

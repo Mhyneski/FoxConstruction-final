@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { Typography, Box, LinearProgress, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from '@mui/material';
+import {
+  Typography,
+  Box,
+  LinearProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  CircularProgress,
+  Button,
+  Dialog,
+  DialogContent,
+  IconButton,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAuthContext } from '../hooks/useAuthContext';
 import Navbar from './Navbar';
@@ -16,6 +29,7 @@ const ProjectProgress = () => {
   const [selectedFloor, setSelectedFloor] = useState(null);
   const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null)
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -42,6 +56,14 @@ const ProjectProgress = () => {
 
   const handleFloorClick = (floorId) => {
     setSelectedFloor(selectedFloor === floorId ? null : floorId);
+  };
+
+  const handleImageClick = (image) => {
+    setSelectedImage(image); // Open modal with clicked image
+  };
+
+  const handleCloseModal = () => {
+    setSelectedImage(null); // Close modal
   };
 
   // Function to generate and download the BOM PDF
@@ -147,7 +169,7 @@ const ProjectProgress = () => {
         {project.bom && (
           <Box mt={2}>
             <Button variant="contained" color="secondary" onClick={handleDownloadBOM}>
-              Download you're BOM
+              Download your BOM
             </Button>
           </Box>
         )}
@@ -185,78 +207,121 @@ const ProjectProgress = () => {
                 <AccordionDetails>
   <Typography variant="h6">Tasks</Typography>
 
-  {/* Display Floor Images */}
-  {floor.images && floor.images.length > 0 && (
-    <>
-      <Typography variant="subtitle1" gutterBottom>
-        Floor Images & Remarks
-      </Typography>
-      <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
-        {floor.images.map((image, index) => (
-          <Box key={index} textAlign="center">
-            <img
-              src={image.path}
-              alt={`Floor ${floor.name} Image ${index + 1}`}
-              style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
-            />
-            <Typography variant="body2" mt={1}>
-              {image.remark || 'No remark'}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </>
+   {/* Floor Images */}
+   {floor.images && floor.images.length > 0 && (
+                  <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
+                    {floor.images.map((image, index) => (
+                      <Box key={index} textAlign="center" onClick={() => handleImageClick(image)}>
+                        <img
+                          src={image.path}
+                          alt={`Floor ${floor.name} Image ${index + 1}`}
+                          style={{
+                            width: '150px',
+                            height: '150px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                          }}
+                        />
+                        <Typography variant="body2" mt={1}>
+                          {image.remark || 'No remark'}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
   )}
 
-  {/* Display Tasks */}
-  {floor.tasks &&
-    floor.tasks.map((task) => (
-      <Box key={task._id} mb={2}>
-        <Typography variant="body1">{task.name}</Typography>
-        <LinearProgress
-          variant="determinate"
-          value={task.progress || 0}
-          sx={{
-            height: 10,
-            borderRadius: 5,
-            [`& .MuiLinearProgress-bar`]: {
-              backgroundColor: '#a7b194',
-            },
-            backgroundColor: '#e0e0e0',
-          }}
-        />
-        <Typography variant="body2" align="center">
-          {task.progress?.toFixed(2)}%
+  {/* Task Images */}
+{floor.tasks &&
+  floor.tasks.map((task) => (
+    <Box key={task._id} mb={4}>
+      {/* Task Name and Progress Bar */}
+      <Box display="flex" alignItems="center" mb={1}>
+        <Typography variant="body1" sx={{ flex: 1 }}>
+          {task.name || 'Unnamed Task'}
         </Typography>
-
-        {/* Display Task Images */}
-        {task.images && task.images.length > 0 && (
-          <>
-            <Typography variant="subtitle1" mt={2}>
-              Task Images & Remarks
-            </Typography>
-            <Box display="flex" flexWrap="wrap" gap={2}>
-              {task.images.map((image, index) => (
-                <Box key={index} textAlign="center">
-                  <img
-                    src={image.path}
-                    alt={`Task ${task.name} Image ${index + 1}`}
-                    style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
-                  />
-                  <Typography variant="body2" mt={1}>
-                    {image.remark || 'No remark'}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </>
-        )}
+        <Typography variant="body2" sx={{ marginLeft: 2 }}>
+          {Math.round(task.progress || 0)}%
+        </Typography>
       </Box>
-    ))}
-</AccordionDetails>
-              </Accordion>
-            ))}
+      <LinearProgress
+        variant="determinate"
+        value={task.progress || 0}
+        sx={{
+          height: 10,
+          borderRadius: 5,
+          [`& .MuiLinearProgress-bar`]: {
+            backgroundColor: '#a7b194',
+          },
+          backgroundColor: '#e0e0e0',
+        }}
+      />
+
+      {/* Task Images */}
+      {task.images && task.images.length > 0 && (
+        <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+          {task.images.map((image, index) => (
+            <Box key={index} textAlign="center" onClick={() => handleImageClick(image)}>
+              <img
+                src={image.path}
+                alt={`Task ${task.name} Image ${index + 1}`}
+                style={{
+                  width: '150px',
+                  height: '150px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              />
+              <Typography variant="body2" mt={1}>
+                {image.remark || 'No remark'}
+              </Typography>
+            </Box>
+          ))}
         </Box>
+      )}
+    </Box>
+  ))}
+
+              </AccordionDetails>
+            </Accordion>
+          ))}
+      </Box>
+
+      {/* Modal for Full-View Image */}
+      <Dialog open={!!selectedImage} onClose={handleCloseModal} maxWidth="lg" fullWidth  PaperProps={{
+        style: {
+          backgroundColor: 'transparent', // Remove default white background
+          boxShadow: 'none', // Remove shadow
+        },
+      }}>
+        <DialogContent sx={{ position: 'relative' }}>
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              background: 'rgba(0, 0, 0, 0.5)',
+              color: '#fff',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          {selectedImage && (
+            <img
+              src={selectedImage.path}
+              alt={selectedImage.remark || 'Full view'}
+              style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+            />
+          )}
+          {selectedImage?.remark && (
+            <Typography variant="body1" align="center" mt={2}>
+              {selectedImage.remark}
+            </Typography>
+          )}
+        </DialogContent>
+      </Dialog>
 
         <Typography variant="body2" color="textSecondary" mt={4}>
           LAST UPDATE:{' '}

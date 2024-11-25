@@ -95,7 +95,7 @@ const AdminDashboard = () => {
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.cardText}>Account List</div>
+                <div className={styles.cardText}>ACCOUNT LIST</div>
               </div>
             </Link>
             <Link to="/Materials" className={styles.dashboardCard}>
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.cardText}>Edit Material Prices</div>
+                <div className={styles.cardText}>MATERIALS</div>
               </div>
             </Link>
             <Link to="/Location" className={styles.dashboardCard}>
@@ -115,7 +115,7 @@ const AdminDashboard = () => {
                 className={styles.dashboardImage}
               />
               <div className={styles.dashboardOverlay}>
-                <div className={styles.cardText}>Edit Location Markups</div>
+                <div className={styles.cardText}>LOCATIONS</div>
               </div>
             </Link>
           </>

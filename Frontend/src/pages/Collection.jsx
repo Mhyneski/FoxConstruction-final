@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  ButtonBase,
-  useTheme,
-} from "@mui/material";
+import { Box, Typography, ButtonBase } from "@mui/material";
 import Image1 from "../assets/IMAGE1.jpg";
 import Image2 from "../assets/IMAGE2.jpg";
 import Image3 from "../assets/IMAGE3.jpg";
@@ -14,7 +9,6 @@ import Image6 from "../assets/IMAGE6.jpg";
 import Header from "../components/Header";
 
 const Collection = () => {
-  const theme = useTheme(); // To use consistent colors
   const collections = [
     { title: "Residential 1", image: Image1 },
     { title: "Residential 2", image: Image2 },
@@ -49,7 +43,7 @@ const Collection = () => {
           textAlign: "center",
           fontWeight: "bold",
           color: "#3f5930",
-          mt: 4,
+          mt: 1,
         }}
       >
         Our Collections
@@ -59,18 +53,20 @@ const Collection = () => {
       <Box
         sx={{
           position: "relative",
-          width: "80%",
+          width: "90%",
           maxWidth: "1200px",
           mx: "auto",
-          mt: 4,
+          mt: 3,
           overflow: "hidden",
+          borderRadius: "10px",
+          boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.1)",
         }}
       >
         {/* Carousel Inner */}
         <Box
           sx={{
             display: "flex",
-            transition: "transform 0.5s ease-in-out",
+            transition: "transform 0.8s ease-in-out",
             transform: `translateX(-${currentIndex * 100}%)`,
           }}
         >
@@ -88,10 +84,8 @@ const Collection = () => {
                 alt={collection.title}
                 sx={{
                   width: "100%",
-                  height: { xs: "250px", md: "500px" },
+                  height: { xs: "300px", md: "600px" },
                   objectFit: "cover",
-                  borderRadius: "8px",
-                  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
                 }}
               />
               {/* Overlay with Title */}
@@ -101,13 +95,15 @@ const Collection = () => {
                   bottom: 0,
                   left: 0,
                   width: "100%",
-                  bgcolor: "rgba(0, 0, 0, 0.6)",
+                  bgcolor: "rgba(0, 0, 0, 0.5)",
                   color: "white",
                   textAlign: "center",
-                  py: 1,
+                  py: 2,
+                  fontSize: { xs: "1rem", md: "1.5rem" },
+                  fontWeight: "bold",
                 }}
               >
-                <Typography variant="h6">{collection.title}</Typography>
+                {collection.title}
               </Box>
             </Box>
           ))}
@@ -127,12 +123,15 @@ const Collection = () => {
             key={index}
             onClick={() => handleDotClick(index)}
             sx={{
-              width: "12px",
-              height: "12px",
+              width: "14px",
+              height: "14px",
               borderRadius: "50%",
-              bgcolor: currentIndex === index ? "#3f5930" : "#a7b194",
+              bgcolor: currentIndex === index ? "#3f5930" : "#ccc",
               m: 0.5,
               transition: "background-color 0.3s ease",
+              "&:hover": {
+                bgcolor: "#3f5930",
+              },
             }}
           />
         ))}

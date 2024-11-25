@@ -1,96 +1,55 @@
-.collectionContainer {
-  width: 100vw;
-  padding: 0;
-  background-color: white;
-}
-
-.header {
-  font-size: 26px;
-  color: white;
-  text-align: left;
-  padding: 20px 30px;
-  background-color: #6b775c;
-  margin: 0;
-}
-
-.carousel {
+.carouselContainer {
+  width: 100%;
+  height: 600px;
   position: relative;
   overflow: hidden;
-  width: 100vw;
-  height: 60vh; 
-  max-height: 600px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 10px;
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .carouselInner {
   display: flex;
-  transition: transform 0.5s ease-in-out;
+  transition: transform 0.8s ease-in-out;
+}
+
+.carouselImage {
   width: 100%;
+  height: 600px;
+  object-fit: cover;
 }
 
-.collectionItem {
-  min-width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-
-.collectionImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; 
-}
-
-.overlay {
+.carouselOverlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.collectionItem:hover .overlay {
-  opacity: 1;
-}
-
-.text {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.5);
   color: white;
-  font-size: 24px;
+  text-align: center;
+  padding: 10px;
+  font-size: 1.5rem;
   font-weight: bold;
 }
 
-/* Dots (Indicators) */
 .dots {
-  text-align: center;
-  padding: 10px;
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }
 
 .dot {
-  height: 12px;
-  width: 12px;
-  margin: 0 5px;
-  background-color: #bbb;
+  width: 14px;
+  height: 14px;
+  background-color: #ccc;
   border-radius: 50%;
-  display: inline-block;
+  margin: 0 5px;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
-.active {
-  background-color: #6b775c;
+.dot:hover {
+  background-color: #3f5930;
 }
 
-
-@media (min-width: 1200px) {
-  .carousel {
-    height: 100vh; 
-  }
+.dot.active {
+  background-color: #3f5930;
 }

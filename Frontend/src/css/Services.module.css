@@ -1,37 +1,69 @@
 .servicesContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding:30px; 
-    padding-top: 0px; 
-    background-color: white;
-    min-height: 70vh; 
-  }
-  
-  .title {
-    font-size: 48px;
-    font-weight: 400;
-    letter-spacing: 2px;
-    margin-bottom: 10px; 
-    color: #333;
-  }
-  
-  .subtitle {
-    font-size: 28px;
-    font-family: 'Cursive', sans-serif;
-    font-weight: 400;
-    margin-bottom: 10px; 
-    color: #333;
-  }
-  
-  .description {
-    font-size: 18px;
-    font-weight: 300;
-    letter-spacing: 1px;
-    line-height: 1.5;
-    color: #333;
-    max-width: 800px;
-  }
-  
+  padding: 2rem;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: #3f5930;
+  font-weight: bold;
+  margin-bottom: 0;
+  margin-top: 3;
+}
+
+.subtitle {
+  margin-top: 0;
+  padding: 0;
+  font-size: 1.3rem;
+  color: #3f5930;
+  margin-bottom: 2rem;
+}
+
+.description {
+  font-size: 1rem;
+  color: #3f5930;
+  margin-bottom: 2rem;
+}
+
+/* Row Container */
+.gridRow {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Service Card */
+.serviceCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.serviceCard:hover {
+  transform: scale(1.05); /* Slightly enlarges the card */
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.2); /* Adds a shadow effect */
+}
+
+/* Service Image */
+.serviceImage {
+  width: 200px; /* Increased from 150px */
+  height: 200px; /* Increased from 150px */
+  object-fit: cover;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.serviceCard:hover .serviceImage {
+  transform: scale(1.1); /* Slightly enlarges the image on hover */
+}
+/* Service Name */
+.serviceName {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #3f5930;
+}
