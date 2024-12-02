@@ -190,16 +190,16 @@ const [imageToDelete, setImageToDelete] = useState(null);
         setIsLoading(true);
   
         const [projectsResponse, locationsResponse, templatesResponse, usersResponse] = await Promise.all([
-          axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
+          axios.get(`http://localhost:4000/api/project/contractor`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
+          axios.get(`http://localhost:4000/api/locations`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
+          axios.get(`http://localhost:4000/api/templates`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
+          axios.get(`http://localhost:4000/api/user/get`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
         ]);
@@ -232,7 +232,18 @@ const [imageToDelete, setImageToDelete] = useState(null);
   }, [user]);
   
   
-
+  const handleUpdateTaskImageRemark = (floorIndex, taskIndex, imageIndex, newRemark) => {
+    setNewProject((prevProject) => {
+      const updatedFloors = [...prevProject.floors];
+      const updatedTasks = [...updatedFloors[floorIndex].tasks];
+      const updatedTaskImages = [...updatedTasks[taskIndex].images];
+      updatedTaskImages[imageIndex].remark = newRemark; // Update the remark
+      updatedTasks[taskIndex].images = updatedTaskImages; // Update images for the task
+      updatedFloors[floorIndex].tasks = updatedTasks; // Update tasks for the floor
+      return { ...prevProject, floors: updatedFloors };
+    });
+  };
+  
   const handleFloorHeightChange = (e) => {
     const inputValue = e.target.value;
   
@@ -272,40 +283,46 @@ const [imageToDelete, setImageToDelete] = useState(null);
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
+        const newImage = {
+          preview: reader.result,
+          file,
+          isLocal: true,
+          remark: "",
+        };
+  
         setLocalImages((prev) => {
-          const updated = { ...prev };
-          if (!updated[floorIndex]) {
-            updated[floorIndex] = { images: [], tasks: {} };
+          const updatedImages = { ...prev };
+  
+          // Initialize floor if not present
+          if (!updatedImages[floorIndex]) {
+            updatedImages[floorIndex] = { images: [], tasks: {} };
           }
+  
+          // Add image to task or floor, avoiding duplicates
           if (taskIndex !== null) {
-            // Task image
-            if (!updated[floorIndex].tasks[taskIndex]) {
-              updated[floorIndex].tasks[taskIndex] = { images: [] };
+            // Task image handling
+            if (!updatedImages[floorIndex].tasks[taskIndex]) {
+              updatedImages[floorIndex].tasks[taskIndex] = { images: [] };
             }
-            updated[floorIndex].tasks[taskIndex].images.push({
-              preview: reader.result,
-              file,
-              isLocal: true,
-            });
+  
+            // Add image only if it does not exist already (check by file name)
+            if (!updatedImages[floorIndex].tasks[taskIndex].images.some(img => img.file.name === file.name)) {
+              updatedImages[floorIndex].tasks[taskIndex].images.push(newImage);
+            }
           } else {
-            // Floor image
-            updated[floorIndex].images.push({
-              preview: reader.result,
-              file,
-              isLocal: true,
-            });
+            // Floor image handling
+  
+            // Add image only if it does not exist already (check by file name)
+            if (!updatedImages[floorIndex].images.some(img => img.file.name === file.name)) {
+              updatedImages[floorIndex].images.push(newImage);
+            }
           }
-          return updated;
+          return updatedImages;
         });
       };
       reader.readAsDataURL(file);
     });
   };
-  
-  
-  
-  
-  
   
   
   
@@ -369,31 +386,34 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handleToggleProgressMode = async (projectId, isAutomatic) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/progress-mode`,
+        `http://localhost:4000/api/project/${projectId}/progress-mode`,
         { isAutomatic },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
   
-      const updatedProject = response.data.project;
+      // Log the entire response.data to examine its structure
+      console.log("Response Data:", response.data);
   
-      // Update the projects state with the new project data
-      setProjects(prevProjects =>
-        prevProjects.map(project =>
-          project._id === updatedProject._id ? updatedProject : project
-        )
-      );
+      // Attempt to access the project data, with more fallback and error handling
+      const updatedProject = response.data?.project || response.data;
   
-      showAlert(
-        'Success',
-        `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`,
-        'success'
-      );
+      if (updatedProject && updatedProject._id) {
+        // Update the projects list with the newly retrieved project
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            project._id === updatedProject._id ? updatedProject : project
+          )
+        );
+        showAlert("Success", `Progress mode set to ${isAutomatic ? 'Automatic' : 'Manual'}.`, "success");
+      } else {
+        console.error("Error: Updated project data is undefined or missing _id in the response:", response.data);
+        showAlert("Error", "Failed to retrieve updated project data.", "error");
+      }
     } catch (error) {
-      console.error('Error toggling progress mode:', error);
-      showAlert('Error', 'Failed to toggle progress mode. Please try again.', 'error');
+      console.error("Error toggling progress mode:", error);
+      showAlert("Error", "Failed to toggle progress mode. Please try again.", "error");
     }
   };
-  
   
   
   
@@ -474,7 +494,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
       };
   
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/project`,
+        `http://localhost:4000/api/project`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -513,7 +533,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
                 formData.append("remark", img.remark || "");
             
                 const response = await axios.post(
-                  `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/images`,
+                  `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images`,
                   formData,
                   {
                     headers: {
@@ -544,7 +564,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
                     formData.append("remark", img.remark || "");
   
                     const response = await axios.post(
-                      `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images`,
+                      `http://localhost:4000/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images`,
                       formData,
                       {
                         headers: {
@@ -606,7 +626,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   
       // Send the updated project to the server
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${editProjectId}`,
+        `http://localhost:4000/api/project/${editProjectId}`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -642,7 +662,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   // Handle deleting a project
   const handleDeleteProject = async () => {
     try {
-      await axios.delete(`https://foxconstruction-final.onrender.com/api/project/${selectedProject._id}`, {
+      await axios.delete(`http://localhost:4000/api/project/${selectedProject._id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -685,7 +705,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handleStartProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/start`,
+        `http://localhost:4000/api/project/${projectId}/start`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -707,7 +727,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handlePostponeProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/postpone`,
+        `http://localhost:4000/api/project/${projectId}/postpone`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -730,7 +750,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handleResumeProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/resume`,
+        `http://localhost:4000/api/project/${projectId}/resume`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -752,7 +772,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handleEndProject = async (projectId) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/end`,
+        `http://localhost:4000/api/project/${projectId}/end`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -809,7 +829,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   
         // Send delete request to the server
         await axios.delete(
-          `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
+          `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
           { headers: { Authorization: `Bearer ${user.token}` } }
         );
   
@@ -838,7 +858,7 @@ setNewProject({ ...newProject, floors: updatedFloors });
   
         // Send delete request to the server
         await axios.delete(
-          `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images/${imageId}`,
+          `http://localhost:4000/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images/${imageId}`,
           { headers: { Authorization: `Bearer ${user.token}` } }
         );
   
@@ -915,7 +935,7 @@ setNewProject({ ...newProject, floors: updatedFloors });
   const handleUpdateStatus = async (projectId, newStatus) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/status`,
+        `http://localhost:4000/api/project/${projectId}/status`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -1145,7 +1165,7 @@ setNewProject({ ...newProject, floors: updatedFloors });
       const floorId = newProject.floors[floorIndex]._id;
   
       await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
+        `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images/${imageId}`,
         { remark: newRemark },
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -1533,24 +1553,18 @@ setNewProject({ ...newProject, floors: updatedFloors });
             {/* Number of Floors */}
             {!isEditing && (
               <TextField
-              fullWidth
-              margin="dense"
-              label="Number of Floors"
-              type="number"
-              value={newProject.numFloors}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                if (!isNaN(value) && value > 0 && value <= 5) { // Validate range (1 to 5)
-                  setNewProject({ ...newProject, numFloors: value });
-                } else if (value <= 0) {
-                  setNewProject({ ...newProject, numFloors: 1 }); // Default to 1 if invalid
-                }
-              }}
-              InputProps={{
-                inputProps: { min: 1, max: 5 },
-              }}
-            />
-            
+                fullWidth
+                margin="dense"
+                label="Number of Floors"
+                type="number"
+                value={newProject.numFloors}
+                onChange={handleNumFloorsChange}
+                error={!!floorError}
+                helperText={floorError}
+                InputProps={{
+                  inputProps: { min: 0 },
+                }}
+              />
             )}
 
             {/* Project Timeline */}
@@ -1597,36 +1611,18 @@ setNewProject({ ...newProject, floors: updatedFloors });
     </AccordionSummary>
     <AccordionDetails>
       {/* Floor Progress */}
-      {/* Floor Progress */}
-<TextField
-  fullWidth
-  margin="dense"
-  label="Progress (%)"
-  type="number"
-  value={floor.progress}
-  onChange={(e) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 0 && value <= 100) { // Ensure valid range 0-100
-      handleFloorChange(floorIndex, "progress", value);
-    } else if (value < 0) {
-      handleFloorChange(floorIndex, "progress", 0); // Set to 0 if input is negative
-    }
-  }}
-  InputProps={{
-    inputProps: { min: 0, max: 100 },
-  }}
-/>
-
+      <TextField
+        fullWidth
+        margin="dense"
+        label="Progress"
+        type="number"
+        value={floor.progress}
+        onChange={(e) =>
+          handleFloorChange(floorIndex, "progress", parseInt(e.target.value, 10))
+        }
+      />
 
 <Box mt={2} mb={2}>
-  <Typography variant="subtitle2">Upload Floor Image & Remark</Typography>
-  <TextField
-    fullWidth
-    margin="dense"
-    label="Remark"
-    value={floor.remark || ""}
-    onChange={(e) => handleFloorChange(floorIndex, "remark", e.target.value)}
-  />
   <Button variant="contained" component="label" sx={{ mt: 1 }}>
     Upload Floor Image
     <input
@@ -1641,11 +1637,11 @@ setNewProject({ ...newProject, floors: updatedFloors });
   <Box mt={2} mb={2}>
   <Typography variant="subtitle2">Existing Floor Images</Typography>
   <Box display="flex" flexWrap="wrap" gap={2}>
-    {(floor.images || []).filter(Boolean).map((img, imageIndex) => (
+    {(newProject.floors[floorIndex]?.images || []).filter(Boolean).map((img, imageIndex) => (
       <Box key={imageIndex} position="relative" display="flex" flexDirection="column" alignItems="center">
         {/* Image Display */}
         <img
-          src={img.path}
+          src={img.isLocal ? img.preview : img.path}
           alt={`Floor Image ${imageIndex + 1}`}
           style={{
             width: "150px",
@@ -1660,9 +1656,9 @@ setNewProject({ ...newProject, floors: updatedFloors });
           fullWidth
           margin="dense"
           label="Remark"
-          value={img.remark || ""} // Display the current remark
+          value={img.remark || ""}
           onChange={(e) =>
-            handleUpdateImageRemark(floorIndex, imageIndex, e.target.value) // Handle remark changes
+            handleUpdateImageRemark(floorIndex, imageIndex, e.target.value)
           }
           sx={{ mt: 1 }}
         />
@@ -1685,6 +1681,34 @@ setNewProject({ ...newProject, floors: updatedFloors });
   </Box>
 </Box>
 
+{/* Floor Images */}
+{localImages[floorIndex]?.images?.map((img, imageIndex) => (
+  <Box key={imageIndex} mt={2} position="relative" display="inline-block">
+    <img
+      src={img.preview}
+      alt={`Floor Image ${imageIndex + 1}`}
+      style={{
+        width: "150px",
+        height: "150px",
+        objectFit: "cover",
+        borderRadius: "8px",
+      }}
+    />
+    <IconButton
+      size="small"
+      onClick={() => handleRemoveImage(floorIndex, imageIndex)}
+      style={{
+        position: "absolute",
+        top: 5,
+        right: 5,
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+      }}
+    >
+      <CloseIcon fontSize="small" />
+    </IconButton>
+  </Box>
+))}
+
 
 
 
@@ -1706,39 +1730,19 @@ setNewProject({ ...newProject, floors: updatedFloors });
           />
 
           {/* Task Progress */}
-          {/* Task Progress */}
-<TextField
-  fullWidth
-  margin="dense"
-  label="Task Progress (%)"
-  type="number"
-  value={task.progress}
-  onChange={(e) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 0 && value <= 100) { // Ensure valid range 0-100
-      handleTaskChange(floorIndex, taskIndex, "progress", value);
-    } else if (value < 0) {
-      handleTaskChange(floorIndex, taskIndex, "progress", 0); // Set to 0 if input is negative
-    }
-  }}
-  InputProps={{
-    inputProps: { min: 0, max: 100 },
-  }}
-/>
-
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Task Progress"
+            type="number"
+            value={task.progress}
+            onChange={(e) =>
+              handleTaskChange(floorIndex, taskIndex, "progress", parseInt(e.target.value, 10))
+            }
+          />
       
           {/* Task Image and Remark */}
           <Box mt={2} mb={2}>
-  <Typography variant="subtitle2">Upload Task Image & Remark</Typography>
-  <TextField
-    fullWidth
-    margin="dense"
-    label="Remark"
-    value={task.remark || ""}
-    onChange={(e) =>
-      handleTaskChange(floorIndex, taskIndex, "remark", e.target.value)
-    }
-  />
              <Button variant="contained" component="label" sx={{ mt: 1 }}>
     Upload Task Image
     <input
@@ -1769,17 +1773,16 @@ setNewProject({ ...newProject, floors: updatedFloors });
           }}
         />
 
-        {/* Remark Field */}
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Remark"
-          value={img.remark || ""} // Display the current remark
-          onChange={(e) =>
-            handleUpdateImageRemark(floorIndex, imageIndex, e.target.value) // Handle remark changes
-          }
-          sx={{ mt: 1 }}
-        />
+<TextField
+  fullWidth
+  margin="dense"
+  label="Remark"
+  value={img.remark || ""} // Display the current remark for task images
+  onChange={(e) =>
+    handleUpdateTaskImageRemark(floorIndex, taskIndex, imageIndex, e.target.value) // Handle remark changes for task images
+  }
+  sx={{ mt: 1 }}
+/>
 
         {/* Delete Button */}
         <IconButton

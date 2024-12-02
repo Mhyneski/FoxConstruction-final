@@ -295,45 +295,9 @@ const uploadTaskImage = async (req, res) => {
     }
   };
   
-  
-  
-  
-  function getPublicIdFromUrl(url) {
-    try {
-      // Parse the URL to extract the path after 'upload/'
-      const parts = url.split('/');
-  
-      // Find the index of 'upload'
-      const uploadIndex = parts.findIndex((part) => part === 'upload');
-  
-      if (uploadIndex === -1) {
-        // 'upload' not found in URL
-        return null;
-      }
-  
-      // Reconstruct the public_id by joining the rest of the parts after 'upload/'
-      let publicId = parts.slice(uploadIndex + 1).join('/');
-  
-      // Remove URL parameters if any (e.g., transformations)
-      const questionMarkIndex = publicId.indexOf('?');
-      if (questionMarkIndex !== -1) {
-        publicId = publicId.substring(0, questionMarkIndex);
-      }
-  
-      // Remove file extension from public_id
-      const dotIndex = publicId.lastIndexOf('.');
-      if (dotIndex !== -1) {
-        publicId = publicId.substring(0, dotIndex);
-      }
-  
-      return publicId;
-    } catch (error) {
-      console.error('Error extracting public_id from URL:', error);
-      return null;
-    }
-  }
+
     
   
   
   module.exports = { uploadTaskImage, uploadFloorImage, deleteTaskImage,
-    deleteFloorImage, };
+    deleteFloorImage };

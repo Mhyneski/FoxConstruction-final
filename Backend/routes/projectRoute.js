@@ -20,7 +20,7 @@ const {
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload'); // Your Multer configuration for Cloudinary
 const { uploadTaskImage, uploadFloorImage, deleteTaskImage,
-  deleteFloorImage, } = require('../controllers/imagesController');
+  deleteFloorImage} = require('../controllers/imagesController');
 
 const router = express.Router();
 
@@ -46,6 +46,8 @@ router.post('/:projectId/floors/:floorId/tasks/:taskId/images', upload.single('i
 
 // Upload image for a specific floor
 router.post('/:projectId/floors/:floorId/images', upload.single('image'), uploadFloorImage);
+
+
 
 // Route to delete a task image
 router.delete(

@@ -1,47 +1,27 @@
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-} from '@mui/material';
-import HeroVideo from "../assets/Hevabi.mp4";
+import { Box, Typography } from '@mui/material';
+import HeroImage from "../assets/bgCons.jpg"; // Replace with your image path
 import Header from '../components/Header';
 
 const Homepage = () => {
   const [isTextLoaded, setIsTextLoaded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
-    const handleUserInteraction = () => {
-      setIsMuted(false);
-      const video = document.querySelector("video");
-      if (video && video.paused) {
-        video.play().catch((error) => {
-          console.error("Failed to play video on interaction:", error);
-        });
-      }
-      document.removeEventListener("click", handleUserInteraction);
-    };
-  
-    document.addEventListener("click", handleUserInteraction);
-  
     // Set isTextLoaded to true after a slight delay to trigger the fade-in effect
     const textLoadTimeout = setTimeout(() => {
       setIsTextLoaded(true);
     }, 300); // Adjust delay as needed
-  
+
     return () => {
-      document.removeEventListener("click", handleUserInteraction);
       clearTimeout(textLoadTimeout); // Clean up the timeout
     };
   }, []);
-  
-  
 
   return (
     <Box sx={{ width: '100%', height: '100vh', overflow: 'hidden' }}>
       {/* Header Component */}
       <Header />
-      
+
       {/* Hero Section */}
       <Box
         sx={{
@@ -55,20 +35,18 @@ const Homepage = () => {
           mt: '64px', // Margin top to account for fixed header
         }}
       >
-        <video
-  src={HeroVideo}
-  autoPlay
-  loop
-  muted
-  playsInline
-  style={{
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    zIndex: -1,
-  }}
-/>
+        <img
+          src={HeroImage}
+          alt="Hero"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center bottom', // Adjust this to focus on the lower section
+            zIndex: -1,
+          }}
+        />
         <Box
           sx={{
             textAlign: 'center',

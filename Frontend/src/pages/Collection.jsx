@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, ButtonBase } from "@mui/material";
-import Image1 from "../assets/IMAGE1.jpg";
-import Image2 from "../assets/IMAGE2.jpg";
-import Image3 from "../assets/IMAGE3.jpg";
-import Image4 from "../assets/IMAGE4.jpg";
+import Image1 from "../assets/manaloHouse1.jpg";
+import Image2 from "../assets/ManaloHouse2.jpg";
+import Image3 from "../assets/ManaloHouse3.png";
+import Image4 from "../assets/manalohouseaye.png";
 import Image5 from "../assets/IMAGE5.jpg";
 import Image6 from "../assets/IMAGE6.jpg";
 import Header from "../components/Header";
