@@ -39,7 +39,7 @@ const Location = () => {
     const fetchLocations = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:4000/api/locations`, {
+        const response = await axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -63,7 +63,7 @@ const Location = () => {
   const handleSave = async (id) => {
     try {
       const updatedLocation = { ...editedLocation };
-      await axios.patch(`http://localhost:4000/api/locations/${id}`, updatedLocation, {
+      await axios.patch(`https://foxconstruction-final.onrender.com/api/locations/${id}`, updatedLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -81,7 +81,7 @@ const Location = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:4000/api/locations/${id}`, {
+      await axios.delete(`https://foxconstruction-final.onrender.com/api/locations/${id}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -113,7 +113,7 @@ const Location = () => {
         return;
       }
 
-      const response = await axios.post(`http://localhost:4000/api/locations`, newLocation, {
+      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/locations`, newLocation, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
