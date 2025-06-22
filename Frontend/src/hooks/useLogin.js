@@ -14,7 +14,7 @@ export const useLogin = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`https://foxconstruction-final.onrender.com/api/user/login`, { Username, password });
+      const response = await axios.post(` http://localhost:4000/api/user/login`, { Username, password });
       const json = response.data;
 
       // Log the user data after logging in
@@ -32,7 +32,7 @@ export const useLogin = () => {
         navigate('/AdminDashboard');
       } else if (role === 'user') {
         navigate('/UserDashboard');
-      } else if (role === 'contractor') {
+      } else if (role === 'designEngineer') {
         navigate('/ContractorDashboard');
       } else {
         navigate('/UnknownRole');

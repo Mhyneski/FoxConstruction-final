@@ -190,16 +190,16 @@ const [imageToDelete, setImageToDelete] = useState(null);
         setIsLoading(true);
   
         const [projectsResponse, locationsResponse, templatesResponse, usersResponse] = await Promise.all([
-          axios.get(`https://foxconstruction-final.onrender.com/api/project/contractor`, {
+          axios.get(`http://localhost:4000/api/project/contractor`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/locations`, {
+          axios.get(`http://localhost:4000/api/locations`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/templates`, {
+          axios.get(`http://localhost:4000/api/templates`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`https://foxconstruction-final.onrender.com/api/user/get`, {
+          axios.get(`http://localhost:4000/api/user/get`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
         ]);
@@ -386,7 +386,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
   const handleToggleProgressMode = async (projectId, isAutomatic) => {
     try {
       const response = await axios.patch(
-        `https://foxconstruction-final.onrender.com/api/project/${projectId}/progress-mode`,
+        `http://localhost:4000/api/project/${projectId}/progress-mode`,
         { isAutomatic },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -494,7 +494,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
       };
   
       const response = await axios.post(
-        `https://foxconstruction-final.onrender.com/api/project`,
+        `http://localhost:4000/api/project`,
         processedProject,
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -533,7 +533,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
                 formData.append("remark", img.remark || "");
             
                 const response = await axios.post(
-                  `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/images`,
+                  `http://localhost:4000/api/project/${projectId}/floors/${floorId}/images`,
                   formData,
                   {
                     headers: {
@@ -564,7 +564,7 @@ const [imageToDelete, setImageToDelete] = useState(null);
                     formData.append("remark", img.remark || "");
   
                     const response = await axios.post(
-                      `https://foxconstruction-final.onrender.com/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images`,
+                      `http://localhost:4000/api/project/${projectId}/floors/${floorId}/tasks/${taskId}/images`,
                       formData,
                       {
                         headers: {

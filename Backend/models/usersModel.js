@@ -15,7 +15,7 @@ const userSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'contractor'],
+    enum: ['admin', 'user', 'designEngineer'],
     required: true
   },
   forgotPassword: { type: Boolean, default: false },

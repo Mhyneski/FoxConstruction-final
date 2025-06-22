@@ -25,12 +25,11 @@ const generateBOM = async (req, res) => {
     const foundationFactor = foundationDepth / baseTemplate.bom.foundationDepth;
     const scaleFactor = areaFactor * floorFactor * heightFactor;
 
-    // Scale the materials based on the category and scaling factors
     const scaledCategories = baseTemplate.bom.categories.map((category) => {
       const scaledMaterials = category.materials.map((material) => {
         let scaledQuantity;
 
-        // Category-specific scaling logic with additional factors if needed
+       
         switch (category.category.toLowerCase().trim()) {
           case 'earthwork':
             scaledQuantity = material.quantity * areaFactor * heightFactor;
@@ -67,7 +66,7 @@ const generateBOM = async (req, res) => {
             scaledQuantity = material.quantity * scaleFactor; 
         }
 
-        // Apply additional scaling based on material-specific factors
+    
         scaledQuantity *= material.scaling.roomCountFactor ? roomFactor : 1;
         scaledQuantity *= material.scaling.foundationDepthFactor ? foundationFactor : 1;
 

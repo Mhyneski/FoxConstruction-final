@@ -10,10 +10,9 @@ const projectRoutes = require('./routes/projectRoute');
 const preprojectRoutes = require('./routes/preprojectRoute');
 const { authMiddleware, authorizeRoles } = require('./middlewares/authMiddleware');
 const cors = require('cors');
-const cron = require('node-cron'); // Import cron
-const Project = require('./models/projectModel'); // Import the Project model
+const cron = require('node-cron'); 
+const Project = require('./models/projectModel'); 
 
-// express app
 const app = express();
 
 app.use(express.json({ limit: '50mb' }));
@@ -24,27 +23,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enable CORS
+
 app.use(cors({
-  origin: 'https://foxconstruction.netlify.app', // Your frontend URL
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-  optionsSuccessStatus: 200, // For legacy browsers (IE11, etc.) that handle preflight requests incorrectly
+  origin: ' http://localhost:5173', 
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization'], 
+  credentials: true, 
+  optionsSuccessStatus: 200, 
 }));
 
-// Apply authMiddleware and authorizeRoles only for protected routes
 
-// No auth required for login and signup routes
-app.use('/api/user', userRoutes); // These routes handle login/signup, so no auth middleware here
+app.use('/api/user', userRoutes);
 
-// Protected routes
-app.use('/api/materials', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), materialRoutes);
-app.use('/api/locations', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), locationRoutes);
-app.use('/api/templates', authMiddleware, authorizeRoles(['contractor', 'admin']), templatesRoutes);
-app.use('/api/bom', authMiddleware, authorizeRoles(['contractor', 'admin']), bomRoutes);
-app.use('/api/project', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), projectRoutes);
-app.use('/api/preprojects', authMiddleware, authorizeRoles(['contractor', 'admin', 'user']), preprojectRoutes);
+
+app.use('/api/materials', authMiddleware, authorizeRoles(['designEngineer', 'admin', 'user']), materialRoutes);
+app.use('/api/locations', authMiddleware, authorizeRoles(['designEngineer', 'admin', 'user']), locationRoutes);
+app.use('/api/templates', authMiddleware, authorizeRoles(['designEngineer', 'admin']), templatesRoutes);
+app.use('/api/bom', authMiddleware, authorizeRoles(['designEngineer', 'admin']), bomRoutes);
+app.use('/api/project', authMiddleware, authorizeRoles(['designEngineer', 'admin', 'user']), projectRoutes);
+app.use('/api/preprojects', authMiddleware, authorizeRoles(['designEngineer', 'admin', 'user']), preprojectRoutes);
 
 // Function to calculate and update project progress
 const updateDailyProgress = async () => {
@@ -69,19 +66,19 @@ const updateDailyProgress = async () => {
 };
 
 
-// Connect to MongoDB and start the server
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     app.listen(process.env.PORT, () => {
       console.log('Connected to DB and listening on ' + process.env.PORT);
       
 
-      // Schedule the job to run every day at midnight
+      
       cron.schedule('0 0 * * *', () => {
         console.log("Running daily project progress update...");
         updateDailyProgress();
       }, {
-        timezone: "Asia/Manila" // Set the timezone as per your requirements
+        timezone: "Asia/Manila" 
       });
     });
   })

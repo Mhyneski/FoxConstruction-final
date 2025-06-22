@@ -114,7 +114,7 @@ function App() {
         <Route
           path="/ContractorDashboard"
           element={
-            <ProtectedRoute allowedRoles={['contractor']}>
+            <ProtectedRoute allowedRoles={['designEngineer']}>  
               <ContractorDashboard />
             </ProtectedRoute>
           }
@@ -122,20 +122,20 @@ function App() {
         <Route
           path="/HouseSliders"
           element={
-            <ProtectedRoute allowedRoles={['contractor']}>
+            <ProtectedRoute allowedRoles={['designEngineer']}>
               <HouseSliders />
             </ProtectedRoute>
           }
         />
         <Route path="/projects/:id" element={
-            <ProtectedRoute allowedRoles={['contractor']}>
+            <ProtectedRoute allowedRoles={['designEngineer']}>
               <ProjectDetails />
             </ProtectedRoute>
           } />
         <Route
         path="/Templates"
         element={
-          <ProtectedRoute allowedRoles={['contractor']}>
+          <ProtectedRoute allowedRoles={['designEngineer']}>
             <Templates />
           </ProtectedRoute>
         }
@@ -143,7 +143,7 @@ function App() {
         <Route
           path="/ProjectList"
           element={
-            <ProtectedRoute allowedRoles={['contractor']}>
+            <ProtectedRoute allowedRoles={['designEngineer']}>
               <ProjectList />
             </ProtectedRoute>
           }
@@ -151,7 +151,7 @@ function App() {
         <Route
           path="/Generator"
           element={
-            <ProtectedRoute allowedRoles={['contractor']}>
+            <ProtectedRoute allowedRoles={['designEngineer']}>
               <Generator />
             </ProtectedRoute>
           }
