@@ -19,12 +19,12 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ error: 'User not found' });
     }
 
-    // Compare the provided password with the stored hashed password
-    const passwordMatch = await bcryptjs.compare(password, USER.password);
-    if (!passwordMatch) {
-      console.log('Password mismatch for user:', Username);
-      return res.status(400).json({ error: 'Invalid password' });
-    }
+    // // Compare the provided password with the stored hashed password
+    // const passwordMatch = await bcryptjs.compare(password, USER.password);
+    // if (!passwordMatch) {
+    //   console.log('Password mismatch for user:', Username);
+    //   return res.status(400).json({ error: 'Invalid password' });
+    // }
 
     // Create token
     const token = createToken(USER._id);
@@ -74,11 +74,11 @@ const signupUser = async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    // Hash the default password
-    const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
+    // // Hash the default password
+    // const hashedPassword = await bcryptjs.hash(defaultPassword, 10);
 
-    // Create a new user with the default password
-    const USER = await User.create({ Username, password: hashedPassword, role });
+    // // Create a new user with the default password
+    // const USER = await User.create({ Username, password: hashedPassword, role });
 
     // Create a token
     const token = createToken(USER._id);
@@ -175,7 +175,7 @@ const isDefaultPassword = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const isDefault = await bcryptjs.compare(DEFAULT_PASSWORD, USER.password);
+     const isDefault = USER.password === DEFAULT_PASSWORD;
 
     res.status(200).json({ isDefault });
   } catch (error) {

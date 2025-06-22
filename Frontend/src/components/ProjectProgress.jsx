@@ -291,8 +291,8 @@ const ProjectProgress = () => {
       {/* Modal for Full-View Image */}
       <Dialog open={!!selectedImage} onClose={handleCloseModal} maxWidth="lg" fullWidth  PaperProps={{
         style: {
-          backgroundColor: 'transparent', // Remove default white background
-          boxShadow: 'none', // Remove shadow
+          backgroundColor: 'transparent', 
+          boxShadow: 'none', 
         },
       }}>
         <DialogContent sx={{ position: 'relative' }}>
